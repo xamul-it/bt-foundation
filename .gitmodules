@@ -4,3 +4,6 @@
 [submodule "bt-dash"]
 	path = bt-dash
 	url = git@github.com:xamul-it/bt-dash.git
+[submodule "bt-api"]
+	path = bt-api
+	url = git@github.com:xamul-it/bt-api.git
