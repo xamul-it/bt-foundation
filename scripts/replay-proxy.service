@@ -1,0 +1,23 @@
+[Unit]
+Description=Replay ZMQ Proxy — NASDAQ_HV 2026-02-03
+After=network.target
+# NON dipende da zmq-proxy.service: usa porte separate (REQ=5557, PUB=5558)
+
+[Service]
+Type=simple
+WorkingDirectory=/home/htpc/backtrader/backtrader
+EnvironmentFile=/home/htpc/backtrader/env/replay
+ExecStart=/home/htpc/backtrader/scripts/replay-proxy.sh ${REPLAY_DATE} \
+    --speed ${REPLAY_SPEED} \
+    --log-dir ${REPLAY_LOG_DIR} \
+    --req-port 5557 \
+    --pub-port 5558
+StandardOutput=append:/home/htpc/backtrader/logs/replay-proxy.log
+StandardError=append:/home/htpc/backtrader/logs/replay-proxy.log
+# Restart=no: il replay termina da solo alla fine del giorno
+Restart=no
+# Riavvia automaticamente solo se crasha (exit code != 0)
+RestartSec=5s
+
+[Install]
+WantedBy=default.target

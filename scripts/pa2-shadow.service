@@ -1,0 +1,20 @@
+[Unit]
+Description=HMA Strategy
+After=zmq-proxy.service
+Requires=zmq-proxy.service
+Requires=pa2.service
+# Questo lo fa riavviare con zmq
+# PartOf=zmq-proxy.service  
+
+[Service]
+Type=simple
+WorkingDirectory=/home/htpc/backtrader
+EnvironmentFile=/home/htpc/backtrader/.PA2
+#ExecStart=/bin/bash -c 'source ./backtrader/bin/activate && source ./.PA2 && python ./btmain.py --ticker="NASDAQ sca.json" --strat=daily.HMA --stratargs="period=16 inverted=True" --broker=alpaca --live --proxy'
+ExecStart=/home/htpc/backtrader/scripts/pa2-shadow.sh
+StandardOutput=append:/home/htpc/backtrader/logs/pa2-shadow.log
+StandardError=append:/home/htpc/backtrader/logs/pa2-shadow.log
+Restart=on-failure
+
+[Install]
+WantedBy=default.target

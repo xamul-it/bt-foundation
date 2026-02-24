@@ -1,0 +1,13 @@
+[Unit]
+Description=Timer EOD Analysis — 21:30 UTC (16:30 EST) lunedì-venerdì
+Requires=parallel-sim-eod.service
+
+[Timer]
+# 16:30 EST = 21:30 UTC (orario estivo USA)
+# Aggiornare a 21:30 in inverno (EST = UTC-5)
+OnCalendar=Mon-Fri 21:30:00 UTC
+Persistent=true
+Unit=parallel-sim-eod.service
+
+[Install]
+WantedBy=timers.target
