@@ -1,0 +1,3 @@
+[submodule "bt-docker"]
+	path = bt-docker
+	url = git@github.com:xamul-it/bt-docker.git
