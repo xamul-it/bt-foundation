@@ -10,3 +10,6 @@
 [submodule "bt-gateway"]
 	path = bt-gateway
 	url = git@github.com:xamul-it/bt-gateway.git
+[submodule "bt-core"]
+        path = bt-core
+        url = git@github.com:xamul-it/bt-core.git
