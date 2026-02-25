@@ -1,0 +1,31 @@
+# Python cache/bytecode
+__pycache__/
+*.py[cod]
+
+# Virtual environments
+.venv/
+venv/
+venv
+env/
+
+# Runtime outputs
+logs/
+out/
+*.log
+
+# Local secrets / machine-specific env files
+.PA1
+.PA2
+.paper-env
+.parallel-sim-env
+.replay-proxy-env
+.zmq-env
+.env
+.env.*
+
+# IDE/editor
+.vscode/
+.idea/
+*.code-workspace
+*.swp
+*.swo

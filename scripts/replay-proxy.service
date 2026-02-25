@@ -5,7 +5,7 @@ After=network.target
 
 [Service]
 Type=simple
-WorkingDirectory=/home/htpc/backtrader/backtrader
+WorkingDirectory=/home/htpc/backtrader/bt-gateway
 EnvironmentFile=/home/htpc/backtrader/env/replay
 ExecStart=/home/htpc/backtrader/scripts/replay-proxy.sh ${REPLAY_DATE} \
     --speed ${REPLAY_SPEED} \

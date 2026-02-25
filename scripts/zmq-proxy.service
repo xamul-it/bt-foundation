@@ -4,10 +4,10 @@ After=network.target
 
 [Service]
 Type=simple
-WorkingDirectory=/home/htpc/backtrader/backtrader
+WorkingDirectory=/home/htpc/backtrader/bt-gateway/bt_alpaca_zmq
 
 # Versione corretta con attivazione virtualenv
-ExecStart=/bin/bash -c 'source ./backtrader/bin/activate && source ../.zmq-env && exec python ./alpaca_zmq_proxy.py --log-level=INFO'
+ExecStart=/bin/bash -c 'source ../env/zmq && exec ../.venv/bin/python ./alpaca_zmq_proxy.py --log-level=INFO'
 
 # Gestione dei log (alternativa più pulita)
 StandardOutput=append:/home/htpc/backtrader/logs/zmq.log

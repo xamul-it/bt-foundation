@@ -5,13 +5,13 @@ Requires=zmq-proxy.service
 
 [Service]
 Type=simple
-WorkingDirectory=/home/htpc/backtrader/backtrader
+WorkingDirectory=/home/htpc/backtrader/bt-gateway/bt_alpaca_zmq
 
 # Mostra nei log di systemd dove si trovano i file prodotti
-ExecStartPre=/bin/bash -c 'echo "[ZMQ-LOGGER] scrivo i log in /home/htpc/backtrader/backtrader/out/dump (file per simbolo e zmq_messages.log)"'
+ExecStartPre=/bin/bash -c 'echo "[ZMQ-LOGGER] scrivo i log in /home/htpc/backtrader/out/dump (file per simbolo e zmq_messages.log)"'
 
 # Il logger non richiede le API ma eredita eventuali variabili dal file .zmq-env
-ExecStart=/bin/bash -c 'source ./backtrader/bin/activate && source ../.zmq-env && exec python ./zmq_logger.py'
+ExecStart=/bin/bash -c 'source ../../env/zmq && exec ../.venv/bin/python ./zmq_logger.py'
 
 StandardOutput=append:/home/htpc/backtrader/logs/zmq-logger.log
 StandardError=append:/home/htpc/backtrader/logs/zmq-logger.log
