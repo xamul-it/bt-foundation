@@ -1,0 +1,18 @@
+[Unit]
+Description=Backtrader Live Event Writer
+After=network.target redis.service
+Wants=redis.service
+
+[Service]
+Type=simple
+WorkingDirectory=/home/htpc/backtrader/bt-core
+ExecStart=/bin/bash -lc 'set -a; source /home/htpc/backtrader/env/bt-live-events; set +a; exec /home/htpc/backtrader/bt-core/.venv/bin/python ./live_event_writer.py --log-level=INFO'
+
+StandardOutput=append:/home/htpc/backtrader/logs/bt-live-event-writer.log
+StandardError=append:/home/htpc/backtrader/logs/bt-live-event-writer.log
+
+Restart=on-failure
+RestartSec=5s
+
+[Install]
+WantedBy=default.target

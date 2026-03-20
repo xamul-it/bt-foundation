@@ -1,0 +1,18 @@
+[Unit]
+Description=Backtrader Paper/Sim Watchtower
+After=network.target postgresql.service
+Wants=postgresql.service
+
+[Service]
+Type=simple
+WorkingDirectory=/home/htpc/backtrader/bt-core
+ExecStart=/bin/bash -lc 'set -a; source /home/htpc/backtrader/env/bt-live-events; set +a; exec /home/htpc/backtrader/bt-core/.venv/bin/python ./reconciliation_watchdog.py --db-dsn "$LIVE_EVENTS_DB_DSN" --poll-seconds "${BT_WATCHTOWER_POLL_SECONDS:-5}" --log-level="${BT_WATCHTOWER_LOG_LEVEL:-INFO}"'
+
+StandardOutput=append:/home/htpc/backtrader/logs/bt-watchtower.log
+StandardError=append:/home/htpc/backtrader/logs/bt-watchtower.log
+
+Restart=on-failure
+RestartSec=5s
+
+[Install]
+WantedBy=default.target

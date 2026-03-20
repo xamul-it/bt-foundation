@@ -1,0 +1,20 @@
+{
+  "_comment": "Configurazione per scoring data generator",
+
+  "symbols": [
+    "AAPL", "MSFT", "GOOGL", "AMZN", "TSLA", "NVDA",
+    "AMD", "MSTR", "SMCI", "DOCU", "ZM", "PTON",
+    "RIVN", "LCID", "TEAM", "OKTA", "DDOG", "MDB",
+    "CRWD", "SNOW", "BIDU", "ROKU", "NFLX"
+  ],
+
+  "data_folder": "config/data/d/yahoo",
+
+  "window_days": 180,
+  "min_bars": 120,
+
+  "from_date": "2024-01-01",
+  "to_date": null,
+
+  "output_file": "config/scoring/scoring_data.csv"
+}

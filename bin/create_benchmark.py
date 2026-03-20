@@ -3,13 +3,14 @@
 
 import argparse
 import json
-import os
+import tempfile
 import subprocess
 import sys
 from datetime import datetime
 from pathlib import Path
 
 import csv
+import pandas as pd
 
 
 def parse_args():
@@ -28,7 +29,7 @@ def parse_args():
     parser.add_argument(
         "--data",
         default="data",
-        help="Data folder under config/ (default: data)",
+        help="Data folder under config-common/ (default: data)",
     )
     parser.add_argument(
         "--timeframe",
@@ -38,7 +39,7 @@ def parse_args():
     parser.add_argument(
         "--output",
         default=None,
-        help="Output benchmark CSV path (default: config/benchmark/<listname>.csv)",
+        help="Output benchmark CSV path (default: config-common/benchmark/<listname>.csv)",
     )
     parser.add_argument(
         "--no-run",
@@ -73,14 +74,45 @@ def parse_first_date(csv_path):
     return None
 
 
+def parse_first_date_parquet(parquet_path):
+    try:
+        df = pd.read_parquet(parquet_path)
+    except Exception:
+        return None
+
+    if df is None or df.empty:
+        return None
+
+    for col in ("datetime", "timestamp", "Date", "date"):
+        if col in df.columns:
+            series = pd.to_datetime(df[col], errors="coerce")
+            series = series.dropna()
+            if not series.empty:
+                return series.min().to_pydatetime()
+
+    if isinstance(df.index, pd.DatetimeIndex) and not df.index.empty:
+        return df.index.min().to_pydatetime()
+    return None
+
+
+def first_date_for_ticker(data_dir, ticker):
+    csv_path = data_dir / f"{ticker}.csv"
+    if csv_path.exists():
+        first_date = parse_first_date(csv_path)
+        if first_date is not None:
+            return first_date
+
+    parquet_path = data_dir / f"{ticker}.parquet"
+    if parquet_path.exists():
+        return parse_first_date_parquet(parquet_path)
+
+    return None
+
+
 def find_earliest_date(tickers, data_dir):
     earliest = None
     for ticker in tickers:
-        csv_path = data_dir / f"{ticker}.csv"
-        if not csv_path.exists():
-            continue
-
-        first_date = parse_first_date(csv_path)
+        first_date = first_date_for_ticker(data_dir, ticker)
         if first_date is None:
             continue
 
@@ -95,16 +127,59 @@ def find_data_dir(tickers, candidates):
         if not candidate.exists():
             continue
         for ticker in tickers:
-            if (candidate / f"{ticker}.csv").exists():
+            if (candidate / f"{ticker}.csv").exists() or (candidate / f"{ticker}.parquet").exists():
                 return candidate
     return None
+
+
+def prepare_btmain_data_root(source_dir, timeframe, provider):
+    """
+    Create a temporary data root with btmain-expected layout:
+      <tmp_root>/<m|d>/<provider> -> symlink to source_dir
+    Returns tmp_root path.
+    """
+    tf_key = "m" if timeframe.startswith("min") or timeframe == "m" else "d"
+    tmp_root = Path(tempfile.mkdtemp(prefix="bt_bench_data_"))
+    target = tmp_root / tf_key / provider
+    target.parent.mkdir(parents=True, exist_ok=True)
+    target.symlink_to(source_dir)
+    return tmp_root
+
+
+def find_latest_returns_file(out_root):
+    patterns = [
+        "out/generic/BuyAndHold/**/returns.csv",
+        "out/generic/BuyAndHold/returns.csv",
+        "out/BuyAndHold/**/returns.csv",
+        "out/BuyAndHold/returns.csv",
+        "out/generic/BuyAndHold/**/result.csv",
+        "out/BuyAndHold/**/result.csv",
+    ]
+    matches = []
+    for pattern in patterns:
+        matches.extend((out_root / pattern.split("/")[0]).glob("/".join(pattern.split("/")[1:])))
+    files = [p for p in matches if p.exists() and p.is_file()]
+    if not files:
+        return None
+    files.sort(key=lambda p: p.stat().st_mtime, reverse=True)
+    return files[0]
 
 
 def main():
     args = parse_args()
     repo_root = Path(__file__).resolve().parents[1]
+    btmain_path = repo_root / "bt-core" / "btmain.py"
+    python_path = repo_root / "bt-core" / ".venv" / "bin" / "python"
+    if not btmain_path.exists():
+        print(f"btmain.py not found: {btmain_path}", file=sys.stderr)
+        return 2
+    if not python_path.exists():
+        print(f"python not found: {python_path}", file=sys.stderr)
+        return 2
 
-    tickers_file = repo_root / "config" / "tickers" / args.ticker_list
+    tickers_file = repo_root / "config-common" / "tickers" / args.ticker_list
+    if not tickers_file.exists():
+        tickers_file = repo_root / "config" / "tickers" / args.ticker_list
     if not tickers_file.exists():
         print(f"Ticker list not found: {tickers_file}", file=sys.stderr)
         return 2
@@ -116,12 +191,27 @@ def main():
         print("Ticker list is empty", file=sys.stderr)
         return 2
 
+    tf = args.timeframe.strip().lower()
+    timeframe_variants = [tf, tf[0:1]]
+    if tf in ("daily", "d"):
+        timeframe_variants += ["minutes", "minute", "m"]
+    elif tf in ("minutes", "minute", "m"):
+        timeframe_variants += ["daily", "d"]
+    timeframe_variants = list(dict.fromkeys([x for x in timeframe_variants if x]))
+
+    cfg_roots = [repo_root / "config-common", repo_root / "config"]
     candidate_dirs = [
-        repo_root / "config" / args.data / args.timeframe[0:1] / args.provider,
-        repo_root / "config" / args.data / args.timeframe / args.provider,
-        repo_root / "config" / args.data / args.provider,
-        repo_root / "config" / args.data,
+        cfg / args.data / t / args.provider
+        for cfg in cfg_roots
+        for t in timeframe_variants
+    ] + [
+        cfg / args.data / args.provider
+        for cfg in cfg_roots
+    ] + [
+        cfg / args.data
+        for cfg in cfg_roots
     ]
+
     data_dir = find_data_dir(tickers, candidate_dirs)
     if data_dir is None:
         print("No data directory found for the selected tickers.", file=sys.stderr)
@@ -135,13 +225,16 @@ def main():
     fromdate = earliest.date().isoformat()
 
     list_name = Path(args.ticker_list).stem
-    output_path = Path(args.output) if args.output else (repo_root / "config" / "benchmark" / f"{list_name}.csv")
+    default_bench_root = (repo_root / "config-common") if (repo_root / "config-common").exists() else (repo_root / "config")
+    output_path = Path(args.output) if args.output else (default_bench_root / "benchmark" / f"{list_name}.csv")
     output_path.parent.mkdir(parents=True, exist_ok=True)
 
     if not args.no_run:
+        run_timeframe = "minutes" if "minutes" in data_dir.parts else ("daily" if tf in ("daily", "d") else args.timeframe)
+        staged_data_root = prepare_btmain_data_root(data_dir, run_timeframe, args.provider)
         cmd = [
-            sys.executable,
-            str(repo_root / "btmain.py"),
+            str(python_path),
+            str(btmain_path),
             "--ticker",
             args.ticker_list,
             "--strat",
@@ -149,31 +242,32 @@ def main():
             "--fromdate",
             fromdate,
             "--timeframe",
-            args.timeframe,
+            run_timeframe,
             "--provider",
             args.provider,
+            "--benchmark",
+            "buyandhold",
             "--data",
-            args.data,
+            str(staged_data_root),
             "--mode",
             "backtest",
         ]
 
+        print(f"Data directory: {data_dir}")
+        print(f"Staging data root: {staged_data_root}")
+        print(f"From date: {fromdate}")
         print("Running:", " ".join(cmd))
         result = subprocess.run(cmd, cwd=str(repo_root))
         if result.returncode != 0:
             return result.returncode
 
-    returns_path = repo_root / "out" / "BuyAndHold" / "returns.csv"
-    if not returns_path.exists():
-        alt_path = repo_root / "out" / "BuyAndHold" / "result.csv"
-        if alt_path.exists():
-            returns_path = alt_path
-        else:
-            print(f"Returns file not found: {returns_path}", file=sys.stderr)
-            return 2
+    returns_path = find_latest_returns_file(repo_root)
+    if returns_path is None:
+        print("Returns file not found under out/", file=sys.stderr)
+        return 2
 
     output_path.write_bytes(returns_path.read_bytes())
-    print(f"Benchmark written to {output_path}")
+    print(f"Benchmark written to {output_path} (source: {returns_path})")
     return 0
 
 

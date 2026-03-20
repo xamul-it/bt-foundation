@@ -4,9 +4,9 @@
 
 BACK_DIR=/home/htpc/backtrader
 
-source $BACK_DIR/backtrader/backtrader/bin/activate
+source $BACK_DIR/bt-core/.venv/bin/activate
 source $BACK_DIR/env/psim
-cd $BACK_DIR/backtrader
+cd $BACK_DIR
 
 exec python bin/parallel_sim/run_parallel.py \
     --strat="${PSIM_STRAT}" \
