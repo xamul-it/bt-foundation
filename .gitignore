@@ -12,6 +12,7 @@ env/
 logs/
 out/
 *.log
+data/
 
 # Local secrets / machine-specific env files
 .PA1
