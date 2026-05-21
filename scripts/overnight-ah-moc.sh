@@ -10,6 +10,7 @@ BT_CORE="$BACK_DIR/bt-core"
 TICKER="stable_ah_top10.json"
 STRATARGS="max_concurrent=5 min_intraday_vol=0.025 max_intraday_vol=0.045 ah_lag1_threshold=-0.1 max_adv_participation=0.0025 max_exposure=2 min_price=0 min_adv=100000000"
 UNIVERSE_FILTER="$BACK_DIR/bin/overnight_ah/out/monthly_universe_lists/monthly_lists_total_top10_trades20_keep20_enter10.csv"
+USE_UNIVERSE_FILTER="${USE_UNIVERSE_FILTER:-0}"
 
 log() { echo "[$(date '+%F %T %Z')] $*"; }
 
@@ -33,10 +34,12 @@ log "STEP 1 done in $(( $(date +%s%3N) - T1 ))ms"
 log "STEP 2: run strategia (MOC entry)"
 T2=$(date +%s%3N)
 FROMDATE=$(date -d '30 days ago' '+%Y-%m-%d')
-if [[ -f "$UNIVERSE_FILTER" ]]; then
+if [[ "$USE_UNIVERSE_FILTER" == "1" && -f "$UNIVERSE_FILTER" ]]; then
     STRATARGS="$STRATARGS universe_filter_file='$UNIVERSE_FILTER' universe_filter_delay_months=1"
+elif [[ "$USE_UNIVERSE_FILTER" == "1" ]]; then
+    log "WARN: universe filter richiesto ma non trovato: $UNIVERSE_FILTER"
 else
-    log "WARN: universe filter non trovato: $UNIVERSE_FILTER"
+    log "Universe filter disabilitato (USE_UNIVERSE_FILTER=$USE_UNIVERSE_FILTER)"
 fi
 log "STRATARGS: $STRATARGS"
 python btmain.py \
