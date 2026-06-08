@@ -8,6 +8,6 @@ BACK_DIR="/home/htpc/backtrader"
 BT_CORE="$BACK_DIR/bt-core"
 
 source "$BT_CORE/.venv/bin/activate"
-set -a; source "$BACK_DIR/env/psim-b"; set +a
+set -a; source "$BACK_DIR/env/overnight-ah-auc.key"; set +a
 
-exec python "$BACK_DIR/bin/overnight_ah/submit_moo.py" --fallback-market "$@"
+exec python "$BACK_DIR/bin/overnight_ah/submit_moo.py" --fallback-market --entry-tif cls "$@"

@@ -6,7 +6,10 @@ __pycache__/
 .venv/
 venv/
 venv
-env/
+env/*
+!env/
+!env/*.example
+!env/README.md
 
 # Runtime outputs
 logs/

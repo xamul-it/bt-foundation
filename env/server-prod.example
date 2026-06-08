@@ -1,0 +1,9 @@
+LOG_LEVEL=INFO
+
+# Public hostname exposed by reverse proxy.
+ALLOWED_ORIGINS=https://ilz.duckdns.org
+
+# Optional webhook/runtime values can stay here if needed later.
+# GITHUB_WEBHOOK_SECRET=
+# GITHUB_REPO_PATH=/home/htpc/backtrader
+# GITHUB_RESTART_SERVICE=zmq-proxy

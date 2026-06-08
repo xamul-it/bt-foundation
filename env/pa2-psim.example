@@ -1,0 +1,10 @@
+#!/usr/bin/env bash
+# Profilo composto: PA2 + PSIM (parallel paper+sim con proxy produzione)
+# Uso shell: bt-env pa2-psim
+# Uso systemd: EnvironmentFile=.../env/pa2  +  EnvironmentFile=.../env/psim
+_BT_D="$(dirname "${BASH_SOURCE[0]}")"
+# shellcheck source=pa2
+source "${_BT_D}/pa2"
+# shellcheck source=psim
+source "${_BT_D}/psim"
+unset _BT_D

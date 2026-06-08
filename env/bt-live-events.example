@@ -1,0 +1,13 @@
+# Shared environment for bt-live-event-writer.service and bt-watchtower.service
+
+LIVE_EVENTS_REDIS_URL=redis://localhost:6379/0
+LIVE_EVENTS_STREAM=bt:live_events
+LIVE_EVENTS_GROUP=live_event_writer
+LIVE_EVENTS_CONSUMER=writer_01
+
+LIVE_EVENTS_WRITE_FS=1
+LIVE_EVENTS_WRITE_DB=1
+LIVE_EVENTS_DB_DSN=postgresql://USER:PASSWORD@HOST:PORT/DB
+
+BT_WATCHTOWER_LOG_LEVEL=INFO
+BT_WATCHTOWER_POLL_SECONDS=5

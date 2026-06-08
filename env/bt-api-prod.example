@@ -1,0 +1,13 @@
+# Shared DB only: dev and prod point to the same watchtower/live-events DB env.
+BT_DB_ENV_FILE=/home/htpc/backtrader/env/bt-live-events
+
+# Broker/runtime env for API-side operations in production.
+BT_ENV_FILE=/home/htpc/backtrader/env/pa2
+BT_SRV_ENV_FILE=/home/htpc/backtrader/env/server-prod
+
+SERVER_PORT=19090
+GUNICORN_BIND=127.0.0.1:19090
+GUNICORN_WORKERS=2
+GUNICORN_THREADS=4
+GUNICORN_TIMEOUT=60
+APP_SERVER=gunicorn

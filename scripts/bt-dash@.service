@@ -1,0 +1,13 @@
+[Unit]
+Description=Backtrader Dashboard Quasar dev server (%i)
+After=network-online.target bt-api@%i.service
+
+[Service]
+WorkingDirectory=/home/htpc/backtrader/bt-dash
+EnvironmentFile=/home/htpc/backtrader/env/bt-dash-%i
+ExecStart=/bin/bash -lc 'exec npx quasar dev --hostname "${BT_DASH_HOST:-127.0.0.1}"'
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=default.target

@@ -8,12 +8,12 @@ set -euo pipefail
 BACK_DIR="/home/htpc/backtrader"
 BT_CORE="$BACK_DIR/bt-core"
 TICKER="stable_ah_top10.json"
-STRATARGS="max_concurrent=5 min_intraday_vol=0.025 max_intraday_vol=0.045 ah_lag1_threshold=-0.1 max_adv_participation=0.0025 max_exposure=2 min_price=0 min_adv=100000000"
+STRATARGS="max_concurrent=5 min_intraday_vol=0.025 max_intraday_vol=0.045 ah_lag1_threshold=-0.1 max_adv_participation=0.0025 max_exposure=1 min_price=0 min_adv=100000000"
 
 log() { echo "[$(date '+%F %T %Z')] $*"; }
 
 source "$BT_CORE/.venv/bin/activate"
-set -a; source "$BACK_DIR/env/psim-b"; set +a
+set -a; source "$BACK_DIR/env/overnight-ah-auc.key"; set +a
 
 cd "$BT_CORE"
 

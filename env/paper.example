@@ -1,0 +1,6 @@
+# Account Alpaca paper — quarto account (paper trading dedicato)
+# Uso: bt-env paper  oppure  EnvironmentFile=.../env/paper
+ALPACA_API_KEY=CHANGE_ME
+ALPACA_SECRET_KEY=CHANGE_ME
+BROKER_API_KEY=CHANGE_ME
+BROKER_SECRET_KEY=CHANGE_ME

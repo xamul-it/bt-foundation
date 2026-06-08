@@ -1,0 +1,18 @@
+[Unit]
+Description=Parallel Paper + Simulation Trading (%i)
+After=zmq-proxy.service
+Requires=zmq-proxy.service
+PartOf=zmq-proxy.service
+
+[Service]
+Type=simple
+WorkingDirectory=/home/htpc/backtrader/bt-core
+EnvironmentFile=/home/htpc/backtrader/env/%i
+ExecStart=/home/htpc/backtrader/scripts/parallel-sim.sh
+StandardOutput=append:/home/htpc/backtrader/logs/parallel-sim-%i.log
+StandardError=append:/home/htpc/backtrader/logs/parallel-sim-%i.log
+Restart=always
+RestartSec=10s
+
+[Install]
+WantedBy=default.target
