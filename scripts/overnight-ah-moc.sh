@@ -5,8 +5,10 @@
 
 set -euo pipefail
 
-BACK_DIR="/home/htpc/backtrader"
-BT_CORE="$BACK_DIR/bt-core"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+BACK_DIR="${BACK_DIR:-$(cd "$SCRIPT_DIR/.." && pwd)}"
+BT_CORE="${BT_CORE:-$BACK_DIR/bt-core}"
+ENV_DIR="${ENV_DIR:-$BACK_DIR/env}"
 TICKER="stable_ah_top10.json"
 STRAT="${STRAT:-overnight_ah_live.OvernightAH}"
 STRATARGS="max_concurrent=5 min_intraday_vol=0.025 max_intraday_vol=0.045 intraday_vol_filter_side='any' ah_lag1_threshold=-0.1 max_adv_participation=0.0025 max_exposure=1 min_price=0 min_adv=100000000"
@@ -14,7 +16,7 @@ STRATARGS="max_concurrent=5 min_intraday_vol=0.025 max_intraday_vol=0.045 intrad
 log() { echo "[$(date '+%F %T %Z')] $*"; }
 
 source "$BT_CORE/.venv/bin/activate"
-set -a; source "$BACK_DIR/env/overnight-ah-auc.key"; set +a
+set -a; source "$ENV_DIR/overnight-ah-auc.key"; set +a
 
 cd "$BT_CORE"
 
