@@ -8,7 +8,8 @@ set -euo pipefail
 BACK_DIR="/home/htpc/backtrader"
 BT_CORE="$BACK_DIR/bt-core"
 TICKER="stable_ah_top10.json"
-STRATARGS="max_concurrent=5 min_intraday_vol=0.025 max_intraday_vol=0.045 ah_lag1_threshold=-0.1 max_adv_participation=0.0025 max_exposure=1 min_price=0 min_adv=100000000"
+STRAT="${STRAT:-overnight_ah_live.OvernightAH}"
+STRATARGS="max_concurrent=5 min_intraday_vol=0.025 max_intraday_vol=0.045 intraday_vol_filter_side='any' ah_lag1_threshold=-0.1 max_adv_participation=0.0025 max_exposure=1 min_price=0 min_adv=100000000"
 
 log() { echo "[$(date '+%F %T %Z')] $*"; }
 
@@ -34,7 +35,7 @@ T2=$(date +%s%3N)
 FROMDATE=$(date -d '30 days ago' '+%Y-%m-%d')
 log "STRATARGS: $STRATARGS"
 python btmain.py \
-    --strat overnight_ah.OvernightAH \
+    --strat "$STRAT" \
     --ticker "$TICKER" \
     --stratargs "$STRATARGS" \
     --timeframe daily \

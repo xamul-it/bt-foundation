@@ -13,9 +13,12 @@ PSIM_ENV="${PSIM_ENV:-overnight-ah-auc.key}"
 AUCTION="${AUCTION:-True}"
 TRADING_MODE="${TRADING_MODE:-paper}"
 TICKER="${TICKER:-stable_ah_top10.json}"
+STRAT="${STRAT:-overnight_ah_live.OvernightAH}"
+DATA_PROVIDER="${DATA_PROVIDER:-yahoo}"
+ALPACA_FEED="${ALPACA_FEED:-sip}"
 MAX_EXPOSURE="${MAX_EXPOSURE:-1}"
 MARGIN_LEVERAGE="${MARGIN_LEVERAGE:-1}"
-BASE_STRATARGS="max_concurrent=5 min_intraday_vol=0.025 max_intraday_vol=0.045 ah_lag1_threshold=-0.1 max_adv_participation=0.0025 max_exposure=$MAX_EXPOSURE min_price=0 min_adv=100000000"
+BASE_STRATARGS="max_concurrent=5 min_intraday_vol=0.025 max_intraday_vol=0.045 intraday_vol_filter_side='any' ah_lag1_threshold=-0.1 max_adv_participation=0.0025 max_exposure=$MAX_EXPOSURE min_price=0 min_adv=100000000"
 STRATARGS="${STRATARGS:-$BASE_STRATARGS auction=$AUCTION ${STRATARGS_EXTRA:-}}"
 
 log() { echo "[$(date '+%F %T %Z')] [$PSIM_ENV mode=$TRADING_MODE auction=$AUCTION] $*"; }
@@ -28,25 +31,30 @@ cd "$BT_CORE"
 T0=$(date +%s%3N)
 log "START overnight-ah-entry"
 
-log "STEP 1: download daily bar Alpaca"
+log "STEP 1: download daily bar $DATA_PROVIDER"
 T1=$(date +%s%3N)
 python load_tickers.py \
     --ticker="$TICKER" \
-    --provider alpaca \
+    --provider "$DATA_PROVIDER" \
+    --alpaca-feed "$ALPACA_FEED" \
     --timeframe=d \
     --incremental
 log "STEP 1 done in $(( $(date +%s%3N) - T1 ))ms"
 
 log "STEP 2: run strategia entry"
 T2=$(date +%s%3N)
-FROMDATE=$(date -d '30 days ago' '+%Y-%m-%d')
+# Finestra ampia per weekend lunghi/festività e indicatori rolling usati sulla
+# barra precedente, ma ancora sostenibile nei run con broker paper/live.
+FROM_DAYS="${FROM_DAYS:-120}"
+FROMDATE=$(date -d "$FROM_DAYS days ago" '+%Y-%m-%d')
 log "STRATARGS: $STRATARGS"
 python btmain.py \
-    --strat overnight_ah.OvernightAH \
+    --strat "$STRAT" \
     --ticker "$TICKER" \
     --stratargs "$STRATARGS" \
     --timeframe daily \
-    --provider alpaca \
+    --provider "$DATA_PROVIDER" \
+    --alpaca-feed "$ALPACA_FEED" \
     --fromdate "$FROMDATE" \
     --mode "$TRADING_MODE" \
     --margin-leverage "$MARGIN_LEVERAGE" \
