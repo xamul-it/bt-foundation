@@ -42,7 +42,7 @@ logging.basicConfig(
 )
 logger = logging.getLogger('parallel_sim')
 
-BACK_DIR = Path(__file__).resolve().parent.parent.parent  # repo root
+BACK_DIR = Path(__file__).resolve().parents[2]  # repo root
 BT_CORE_DIR = BACK_DIR / 'bt-core'
 BTMAIN = BT_CORE_DIR / 'btmain.py'
 PYTHON = BT_CORE_DIR / '.venv' / 'bin' / 'python'
