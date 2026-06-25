@@ -403,7 +403,7 @@ class OvernightAH(mts.MultiTickerStrategy):
                 os.path.join(os.getcwd(), resolved),
                 os.path.join(root, resolved),
                 os.path.join(root, 'config-common', 'tickers', resolved),
-                os.path.join(root, 'bin', 'overnight_ah', 'out', resolved),
+                os.path.join(root, 'bt-strategy-test', 'overnight-ah', 'research', 'out', resolved),
             ]
             resolved = next((p for p in candidates if os.path.exists(p)), resolved)
 

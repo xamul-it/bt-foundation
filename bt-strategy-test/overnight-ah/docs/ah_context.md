@@ -54,7 +54,7 @@ Domanda centrale:
 
 ## BoCSoO / Separazione AH-RTH
 
-Esiste uno studio BoCSoO nella cartella `bin` che separa i rendimenti:
+Esiste uno studio BoCSoO in `bt-strategy-test/BoCSoO` che separa i rendimenti:
 
 - AH / overnight
 - RTH / sessione regolare
@@ -111,7 +111,7 @@ Provider daily:
 Il provider `yahoo_adj` si genera senza toccare i dati raw:
 
 ```bash
-bt-core/.venv/bin/python bin/overnight_ah/prepare_adjusted_yahoo.py --ticker stable_ah_top10.json
+bt-core/.venv/bin/python bt-strategy-test/overnight-ah/research/prepare_adjusted_yahoo.py --ticker stable_ah_top10.json
 ```
 
 Output:
@@ -144,15 +144,18 @@ Scopo:
 Output/metadati BoCSoO usati anche da altri script:
 
 ```txt
-bin/BoCSoO/out/decompose_results.json
+bt-strategy-test/BoCSoO/out/decompose_results.json
 ```
+
+Nota: i sorgenti e gli output sono stati consolidati in `bt-strategy-test/BoCSoO`;
+gli output/cache possono essere esclusi dal commit.
 
 ### Monthly Universe Lists
 
 File:
 
 ```txt
-bin/overnight_ah/monthly_universe_lists.py
+bt-strategy-test/overnight-ah/research/monthly_universe_lists.py
 ```
 
 Scopo:
@@ -168,13 +171,13 @@ Scopo:
 File:
 
 ```txt
-bin/overnight_ah/monthly_ah_universe_file.py
+bt-strategy-test/overnight-ah/research/monthly_ah_universe_file.py
 ```
 
 Output:
 
 ```txt
-bin/overnight_ah/out/monthly_ah_universe_6m_bocsoo_stable.csv
+bt-strategy-test/overnight-ah/research/out/monthly_ah_universe_6m_bocsoo_stable.csv
 ```
 
 Formato:
@@ -198,7 +201,7 @@ Scopo:
 File:
 
 ```txt
-bin/overnight_ah/monthly_universe_walkforward.py
+bt-strategy-test/overnight-ah/research/monthly_universe_walkforward.py
 ```
 
 Scopo:
@@ -213,7 +216,7 @@ Scopo:
 File:
 
 ```txt
-bin/overnight_ah/monthly_universe_policy_sweep.py
+bt-strategy-test/overnight-ah/research/monthly_universe_policy_sweep.py
 ```
 
 Scopo:
@@ -290,7 +293,7 @@ python btmain.py --strat overnight_ah.OvernightAH \
   --ticker NASDAQ_100_US.json \
   --mode backtest \
   --timeframe daily \
-  --stratargs "monthly_universe_file=../bin/overnight_ah/out/monthly_ah_universe_6m_bocsoo_stable.csv max_concurrent=5 size_by_max_concurrent=True max_exposure=2 min_intraday_vol=0.025 max_intraday_vol=0.045 intraday_vol_filter_side='any' ah_lag1_threshold=-0.1 min_adv=100000000" \
+  --stratargs "monthly_universe_file=../bt-strategy-test/overnight-ah/research/out/monthly_ah_universe_6m_bocsoo_stable.csv max_concurrent=5 size_by_max_concurrent=True max_exposure=2 min_intraday_vol=0.025 max_intraday_vol=0.045 intraday_vol_filter_side='any' ah_lag1_threshold=-0.1 min_adv=100000000" \
   --margin-leverage 2
 ```
 
@@ -299,7 +302,7 @@ python btmain.py --strat overnight_ah.OvernightAH \
 Script:
 
 ```txt
-bin/overnight_ah/edge_prediction_study.py
+bt-strategy-test/overnight-ah/research/edge_prediction_study.py
 ```
 
 Scopo:
@@ -312,9 +315,9 @@ Scopo:
 Run principale:
 
 ```bash
-bt-core/.venv/bin/python bin/overnight_ah/edge_prediction_study.py \
+bt-core/.venv/bin/python bt-strategy-test/overnight-ah/research/edge_prediction_study.py \
   --ticker-file config-common/tickers/yahoo_adj_research_universe.json \
-  --out-dir bin/overnight_ah/out/edge_prediction_study_all_adj
+  --out-dir bt-strategy-test/overnight-ah/research/out/edge_prediction_study_all_adj
 ```
 
 Risultato ricerca su universo Yahoo adjusted disponibile:
@@ -335,13 +338,13 @@ Validazione Backtrader reale OOS `2024-01-01` / `2026-06-23`, provider `yahoo_ad
 Batch validation successiva:
 
 ```txt
-bin/overnight_ah/validate_monthly_universe_backtrader.py
+bt-strategy-test/overnight-ah/research/validate_monthly_universe_backtrader.py
 ```
 
 Output consolidato:
 
 ```txt
-bin/overnight_ah/out/edge_prediction_study_all_adj/backtrader_validation_consolidated.csv
+bt-strategy-test/overnight-ah/research/out/edge_prediction_study_all_adj/backtrader_validation_consolidated.csv
 ```
 
 Confronto su tre segmenti:
@@ -376,7 +379,7 @@ Risk/regime gate:
 Output focus:
 
 ```txt
-bin/overnight_ah/out/edge_prediction_study_all_adj/risk_gate_focus_summary.csv
+bt-strategy-test/overnight-ah/research/out/edge_prediction_study_all_adj/risk_gate_focus_summary.csv
 ```
 
 Gate testati sul candidato `combo_c2c6_ah6_top60`, usando solo SPY fino al mese precedente.
@@ -410,13 +413,13 @@ Stress costi/slippage:
 Script riproducibile:
 
 ```txt
-bin/overnight_ah/trade_cost_stress.py
+bt-strategy-test/overnight-ah/research/trade_cost_stress.py
 ```
 
 Output:
 
 ```txt
-bin/overnight_ah/out/edge_prediction_study_all_adj/cost_stress_trade_edge_all_segments.csv
+bt-strategy-test/overnight-ah/research/out/edge_prediction_study_all_adj/cost_stress_trade_edge_all_segments.csv
 ```
 
 Nota: `btmain.py --slippage` e' stato provato, ma sui run OvernightAH ha prodotto final value maggiori invece che minori. Per questo studio non va usato come costo affidabile finche' non viene chiarito il modello di esecuzione. Lo stress corrente applica invece un costo round-trip esplicito a ogni trade salvato in `trades.json`, misurando edge netto e win ratio netto.
@@ -447,7 +450,7 @@ Edge-focus extra test:
 Output:
 
 ```txt
-bin/overnight_ah/out/edge_prediction_study_all_adj/edge_focus_trade_cost_scan.csv
+bt-strategy-test/overnight-ah/research/out/edge_prediction_study_all_adj/edge_focus_trade_cost_scan.csv
 ```
 
 Testati `close_slope_12m` e `c2c_mean_6m` top5/top20 sui tre segmenti. Risultato:
@@ -463,11 +466,11 @@ Clean tuning senza costi/slippage:
 Output principali:
 
 ```txt
-bin/overnight_ah/out/edge_prediction_study_all_adj/monthly_universes_clean_tuning/index.csv
-bin/overnight_ah/out/edge_prediction_study_all_adj/backtrader_validation_clean_tuning_focus_val/backtrader_validation_summary.csv
-bin/overnight_ah/out/edge_prediction_study_all_adj/backtrader_validation_clean_tuning_focus_oos/backtrader_validation_summary.csv
-bin/overnight_ah/out/edge_prediction_study_all_adj/backtrader_validation_clean_tuning_key_train/backtrader_validation_summary.csv
-bin/overnight_ah/out/edge_prediction_study_all_adj/clean_tuning_key_consolidated.csv
+bt-strategy-test/overnight-ah/research/out/edge_prediction_study_all_adj/monthly_universes_clean_tuning/index.csv
+bt-strategy-test/overnight-ah/research/out/edge_prediction_study_all_adj/backtrader_validation_clean_tuning_focus_val/backtrader_validation_summary.csv
+bt-strategy-test/overnight-ah/research/out/edge_prediction_study_all_adj/backtrader_validation_clean_tuning_focus_oos/backtrader_validation_summary.csv
+bt-strategy-test/overnight-ah/research/out/edge_prediction_study_all_adj/backtrader_validation_clean_tuning_key_train/backtrader_validation_summary.csv
+bt-strategy-test/overnight-ah/research/out/edge_prediction_study_all_adj/clean_tuning_key_consolidated.csv
 ```
 
 Griglia mirata:
@@ -521,18 +524,18 @@ Benchmark statici alternativi:
 Script:
 
 ```txt
-bin/overnight_ah/build_static_universe_benchmark.py
-bin/overnight_ah/validate_static_universes_backtrader.py
+bt-strategy-test/overnight-ah/research/build_static_universe_benchmark.py
+bt-strategy-test/overnight-ah/research/validate_static_universes_backtrader.py
 ```
 
 Output:
 
 ```txt
-bin/overnight_ah/out/edge_prediction_study_all_adj/static_universe_benchmark/index.csv
-bin/overnight_ah/out/edge_prediction_study_all_adj/backtrader_validation_static_benchmark_oos/static_validation_summary.csv
-bin/overnight_ah/out/edge_prediction_study_all_adj/static_benchmark_oos_distribution.csv
-bin/overnight_ah/out/edge_prediction_study_all_adj/static_vs_dynamic_consolidated.csv
-bin/overnight_ah/out/edge_prediction_study_all_adj/symbol_contribution_static_dynamic.csv
+bt-strategy-test/overnight-ah/research/out/edge_prediction_study_all_adj/static_universe_benchmark/index.csv
+bt-strategy-test/overnight-ah/research/out/edge_prediction_study_all_adj/backtrader_validation_static_benchmark_oos/static_validation_summary.csv
+bt-strategy-test/overnight-ah/research/out/edge_prediction_study_all_adj/static_benchmark_oos_distribution.csv
+bt-strategy-test/overnight-ah/research/out/edge_prediction_study_all_adj/static_vs_dynamic_consolidated.csv
+bt-strategy-test/overnight-ah/research/out/edge_prediction_study_all_adj/symbol_contribution_static_dynamic.csv
 ```
 
 Sono stati confrontati:
@@ -584,10 +587,10 @@ Concentrated clean tuning 50/50:
 Output:
 
 ```txt
-bin/overnight_ah/out/edge_prediction_study_all_adj/monthly_universes_clean_tuning_concentrated/index.csv
-bin/overnight_ah/out/edge_prediction_study_all_adj/backtrader_validation_clean_tuning_concentrated_val/backtrader_validation_summary.csv
-bin/overnight_ah/out/edge_prediction_study_all_adj/backtrader_validation_clean_tuning_concentrated_oos/backtrader_validation_summary.csv
-bin/overnight_ah/out/edge_prediction_study_all_adj/backtrader_validation_clean_tuning_concentrated_train/backtrader_validation_summary.csv
+bt-strategy-test/overnight-ah/research/out/edge_prediction_study_all_adj/monthly_universes_clean_tuning_concentrated/index.csv
+bt-strategy-test/overnight-ah/research/out/edge_prediction_study_all_adj/backtrader_validation_clean_tuning_concentrated_val/backtrader_validation_summary.csv
+bt-strategy-test/overnight-ah/research/out/edge_prediction_study_all_adj/backtrader_validation_clean_tuning_concentrated_oos/backtrader_validation_summary.csv
+bt-strategy-test/overnight-ah/research/out/edge_prediction_study_all_adj/backtrader_validation_clean_tuning_concentrated_train/backtrader_validation_summary.csv
 ```
 
 Testati `combo_c2c50_ah50` top `10/15/20/25/30/35/40` con gate SPY `dd3m > -10/-12/-15`.
@@ -614,10 +617,10 @@ Consensus / persistence multi-lookback:
 Output:
 
 ```txt
-bin/overnight_ah/out/edge_prediction_study_all_adj/monthly_universes_consensus/index.csv
-bin/overnight_ah/out/edge_prediction_study_all_adj/backtrader_validation_consensus_val/backtrader_validation_summary.csv
-bin/overnight_ah/out/edge_prediction_study_all_adj/backtrader_validation_consensus_oos/backtrader_validation_summary.csv
-bin/overnight_ah/out/edge_prediction_study_all_adj/dynamic_policy_family_comparison.csv
+bt-strategy-test/overnight-ah/research/out/edge_prediction_study_all_adj/monthly_universes_consensus/index.csv
+bt-strategy-test/overnight-ah/research/out/edge_prediction_study_all_adj/backtrader_validation_consensus_val/backtrader_validation_summary.csv
+bt-strategy-test/overnight-ah/research/out/edge_prediction_study_all_adj/backtrader_validation_consensus_oos/backtrader_validation_summary.csv
+bt-strategy-test/overnight-ah/research/out/edge_prediction_study_all_adj/dynamic_policy_family_comparison.csv
 ```
 
 Policy generate:
@@ -661,17 +664,17 @@ ML / ensemble rolling:
 Script:
 
 ```txt
-bin/overnight_ah/build_ml_monthly_universes.py
+bt-strategy-test/overnight-ah/research/build_ml_monthly_universes.py
 ```
 
 Output:
 
 ```txt
-bin/overnight_ah/out/edge_prediction_study_all_adj/monthly_universes_ml/index.csv
-bin/overnight_ah/out/edge_prediction_study_all_adj/monthly_universes_ml/rolling_ml_scores.csv
-bin/overnight_ah/out/edge_prediction_study_all_adj/backtrader_validation_ml_val/backtrader_validation_summary.csv
-bin/overnight_ah/out/edge_prediction_study_all_adj/backtrader_validation_ml_oos/backtrader_validation_summary.csv
-bin/overnight_ah/out/edge_prediction_study_all_adj/ml_vs_dynamic_comparison.csv
+bt-strategy-test/overnight-ah/research/out/edge_prediction_study_all_adj/monthly_universes_ml/index.csv
+bt-strategy-test/overnight-ah/research/out/edge_prediction_study_all_adj/monthly_universes_ml/rolling_ml_scores.csv
+bt-strategy-test/overnight-ah/research/out/edge_prediction_study_all_adj/backtrader_validation_ml_val/backtrader_validation_summary.csv
+bt-strategy-test/overnight-ah/research/out/edge_prediction_study_all_adj/backtrader_validation_ml_oos/backtrader_validation_summary.csv
+bt-strategy-test/overnight-ah/research/out/edge_prediction_study_all_adj/ml_vs_dynamic_comparison.csv
 ```
 
 Setup:
@@ -705,11 +708,11 @@ Core/sleeve hybrid:
 Output:
 
 ```txt
-bin/overnight_ah/out/edge_prediction_study_all_adj/monthly_universes_core_sleeve/index.csv
-bin/overnight_ah/out/edge_prediction_study_all_adj/monthly_universes_core_sleeve_focus.csv
-bin/overnight_ah/out/edge_prediction_study_all_adj/backtrader_validation_core_sleeve_val/backtrader_validation_summary.csv
-bin/overnight_ah/out/edge_prediction_study_all_adj/backtrader_validation_core_sleeve_oos/backtrader_validation_summary.csv
-bin/overnight_ah/out/edge_prediction_study_all_adj/core_sleeve_vs_dynamic_comparison.csv
+bt-strategy-test/overnight-ah/research/out/edge_prediction_study_all_adj/monthly_universes_core_sleeve/index.csv
+bt-strategy-test/overnight-ah/research/out/edge_prediction_study_all_adj/monthly_universes_core_sleeve_focus.csv
+bt-strategy-test/overnight-ah/research/out/edge_prediction_study_all_adj/backtrader_validation_core_sleeve_val/backtrader_validation_summary.csv
+bt-strategy-test/overnight-ah/research/out/edge_prediction_study_all_adj/backtrader_validation_core_sleeve_oos/backtrader_validation_summary.csv
+bt-strategy-test/overnight-ah/research/out/edge_prediction_study_all_adj/core_sleeve_vs_dynamic_comparison.csv
 ```
 
 Setup:
@@ -751,13 +754,13 @@ Theme semis/AI come bonus debole:
 Output:
 
 ```txt
-bin/overnight_ah/build_theme_monthly_universes.py
-bin/overnight_ah/out/edge_prediction_study_all_adj/monthly_universes_theme_weak/index.csv
-bin/overnight_ah/out/edge_prediction_study_all_adj/monthly_universes_theme_weak_oos_focus.csv
-bin/overnight_ah/out/edge_prediction_study_all_adj/backtrader_validation_theme_weak_train/backtrader_validation_summary.csv
-bin/overnight_ah/out/edge_prediction_study_all_adj/backtrader_validation_theme_weak_val/backtrader_validation_summary.csv
-bin/overnight_ah/out/edge_prediction_study_all_adj/backtrader_validation_theme_weak_oos/backtrader_validation_summary.csv
-bin/overnight_ah/out/edge_prediction_study_all_adj/theme_weak_policy_consolidated.csv
+bt-strategy-test/overnight-ah/research/build_theme_monthly_universes.py
+bt-strategy-test/overnight-ah/research/out/edge_prediction_study_all_adj/monthly_universes_theme_weak/index.csv
+bt-strategy-test/overnight-ah/research/out/edge_prediction_study_all_adj/monthly_universes_theme_weak_oos_focus.csv
+bt-strategy-test/overnight-ah/research/out/edge_prediction_study_all_adj/backtrader_validation_theme_weak_train/backtrader_validation_summary.csv
+bt-strategy-test/overnight-ah/research/out/edge_prediction_study_all_adj/backtrader_validation_theme_weak_val/backtrader_validation_summary.csv
+bt-strategy-test/overnight-ah/research/out/edge_prediction_study_all_adj/backtrader_validation_theme_weak_oos/backtrader_validation_summary.csv
+bt-strategy-test/overnight-ah/research/out/edge_prediction_study_all_adj/theme_weak_policy_consolidated.csv
 ```
 
 Setup:
@@ -839,7 +842,7 @@ Smoke test nativo:
 
 ```txt
 out/overnight_ah/OvernightAH/native_weak_theme_full_calendar6m_2016_2026
-bin/overnight_ah/out/edge_prediction_study_all_adj/native_weak_theme_calendar6m_rebased_segments.csv
+bt-strategy-test/overnight-ah/research/out/edge_prediction_study_all_adj/native_weak_theme_calendar6m_rebased_segments.csv
 ```
 
 Metriche rebased da run full-history nativo:
@@ -870,9 +873,9 @@ Run:
 ```txt
 out/overnight_ah/OvernightAH/native_corr12_oos_warmup2023_trade2024
 out/overnight_ah/OvernightAH/static_top10_oos_recheck_20260624
-bin/overnight_ah/out/edge_prediction_study_all_adj/native_warmup_vs_static_oos_segments.csv
-bin/overnight_ah/out/edge_prediction_study_all_adj/native_warmup_vs_static_oos_monthly_spread.csv
-bin/overnight_ah/out/edge_prediction_study_all_adj/native_vs_static_oos_symbol_edges.csv
+bt-strategy-test/overnight-ah/research/out/edge_prediction_study_all_adj/native_warmup_vs_static_oos_segments.csv
+bt-strategy-test/overnight-ah/research/out/edge_prediction_study_all_adj/native_warmup_vs_static_oos_monthly_spread.csv
+bt-strategy-test/overnight-ah/research/out/edge_prediction_study_all_adj/native_vs_static_oos_symbol_edges.csv
 ```
 
 Setup:
@@ -931,41 +934,41 @@ Interpretazione:
 Output:
 
 ```txt
-bin/overnight_ah/build_regime_switch_universes.py
-bin/overnight_ah/out/edge_prediction_study_all_adj/monthly_universes_regime_switch/index.csv
-bin/overnight_ah/out/edge_prediction_study_all_adj/backtrader_validation_regime_switch_val/backtrader_validation_summary.csv
-bin/overnight_ah/out/edge_prediction_study_all_adj/backtrader_validation_regime_switch_oos/backtrader_validation_summary.csv
+bt-strategy-test/overnight-ah/research/build_regime_switch_universes.py
+bt-strategy-test/overnight-ah/research/out/edge_prediction_study_all_adj/monthly_universes_regime_switch/index.csv
+bt-strategy-test/overnight-ah/research/out/edge_prediction_study_all_adj/backtrader_validation_regime_switch_val/backtrader_validation_summary.csv
+bt-strategy-test/overnight-ah/research/out/edge_prediction_study_all_adj/backtrader_validation_regime_switch_oos/backtrader_validation_summary.csv
 out/overnight_ah/OvernightAH/native_switch_3mpos_val_warmup2020_trade2021
 out/overnight_ah/OvernightAH/native_switch_3mpos_oos_warmup2023_trade2024
 out/overnight_ah/OvernightAH/native_switch_3mpos_train_warmup2015_trade2016
 out/overnight_ah/OvernightAH/native_switch_6mpos_val_warmup2020_trade2021
 out/overnight_ah/OvernightAH/native_switch_6mpos_oos_warmup2023_trade2024
 out/overnight_ah/OvernightAH/native_switch_6mpos_train_warmup2015_trade2016
-bin/overnight_ah/out/edge_prediction_study_all_adj/final_candidate_native_comparison.csv
-bin/overnight_ah/out/edge_prediction_study_all_adj/final_candidate_oos_annual.csv
-bin/overnight_ah/out/edge_prediction_study_all_adj/native_switch_3m6m_comparison.csv
-bin/overnight_ah/out/edge_prediction_study_all_adj/native_switch_3m6m_oos_annual.csv
-bin/overnight_ah/out/edge_prediction_study_all_adj/native_switch_3m6m_regime_counts.csv
-bin/overnight_ah/out/edge_prediction_study_all_adj/native_switch_3m_topn_comparison.csv
-bin/overnight_ah/out/edge_prediction_study_all_adj/native_switch_oos_monthly_policy_returns.csv
-bin/overnight_ah/out/edge_prediction_study_all_adj/native_switch_oos_monthly_spread_summary.csv
-bin/overnight_ah/out/edge_prediction_study_all_adj/native_switch_oos_spread_by_regime.csv
-bin/overnight_ah/out/edge_prediction_study_all_adj/native_switch_file_oos_full_turnover.csv
-bin/overnight_ah/out/edge_prediction_study_all_adj/native_switch_file_oos_turnover_summary.csv
-bin/overnight_ah/out/edge_prediction_study_all_adj/exante_ic_segment_summary.csv
-bin/overnight_ah/out/edge_prediction_study_all_adj/exante_ic_stability_summary.csv
-bin/overnight_ah/out/edge_prediction_study_all_adj/exante_ic_key_features.csv
-bin/overnight_ah/out/edge_prediction_study_all_adj/exante_ic_by_month_segments.csv
-bin/overnight_ah/out/edge_prediction_study_all_adj/regime_semis_feature_oos_correlation.csv
-bin/overnight_ah/out/edge_prediction_study_all_adj/monthly_universes_regime_switch_combo_3m6m/
-bin/overnight_ah/out/edge_prediction_study_all_adj/backtrader_validation_regime_switch_combo_3m6m_train/
-bin/overnight_ah/out/edge_prediction_study_all_adj/backtrader_validation_regime_switch_combo_3m6m_val/
-bin/overnight_ah/out/edge_prediction_study_all_adj/backtrader_validation_regime_switch_combo_3m6m_oos/
-bin/overnight_ah/out/edge_prediction_study_all_adj/regime_switch_combo_3m6m_consolidated.csv
-bin/overnight_ah/out/edge_prediction_study_all_adj/native_switch_full_segment_comparison.csv
-bin/overnight_ah/out/edge_prediction_study_all_adj/native_switch_regime_counts.csv
-bin/overnight_ah/out/edge_prediction_study_all_adj/regime_switch_train_val_oos_consolidated.csv
-bin/overnight_ah/out/edge_prediction_study_all_adj/regime_switch_rank_stability.csv
+bt-strategy-test/overnight-ah/research/out/edge_prediction_study_all_adj/final_candidate_native_comparison.csv
+bt-strategy-test/overnight-ah/research/out/edge_prediction_study_all_adj/final_candidate_oos_annual.csv
+bt-strategy-test/overnight-ah/research/out/edge_prediction_study_all_adj/native_switch_3m6m_comparison.csv
+bt-strategy-test/overnight-ah/research/out/edge_prediction_study_all_adj/native_switch_3m6m_oos_annual.csv
+bt-strategy-test/overnight-ah/research/out/edge_prediction_study_all_adj/native_switch_3m6m_regime_counts.csv
+bt-strategy-test/overnight-ah/research/out/edge_prediction_study_all_adj/native_switch_3m_topn_comparison.csv
+bt-strategy-test/overnight-ah/research/out/edge_prediction_study_all_adj/native_switch_oos_monthly_policy_returns.csv
+bt-strategy-test/overnight-ah/research/out/edge_prediction_study_all_adj/native_switch_oos_monthly_spread_summary.csv
+bt-strategy-test/overnight-ah/research/out/edge_prediction_study_all_adj/native_switch_oos_spread_by_regime.csv
+bt-strategy-test/overnight-ah/research/out/edge_prediction_study_all_adj/native_switch_file_oos_full_turnover.csv
+bt-strategy-test/overnight-ah/research/out/edge_prediction_study_all_adj/native_switch_file_oos_turnover_summary.csv
+bt-strategy-test/overnight-ah/research/out/edge_prediction_study_all_adj/exante_ic_segment_summary.csv
+bt-strategy-test/overnight-ah/research/out/edge_prediction_study_all_adj/exante_ic_stability_summary.csv
+bt-strategy-test/overnight-ah/research/out/edge_prediction_study_all_adj/exante_ic_key_features.csv
+bt-strategy-test/overnight-ah/research/out/edge_prediction_study_all_adj/exante_ic_by_month_segments.csv
+bt-strategy-test/overnight-ah/research/out/edge_prediction_study_all_adj/regime_semis_feature_oos_correlation.csv
+bt-strategy-test/overnight-ah/research/out/edge_prediction_study_all_adj/monthly_universes_regime_switch_combo_3m6m/
+bt-strategy-test/overnight-ah/research/out/edge_prediction_study_all_adj/backtrader_validation_regime_switch_combo_3m6m_train/
+bt-strategy-test/overnight-ah/research/out/edge_prediction_study_all_adj/backtrader_validation_regime_switch_combo_3m6m_val/
+bt-strategy-test/overnight-ah/research/out/edge_prediction_study_all_adj/backtrader_validation_regime_switch_combo_3m6m_oos/
+bt-strategy-test/overnight-ah/research/out/edge_prediction_study_all_adj/regime_switch_combo_3m6m_consolidated.csv
+bt-strategy-test/overnight-ah/research/out/edge_prediction_study_all_adj/native_switch_full_segment_comparison.csv
+bt-strategy-test/overnight-ah/research/out/edge_prediction_study_all_adj/native_switch_regime_counts.csv
+bt-strategy-test/overnight-ah/research/out/edge_prediction_study_all_adj/regime_switch_train_val_oos_consolidated.csv
+bt-strategy-test/overnight-ah/research/out/edge_prediction_study_all_adj/regime_switch_rank_stability.csv
 ```
 
 Train nativo:
@@ -1184,10 +1187,10 @@ Controllo fallback dinamico vuoto:
 - output:
 
 ```txt
-bin/overnight_ah/out/edge_prediction_study_all_adj/monthly_universes_regime_switch_fallback_static/
-bin/overnight_ah/out/edge_prediction_study_all_adj/backtrader_validation_regime_switch_fallback_static_train/
-bin/overnight_ah/out/edge_prediction_study_all_adj/backtrader_validation_regime_switch_fallback_static_val/
-bin/overnight_ah/out/edge_prediction_study_all_adj/backtrader_validation_regime_switch_fallback_static_oos/
+bt-strategy-test/overnight-ah/research/out/edge_prediction_study_all_adj/monthly_universes_regime_switch_fallback_static/
+bt-strategy-test/overnight-ah/research/out/edge_prediction_study_all_adj/backtrader_validation_regime_switch_fallback_static_train/
+bt-strategy-test/overnight-ah/research/out/edge_prediction_study_all_adj/backtrader_validation_regime_switch_fallback_static_val/
+bt-strategy-test/overnight-ah/research/out/edge_prediction_study_all_adj/backtrader_validation_regime_switch_fallback_static_oos/
 ```
 
 Risultato:
@@ -1221,7 +1224,7 @@ Output:
 ```txt
 out/overnight_ah/OvernightAH/native_weak_theme_structural10_top50_full
 out/overnight_ah/OvernightAH/native_weak_theme_structural15_top40_full
-bin/overnight_ah/out/edge_prediction_study_all_adj/native_theme_variant_rebased_segments.csv
+bt-strategy-test/overnight-ah/research/out/edge_prediction_study_all_adj/native_theme_variant_rebased_segments.csv
 ```
 
 Confronto rebased:
@@ -1255,8 +1258,8 @@ Turnover mensile del paniere:
 Output:
 
 ```txt
-bin/overnight_ah/out/edge_prediction_study_all_adj/theme_weak_monthly_turnover.csv
-bin/overnight_ah/out/edge_prediction_study_all_adj/theme_weak_turnover_summary.csv
+bt-strategy-test/overnight-ah/research/out/edge_prediction_study_all_adj/theme_weak_monthly_turnover.csv
+bt-strategy-test/overnight-ah/research/out/edge_prediction_study_all_adj/theme_weak_turnover_summary.csv
 ```
 
 | policy | months | avg N | avg turnover | p90 turnover | avg entered | avg exited |
