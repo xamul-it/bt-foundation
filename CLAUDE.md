@@ -23,8 +23,8 @@ backtrader/
 ### 1. Posizione degli script
 - Script Python e shell di analisi/sweep/utility → `backtrader/bin/{nome_strategia}/`
 - NON creare script in `bt-core/bin/` salvo utilità strettamente legate all'engine
-- Esempio corretto: `backtrader/bin/HMA/sweep_sl_tp.py`
-- Esempio sbagliato: `backtrader/bt-core/bin/hma/sweep_sl_tp.py`
+- Esempio corretto: `backtrader/bt-strategy-test/HMA/sweep_sl_tp.py`
+- Esempio sbagliato: `backtrader/bt-core/bin/HMA/sweep_sl_tp.py`
 
 ### 2. Simulazioni Pandas devono replicare Backtrader
 

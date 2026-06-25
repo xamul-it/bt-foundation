@@ -20,6 +20,7 @@ DATA_PROVIDER="${DATA_PROVIDER:-yahoo}"
 ALPACA_FEED="${ALPACA_FEED:-sip}"
 MAX_EXPOSURE="${MAX_EXPOSURE:-1}"
 MARGIN_LEVERAGE="${MARGIN_LEVERAGE:-1}"
+RUN_ID="${RUN_ID:-}"
 BASE_STRATARGS="max_concurrent=5 min_intraday_vol=0.025 max_intraday_vol=0.045 intraday_vol_filter_side='any' ah_lag1_threshold=-0.1 max_adv_participation=0.0025 max_exposure=$MAX_EXPOSURE min_price=0 min_adv=100000000"
 STRATARGS="${STRATARGS:-$BASE_STRATARGS auction=$AUCTION ${STRATARGS_EXTRA:-}}"
 
@@ -35,7 +36,7 @@ log "START overnight-ah-entry"
 
 log "STEP 1: download daily bar $DATA_PROVIDER"
 T1=$(date +%s%3N)
-python load_tickers.py \
+timeout "${LOAD_TIMEOUT_SEC:-900}" python load_tickers.py \
     --ticker="$TICKER" \
     --provider "$DATA_PROVIDER" \
     --alpaca-feed "$ALPACA_FEED" \
@@ -50,17 +51,23 @@ T2=$(date +%s%3N)
 FROM_DAYS="${FROM_DAYS:-120}"
 FROMDATE=$(date -d "$FROM_DAYS days ago" '+%Y-%m-%d')
 log "STRATARGS: $STRATARGS"
-python btmain.py \
-    --strat "$STRAT" \
-    --ticker "$TICKER" \
-    --stratargs "$STRATARGS" \
-    --timeframe daily \
-    --provider "$DATA_PROVIDER" \
-    --alpaca-feed "$ALPACA_FEED" \
-    --fromdate "$FROMDATE" \
-    --mode "$TRADING_MODE" \
-    --margin-leverage "$MARGIN_LEVERAGE" \
+CMD=(
+    python btmain.py
+    --strat "$STRAT"
+    --ticker "$TICKER"
+    --stratargs "$STRATARGS"
+    --timeframe daily
+    --provider "$DATA_PROVIDER"
+    --alpaca-feed "$ALPACA_FEED"
+    --fromdate "$FROMDATE"
+    --mode "$TRADING_MODE"
+    --margin-leverage "$MARGIN_LEVERAGE"
     --commission none
+)
+if [[ -n "$RUN_ID" ]]; then
+    CMD+=(--id "$RUN_ID")
+fi
+"${CMD[@]}"
 log "STEP 2 done in $(( $(date +%s%3N) - T2 ))ms"
 
 log "END overnight-ah-entry — totale $(( $(date +%s%3N) - T0 ))ms"
