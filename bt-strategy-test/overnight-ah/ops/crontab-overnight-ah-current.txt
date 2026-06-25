@@ -1,0 +1,32 @@
+# Snapshot crontab OvernightAH - 2026-06-25
+#
+# Nota: questo file conserva solo il blocco OvernightAH. Non contiene env,
+# chiavi Alpaca o altri job macchina.
+
+# OvernightAH portfolios - orari in CEST (Europe/Rome, UTC+2)
+#
+# Portfolio: live
+#   Entry market/GTC: 15:46 ET = 21:46 CEST
+#   MOO setup: dopo 19:00 ET, schedulato 01:30 CEST
+#   MOO fallback: ~09:52 ET = 15:52 CEST
+46 21 * * 1-5 /home/htpc/backtrader-stable/scripts/overnight-ah-entry-no-live.sh >> /home/htpc/backtrader-stable/logs/overnight-ah-entry-no-live.log 2>&1
+30 01 * * 1-5 /home/htpc/backtrader-stable/scripts/overnight-ah-moo-no-live.sh >> /home/htpc/backtrader-stable/logs/overnight-ah-moo-no-live.log 2>&1
+52 15 * * 1-5 /home/htpc/backtrader-stable/scripts/overnight-ah-moo-fallback-no-live.sh >> /home/htpc/backtrader-stable/logs/overnight-ah-moo-fallback-no-live.log 2>&1
+#
+# Portfolio: no
+#   Entry market/GTC: 15:46 ET = 21:46 CEST
+#   MOO setup: dopo 19:00 ET, schedulato 01:30 CEST
+#   MOO fallback: ~09:52 ET = 15:52 CEST
+46 21 * * 1-5 /home/htpc/backtrader-stable/scripts/overnight-ah-entry-no.sh >> /home/htpc/backtrader-stable/logs/overnight-ah-entry-no.log 2>&1
+30 01 * * 1-5 /home/htpc/backtrader-stable/scripts/overnight-ah-moo-no.sh >> /home/htpc/backtrader-stable/logs/overnight-ah-moo-no.log 2>&1
+52 15 * * 1-5 /home/htpc/backtrader-stable/scripts/overnight-ah-moo-fallback-no.sh >> /home/htpc/backtrader-stable/logs/overnight-ah-moo-fallback-no.log 2>&1
+#
+# Portfolio: auc
+#   Entry market/GTC: 15:40 ET = 21:40 CEST
+#   Auction fallback disabilitato: non serve con auction=False / market entry
+#   MOO setup: dopo 19:00 ET, schedulato 01:30 CEST
+#   MOO fallback: ~09:52 ET = 15:52 CEST
+40 21 * * 1-5 /home/htpc/backtrader/scripts/overnight-ah-entry-auc.sh >> /home/htpc/backtrader/logs/overnight-ah-entry-auc.log 2>&1
+# 05 22 * * 1-5 /home/htpc/backtrader/scripts/overnight-ah-auction-fallback-auc.sh --after 15:30 --client-id-prefix bt_overnigh_ >> /home/htpc/backtrader/logs/overnight-ah-auction-fallback-auc.log 2>&1
+30 01 * * 1-5 /home/htpc/backtrader/scripts/overnight-ah-moo-auc.sh >> /home/htpc/backtrader/logs/overnight-ah-moo-auc.log 2>&1
+52 15 * * 1-5 /home/htpc/backtrader/scripts/overnight-ah-moo-fallback-auc.sh >> /home/htpc/backtrader/logs/overnight-ah-moo-fallback-auc.log 2>&1
