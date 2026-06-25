@@ -13,4 +13,4 @@ ENV_DIR="${ENV_DIR:-$BACK_DIR/env}"
 source "$BT_CORE/.venv/bin/activate"
 set -a; source "$ENV_DIR/overnight-ah-auc.key"; set +a
 
-exec python "$BACK_DIR/bin/overnight_ah/auction_fallback.py" "$@"
+exec python "$BACK_DIR/bin/auction_fallback.py" "$@"

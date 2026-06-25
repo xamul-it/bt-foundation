@@ -16,4 +16,4 @@ ENTRY_TIF="${ENTRY_TIF:-cls}"
 source "$BT_CORE/.venv/bin/activate"
 set -a; source "$ENV_DIR/$PSIM_ENV"; set +a
 
-exec python "$BACK_DIR/bin/overnight_ah/submit_moo.py" --all-longs --entry-tif "$ENTRY_TIF" "$@"
+exec python "$BACK_DIR/bin/submit_moo.py" --all-longs --entry-tif "$ENTRY_TIF" "$@"

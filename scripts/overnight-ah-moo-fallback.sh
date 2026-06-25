@@ -12,4 +12,4 @@ ENV_DIR="${ENV_DIR:-$BACK_DIR/env}"
 source "$BT_CORE/.venv/bin/activate"
 set -a; source "$ENV_DIR/overnight-ah-auc.key"; set +a
 
-exec python "$BACK_DIR/bin/overnight_ah/submit_moo.py" --fallback-market --entry-tif cls "$@"
+exec python "$BACK_DIR/bin/submit_moo.py" --fallback-market --entry-tif cls "$@"
