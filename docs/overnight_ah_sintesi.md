@@ -46,8 +46,8 @@ Conclusione: `min_adv=100000000` e il compromesso preferibile. `150M` aumenta le
 
 Output collegati:
 
-- `bin/overnight_ah/out/adv_sweep_current_summary.csv`
-- `bin/overnight_ah/out/adv_sweep_nasdaq_summary.csv`
+- `bt-strategy-test/overnight-ah/research/out/adv_sweep_current_summary.csv`
+- `bt-strategy-test/overnight-ah/research/out/adv_sweep_nasdaq_summary.csv`
 
 ## Problema lookahead della lista statica
 
@@ -108,8 +108,8 @@ Conclusione: il total edge a 6 mesi con hysteresis e la regola piu interessante 
 
 Output collegati:
 
-- `bin/overnight_ah/out/monthly_universe_walkforward_hysteresis_comparison.csv`
-- `bin/overnight_ah/out/monthly_universe_walkforward_adv_trades20_total_keep20_enter10/walkforward_metrics.csv`
+- `bt-strategy-test/overnight-ah/research/out/monthly_universe_walkforward_hysteresis_comparison.csv`
+- `bt-strategy-test/overnight-ah/research/out/monthly_universe_walkforward_adv_trades20_total_keep20_enter10/walkforward_metrics.csv`
 
 Lista piu recente generata dalla regola, rank month 2026-05-31:
 
@@ -133,7 +133,7 @@ Conclusione: expanding converge verso simboli stabili, ma peggiora molto il draw
 
 Output:
 
-- `bin/overnight_ah/out/monthly_universe_expanding_comparison.csv`
+- `bt-strategy-test/overnight-ah/research/out/monthly_universe_expanding_comparison.csv`
 
 ## Uso della lista dinamica insieme alla lista statica
 
@@ -164,7 +164,7 @@ Conclusione:
 
 Output:
 
-- `bin/overnight_ah/out/hybrid_static_rotation_total_hyst/hybrid_metrics.csv`
+- `bt-strategy-test/overnight-ah/research/out/hybrid_static_rotation_total_hyst/hybrid_metrics.csv`
 
 ## Test gate statistico sui ritorni
 
@@ -194,10 +194,10 @@ Conclusione:
 
 Output:
 
-- `bin/overnight_ah/out/consistency_gate/consistency_gate_metrics.csv`
-- `bin/overnight_ah/out/consistency_gate_baseline_adv/consistency_gate_metrics.csv`
-- `bin/overnight_ah/out/consistency_gate_model_ridge/consistency_gate_metrics.csv`
-- `bin/overnight_ah/out/consistency_gate_rotation_total_hyst/consistency_gate_metrics.csv`
+- `bt-strategy-test/overnight-ah/research/out/consistency_gate/consistency_gate_metrics.csv`
+- `bt-strategy-test/overnight-ah/research/out/consistency_gate_baseline_adv/consistency_gate_metrics.csv`
+- `bt-strategy-test/overnight-ah/research/out/consistency_gate_model_ridge/consistency_gate_metrics.csv`
+- `bt-strategy-test/overnight-ah/research/out/consistency_gate_rotation_total_hyst/consistency_gate_metrics.csv`
 
 ## Modelli feature / regressione
 
@@ -243,7 +243,7 @@ Conclusione:
 
 Output:
 
-- `bin/overnight_ah/out/symbol_feature_model_stable/feature_model_metrics.csv`
+- `bt-strategy-test/overnight-ah/research/out/symbol_feature_model_stable/feature_model_metrics.csv`
 
 ## Analisi anni/mesi negativi
 
@@ -284,7 +284,7 @@ Azioni:
 
 Script collegati:
 
-- `bin/overnight_ah/submit_moo.py`
+- `bin/submit_moo.py`
 - `scripts/overnight-ah-moo.sh`
 - `scripts/overnight-ah-moo-fallback.sh`
 - `scripts/overnight-ah-moc.sh`
