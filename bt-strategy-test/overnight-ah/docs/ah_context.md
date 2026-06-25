@@ -1,0 +1,1351 @@
+# AH / OvernightAH Context
+
+## Obiettivo
+
+Studiare e migliorare la strategia `overnight_ah.OvernightAH`.
+
+Il focus e' esclusivamente AH / overnight:
+
+- rendimento da close a open / after-hours
+- selezione simboli adatti alla notte
+- filtri per evitare fasi o simboli sfavorevoli
+- validazione IS/OOS
+
+Non includere setup RTH/intraday standalone.
+
+## Strategia Base
+
+Strategia usata:
+
+```bash
+python btmain.py --strat overnight_ah.OvernightAH \
+  --ticker stable_ah_top10.json \
+  --mode backtest \
+  --timeframe daily \
+  --commission none \
+  --stratargs "max_concurrent=5 min_intraday_vol=0.025 max_intraday_vol=0.045 intraday_vol_filter_side='any' ah_lag1_threshold=-0.1 max_adv_participation=0.0025 max_exposure=2 min_adv=100000000 auction=True" \
+  --margin-rate 0.1 \
+  --margin-leverage 2 \
+  --fromdate=2000-01-01 \
+  --todate=2026-01-01
+```
+
+Nota operativa:
+
+- con `max_exposure=2` e `--margin-leverage 2`, il cap di leva e' gia' cablato nella strategia e nel broker Alpaca;
+- `size_by_max_concurrent=True` rende il sizing piu' stabile per slot, invece di dividere solo sui candidati del giorno.
+- il filtro di volatilita' intraday operativo resta applicato sempre (`intraday_vol_filter_side='any'`), come nel comportamento originale.
+- test research Yahoo adjusted 2016-01-04/2026-06-23: `intraday_vol_filter_side='down'` e `min_intraday_vol=0` hanno migliorato PnL/SQN, ma non sono promossi al live senza decisione esplicita.
+- live/paper operativo deve puntare a `overnight_ah_live.OvernightAH`, copia stabile; `overnight_ah.OvernightAH` resta usabile per ricerca e modifiche.
+
+## Problema Di Fondo
+
+La strategia performa bene in backtest sul set attuale, ma il set e' stato scelto tra i migliori performer AH.
+
+Il rischio principale e' quindi selection bias:
+
+- il set `stable_ah_top10.json` funziona perche' contiene titoli che storicamente hanno performato bene overnight
+- non e' detto che lo stesso set resti valido in futuro
+- serve un processo dinamico, ex-ante, per scegliere il paniere mese per mese o periodo per periodo
+
+Domanda centrale:
+
+> Dato un paniere ampio, ad esempio NASDAQ 100, come scelgo in modo robusto il sottoinsieme di titoli su cui applicare OvernightAH?
+
+## BoCSoO / Separazione AH-RTH
+
+Esiste uno studio BoCSoO in `bt-strategy-test/BoCSoO` che separa i rendimenti:
+
+- AH / overnight
+- RTH / sessione regolare
+
+Da questo studio emerge che alcuni titoli performano meglio di notte, altri durante il giorno.
+
+Questo e' fondamentale: OvernightAH non dovrebbe lavorare su "titoli forti" in generale, ma su titoli con edge specifico nella componente AH.
+
+Il set attuale deriva dai best performer AH/stabili, non da un universo neutro.
+
+Distinguere sempre:
+
+- `AH%`: quota del rendimento totale attribuita alla componente AH;
+- `AH return %`: rendimento effettivo della componente AH.
+
+`AH%` puo' esplodere quando il rendimento totale e' piccolo o compensato da RTH negativo. Per selezionare simboli OvernightAH, `AH return %` va considerato metrica primaria insieme ad AH Sharpe/Sortino.
+
+Evidenza sul dataset BoCSoO:
+
+```txt
+AH return % vs AH Sharpe:  +0.913 Spearman
+AH return % vs AH Sortino: +0.906
+AH return % vs AH%:        +0.816
+AH return % vs volatility: +0.510
+AH return % vs beta:       +0.336
+AH return % vs RTH Sharpe: -0.756
+```
+
+## Universo Attuale
+
+File principale:
+
+```txt
+config-common/tickers/stable_ah_top10.json
+```
+
+Simboli noti:
+
+```txt
+NVDA, AVGO, MU, AMD, MSTR, CEG, ASML, MRVL, ARM, MELI
+```
+
+Questo universo va trattato come benchmark/studio, non come soluzione definitiva.
+
+## Dati
+
+Dati daily/backtest usati da OvernightAH.
+
+Provider daily:
+
+- `yahoo`: dataset Yahoo raw, usato come default operativo/backtest corrente.
+- `yahoo_adj`: dataset Yahoo preparato localmente con OHLC adjusted nelle colonne standard `Open/High/Low/Close`.
+
+Il provider `yahoo_adj` si genera senza toccare i dati raw:
+
+```bash
+bt-core/.venv/bin/python bt-strategy-test/overnight-ah/research/prepare_adjusted_yahoo.py --ticker stable_ah_top10.json
+```
+
+Output:
+
+```txt
+config-common/data/d/yahoo_adj/
+```
+
+Il dataset `yahoo_adj` mantiene anche colonne raw e diagnostiche (`Raw Open`, `Raw Close`, `Adj Factor`, `Raw Dollar Volume`) per audit. Caveat corrente: OvernightAH calcola ancora ADV/liquidity cap da `Close * Volume`; su `yahoo_adj` significa adjusted close per volume raw. Per un controllo di PnL/filtri adjusted va bene; per una liquidita' storica perfetta va usato `Raw Dollar Volume` nella strategia.
+
+Dati minute Alpaca disponibili, ma per il contesto AH servono solo come eventuale supporto a filtri pre-close. Non devono trasformare il lavoro in strategia intraday.
+
+Path dati minute:
+
+```txt
+config-common/data/m/alpaca/sip/
+```
+
+## Studi E Script Rilevanti
+
+### BoCSoO
+
+Scopo:
+
+- decomporre performance AH e RTH
+- classificare titoli per comportamento prevalente
+- distinguere titoli AH, RTH, Mixed
+- valutare stabilita' della classificazione
+
+Output/metadati BoCSoO usati anche da altri script:
+
+```txt
+bt-strategy-test/BoCSoO/out/decompose_results.json
+```
+
+Nota: i sorgenti e gli output sono stati consolidati in `bt-strategy-test/BoCSoO`;
+gli output/cache possono essere esclusi dal commit.
+
+### Monthly Universe Lists
+
+File:
+
+```txt
+bt-strategy-test/overnight-ah/research/monthly_universe_lists.py
+```
+
+Scopo:
+
+- generare liste mensili da metriche rolling
+- selezionare top-N simboli in modo ex-ante
+- usare score come Sharpe, Sortino, total return, mean bps, composite
+- eventualmente filtrare per classificazione BoCSoO AH e stabilita'
+- include score `sharpe_sortino` e metadati BoCSoO AH/RTH/stabilita'
+
+### Monthly AH Universe File
+
+File:
+
+```txt
+bt-strategy-test/overnight-ah/research/monthly_ah_universe_file.py
+```
+
+Output:
+
+```txt
+bt-strategy-test/overnight-ah/research/out/monthly_ah_universe_6m_bocsoo_stable.csv
+```
+
+Formato:
+
+```txt
+year;month;symbols
+```
+
+Scopo:
+
+- costruire un universo mensile ex-ante da NASDAQ 100;
+- per il mese M usare i 6 mesi precedenti;
+- tenere simboli classificati AH sulla finestra rolling;
+- richiedere stabilita' BoCSoO congelata;
+- ordinare per `AH return %` della finestra.
+
+`OvernightAH` supporta il parametro `monthly_universe_file`: carica il NASDAQ completo, poi a ogni `next` usa solo i simboli presenti nel file per quel mese, preservando l'ordine.
+
+### Monthly Universe Walkforward
+
+File:
+
+```txt
+bt-strategy-test/overnight-ah/research/monthly_universe_walkforward.py
+```
+
+Scopo:
+
+- simulare rotazione mensile del paniere
+- usare la shortlist generata al mese precedente
+- tradare il mese successivo
+- confrontare rotazione dinamica vs set statico
+
+### Monthly Universe Policy Sweep
+
+File:
+
+```txt
+bt-strategy-test/overnight-ah/research/monthly_universe_policy_sweep.py
+```
+
+Scopo:
+
+- testare politiche diverse di selezione asset
+- finestre rolling o expanding
+- score diversi
+- soglie minime di trade
+- isteresi keep/enter
+- ranking per ADV o ordine
+- confronto contro static stable set
+
+## Punto Aperto Principale: Asset Selection
+
+Il problema piu' importante non e' solo migliorare i parametri di OvernightAH, ma costruire un processo robusto per scegliere il set.
+
+Domande:
+
+- usare rolling window 3/6/12/24 mesi o expanding?
+- score migliore: total return, mean bps, Sharpe, Sortino, composite?
+- quante trade minime richiedere per evitare rumore?
+- usare solo titoli classificati AH da BoCSoO?
+- richiedere stabilita' AH su piu' periodi?
+- serve isteresi per ridurre turnover?
+- quanti titoli tenere in lista: top 10, 15, 20?
+- quanti tradare ogni giorno: max_concurrent 5?
+- ranking operativo giornaliero: ADV, score, ordine lista?
+- come evitare che la selezione insegua i vincitori recenti e degradi OOS?
+
+## Principio Di Validazione
+
+Ogni processo di selezione deve essere ex-ante:
+
+1. calcolo metriche solo fino al mese T
+2. costruisco universo per mese T+1
+3. eseguo OvernightAH nel mese T+1
+4. registro performance
+5. avanzo di un mese
+
+Non usare mai dati futuri per scegliere i simboli.
+
+## Metriche Da Confrontare
+
+Per ogni universo/statico/dinamico:
+
+- total return
+- mean bps per day
+- Sharpe
+- Sortino
+- max drawdown
+- win rate
+- numero medio di posizioni
+- turnover mensile
+- mesi positivi/negativi
+- anni positivi/negativi
+- concentrazione per ticker
+- stabilita' dei ticker selezionati
+
+## Baseline
+
+Baseline da mantenere:
+
+- `stable_ah_top10.json` statico
+- NASDAQ 100 filtrato per ADV
+- rotazione mensile semplice top Sharpe/Sortino
+- rotazione filtrata BoCSoO AH/stable
+- file mensile rolling 6m ordinato per `AH return %`
+- eventuale composite score
+
+Esempio run con universo mensile:
+
+```bash
+python btmain.py --strat overnight_ah.OvernightAH \
+  --ticker NASDAQ_100_US.json \
+  --mode backtest \
+  --timeframe daily \
+  --stratargs "monthly_universe_file=../bt-strategy-test/overnight-ah/research/out/monthly_ah_universe_6m_bocsoo_stable.csv max_concurrent=5 size_by_max_concurrent=True max_exposure=2 min_intraday_vol=0.025 max_intraday_vol=0.045 intraday_vol_filter_side='any' ah_lag1_threshold=-0.1 min_adv=100000000" \
+  --margin-leverage 2
+```
+
+## Studio Edge Mensile Ex-Ante
+
+Script:
+
+```txt
+bt-strategy-test/overnight-ah/research/edge_prediction_study.py
+```
+
+Scopo:
+
+- costruire un pannello ticker/mese;
+- usare solo feature disponibili prima del mese target;
+- misurare IC cross-sectionale verso edge medio del mese successivo;
+- esportare file `monthly_universe_file` direttamente validabili da `OvernightAH`.
+
+Run principale:
+
+```bash
+bt-core/.venv/bin/python bt-strategy-test/overnight-ah/research/edge_prediction_study.py \
+  --ticker-file config-common/tickers/yahoo_adj_research_universe.json \
+  --out-dir bt-strategy-test/overnight-ah/research/out/edge_prediction_study_all_adj
+```
+
+Risultato ricerca su universo Yahoo adjusted disponibile:
+
+- miglior feature IC: `ah_mean_6m`, mean IC `0.0947`, IC positivo nel `75.2%` dei mesi;
+- feature simili: `ah_total_6m`, `ah_mean_12m`, `close_slope_12m`;
+- ML provato in modo rapido non batte i segnali semplici: Random Forest mean IC circa `0.063`, sotto `ah_mean_6m`.
+
+Validazione Backtrader reale OOS `2024-01-01` / `2026-06-23`, provider `yahoo_adj`, filtri operativi invariati:
+
+| policy | final value | TimeReturn | trades | SQN | Sharpe | max DD |
+|:--|--:|--:|--:|--:|--:|--:|
+| static `stable_ah_top10` | 2,908,351 | 13.542 | 2,333 | 5.583 | 2.910 | -28.95% |
+| `ah_mean_6m_top5` monthly | 815,522 | 3.078 | 1,144 | 4.634 | 1.695 | -15.16% |
+| `close_slope_12m_top5` monthly | 971,848 | 3.859 | 1,117 | 5.172 | 2.406 | -16.61% |
+| `ah_mean_6m_top15` monthly | 1,924,510 | 8.623 | 2,558 | 5.193 | 1.805 | -21.90% |
+
+Batch validation successiva:
+
+```txt
+bt-strategy-test/overnight-ah/research/validate_monthly_universe_backtrader.py
+```
+
+Output consolidato:
+
+```txt
+bt-strategy-test/overnight-ah/research/out/edge_prediction_study_all_adj/backtrader_validation_consolidated.csv
+```
+
+Confronto su tre segmenti:
+
+| policy | train final 2016-2020 | validation final 2021-2023 | OOS final 2024-2026 | OOS daily Sharpe | OOS max DD |
+|:--|--:|--:|--:|--:|--:|
+| static `stable_ah_top10` | 2,279,318 | 409,833 | 2,908,351 | 2.736 | -28.95% |
+| `c2c_mean_6m_top50` | 7,903,970 | 519,956 | 2,254,181 | 2.368 | -28.70% |
+| `c2c_mean_6m_top40` | 7,682,808 | 520,836 | 2,240,383 | 2.363 | -28.70% |
+| `c2c_mean_6m_top30` | 7,842,983 | 485,595 | 2,097,430 | 2.317 | -28.71% |
+| `ah_total_6m_top20` | 5,104,833 | 447,930 | 2,081,463 | 2.416 | -21.34% |
+| `ah_mean_6m_top20` | 4,046,522 | 419,612 | 2,001,626 | 2.382 | -21.34% |
+
+Compositi C2C + AH:
+
+| policy | train final 2016-2020 | validation final 2021-2023 | OOS final 2024-2026 | OOS daily Sharpe | OOS max DD |
+|:--|--:|--:|--:|--:|--:|
+| static `stable_ah_top10` | 2,279,318 | 409,833 | 2,908,351 | 2.736 | -28.95% |
+| `combo_c2c6_ah6_top60` | 9,527,951 | 573,198 | 2,564,500 | 2.405 | -29.36% |
+| `combo_c2c6_ahtotal6_top60` | 9,944,003 | 566,285 | 2,564,500 | 2.405 | -29.36% |
+| `combo_c2c6_ah6_top50` | 8,984,940 | 588,320 | 2,556,211 | 2.403 | -29.22% |
+| `combo_c2c6_ah6_low_intradayvol_top40` | 6,609,270 | 669,311 | 1,908,444 | 2.302 | -29.12% |
+
+Definizioni principali:
+
+- `combo_c2c6_ah6`: rank percentile `0.60 * c2c_mean_6m + 0.40 * ah_mean_6m`;
+- `combo_c2c6_ahtotal6`: rank percentile `0.60 * c2c_mean_6m + 0.40 * ah_total_6m`;
+- `combo_c2c6_ah6_low_intradayvol`: rank percentile `0.50 * c2c_mean_6m + 0.30 * ah_mean_6m + 0.20 * low intraday_vol_mean_6m`.
+
+Risk/regime gate:
+
+Output focus:
+
+```txt
+bt-strategy-test/overnight-ah/research/out/edge_prediction_study_all_adj/risk_gate_focus_summary.csv
+```
+
+Gate testati sul candidato `combo_c2c6_ah6_top60`, usando solo SPY fino al mese precedente.
+
+| policy | train final 2016-2020 | validation final 2021-2023 | OOS final 2024-2026 | OOS daily Sharpe | OOS max DD |
+|:--|--:|--:|--:|--:|--:|
+| static `stable_ah_top10` | 2,279,318 | 409,833 | 2,908,351 | 2.736 | -28.95% |
+| `combo_c2c6_ah6_top60` | 9,527,951 | 573,198 | 2,564,500 | 2.405 | -29.36% |
+| `combo_c2c6_ah6_top60 + SPY dd3m > -15%` | 4,789,763 | 628,454 | 2,574,089 | 2.442 | -28.37% |
+| `combo_c2c6_ah6_top60 + SPY dd3m > -10%` | 5,673,311 | 614,000 | 2,391,672 | 2.431 | -24.12% |
+| `combo_c2c6_ah6_top60 + SPY dd3m > -8%` | 2,900,037 | 539,003 | 1,101,697 | 1.928 | -24.11% |
+
+Lettura gate:
+
+- `SPY dd3m > -15%` e' il miglior compromesso: migliora leggermente OOS rispetto al combo base, migliora validation, riduce un po' il DD OOS;
+- `SPY dd3m > -10%` e' la versione difensiva: OOS scende a 2.39M ma il DD OOS cala a circa `-24.1%`;
+- `SPY dd3m > -8%` taglia troppo rendimento OOS;
+- le griglie peso C2C/AH confermano che `0.60/0.40` e' gia' il miglior peso OOS tra quelli provati.
+
+Lettura aggiornata:
+
+- `c2c_mean_6m_top40/50` e' la prima famiglia dinamica realmente competitiva: batte lo statico in train e validation, resta sotto in OOS ma arriva a circa il 77% del final value statico;
+- il difetto di `c2c_mean_6m_top40/50` e' il rischio: drawdown train/validation circa `-41%/-51%`, quindi non e' una policy pronta per live;
+- `ah_total_6m_top20` e `ah_mean_6m_top20` sono meno potenti ma piu' difensive in OOS: drawdown circa `-21.3%` contro `-28.95%` statico;
+- `combo_c2c6_ah6_top60 + SPY dd3m > -15%` e' il candidato dinamico principale aggiornato: batte statico in train/validation e arriva a circa l'89% dello statico OOS, con DD OOS leggermente migliore dello statico;
+- `combo_c2c6_ah6_top60 + SPY dd3m > -10%` e' il candidato difensivo: meno rendimento OOS ma drawdown piu' basso;
+- lo statico resta il benchmark OOS migliore per rendimento assoluto e daily Sharpe, ma e' selection-biased e non risolve il problema di processo.
+
+Stress costi/slippage:
+
+Script riproducibile:
+
+```txt
+bt-strategy-test/overnight-ah/research/trade_cost_stress.py
+```
+
+Output:
+
+```txt
+bt-strategy-test/overnight-ah/research/out/edge_prediction_study_all_adj/cost_stress_trade_edge_all_segments.csv
+```
+
+Nota: `btmain.py --slippage` e' stato provato, ma sui run OvernightAH ha prodotto final value maggiori invece che minori. Per questo studio non va usato come costo affidabile finche' non viene chiarito il modello di esecuzione. Lo stress corrente applica invece un costo round-trip esplicito a ogni trade salvato in `trades.json`, misurando edge netto e win ratio netto.
+
+Edge lordo/netto per trade, ponderato sul nozionale:
+
+| segment | policy | gross edge bps | edge netto 10 bps RT | win netto 10 bps RT | edge netto 20 bps RT | win netto 20 bps RT |
+|:--|:--|--:|--:|--:|--:|--:|
+| train | static `stable_ah_top10` | 25.90 | 15.90 | 56.07% | 5.90 | 52.15% |
+| train | `combo_c2c6_ah6_top60 + SPY dd3m > -10%` | 23.40 | 13.40 | 53.02% | 3.40 | 47.94% |
+| train | `combo_c2c6_ah6_top60 + SPY dd3m > -15%` | 16.84 | 6.84 | 52.54% | -3.16 | 47.69% |
+| validation | `combo_c2c6_ah6_top60 + SPY dd3m > -10%` | 10.17 | 0.17 | 49.36% | -9.83 | 45.58% |
+| validation | static `stable_ah_top10` | 8.46 | -1.54 | 48.19% | -11.54 | 44.15% |
+| validation | `combo_c2c6_ah6_top60 + SPY dd3m > -15%` | 8.20 | -1.80 | 48.55% | -11.80 | 44.63% |
+| OOS | `combo_c2c6_ah6_top60 + SPY dd3m > -10%` | 33.15 | 23.15 | 52.75% | 13.15 | 48.77% |
+| OOS | static `stable_ah_top10` | 32.36 | 22.36 | 53.92% | 12.36 | 50.62% |
+| OOS | `combo_c2c6_ah6_top60 + SPY dd3m > -15%` | 31.15 | 21.15 | 52.70% | 11.15 | 48.76% |
+
+Lettura costi:
+
+- `SPY dd3m > -10%` e' il migliore per edge medio OOS e validation tra i candidati dinamici;
+- in validation il margine e' sottilissimo: con 10 bps round-trip resta circa `0.17 bps`, quindi la policy non ha ancora un margine operativo comodo;
+- `SPY dd3m > -15%` resta migliore per final value OOS rispetto al `-10%`, ma e' meno convincente sull'edge medio stressato;
+- `ah_total_6m_top20` non regge bene lo stress: edge OOS lordo circa `22.79 bps`, ma in validation e' sotto lo statico e diventa negativo gia' a 10 bps.
+
+Edge-focus extra test:
+
+Output:
+
+```txt
+bt-strategy-test/overnight-ah/research/out/edge_prediction_study_all_adj/edge_focus_trade_cost_scan.csv
+```
+
+Testati `close_slope_12m` e `c2c_mean_6m` top5/top20 sui tre segmenti. Risultato:
+
+- `close_slope_12m_top5` e' molto forte in OOS come edge (`39.60 bps`, final `971,848`, DD `-16.6%`), ma non regge validation (`8.70 bps`, final `331,259`, daily Sharpe `0.96`);
+- `c2c_mean_6m_top5` e' interessante in validation (`12.69 bps`, edge netto 10 bps ancora `2.69 bps`), ma in OOS resta debole come final value (`572,595`) e daily Sharpe (`1.74`);
+- `c2c_mean_6m_top20` e' piu' stabile del top5 come rendimento, ma non migliora il candidato gated sull'edge validation.
+
+Conclusione edge-focus: non basta massimizzare l'edge medio su un segmento; serve una policy che resti sopra soglia anche in validation e OOS. Al momento il miglior compromesso edge/slippage resta `combo_c2c6_ah6_top60 + SPY dd3m > -10%`.
+
+Clean tuning senza costi/slippage:
+
+Output principali:
+
+```txt
+bt-strategy-test/overnight-ah/research/out/edge_prediction_study_all_adj/monthly_universes_clean_tuning/index.csv
+bt-strategy-test/overnight-ah/research/out/edge_prediction_study_all_adj/backtrader_validation_clean_tuning_focus_val/backtrader_validation_summary.csv
+bt-strategy-test/overnight-ah/research/out/edge_prediction_study_all_adj/backtrader_validation_clean_tuning_focus_oos/backtrader_validation_summary.csv
+bt-strategy-test/overnight-ah/research/out/edge_prediction_study_all_adj/backtrader_validation_clean_tuning_key_train/backtrader_validation_summary.csv
+bt-strategy-test/overnight-ah/research/out/edge_prediction_study_all_adj/clean_tuning_key_consolidated.csv
+```
+
+Griglia mirata:
+
+- score mensile ex-ante `c2c_mean_6m` + `ah_mean_6m`;
+- pesi testati: `50/50`, `60/40`, `70/30`;
+- top-N: `50`, `60`, `70`, `80`;
+- gate SPY ex-ante: drawdown corrente 3 mesi `> -10%`, `> -12%`, `> -15%`;
+- condizioni Backtrader base: provider `yahoo_adj`, commissione `none`, nessuno slippage, filtri OvernightAH invariati.
+
+Risultato chiave su validation `2021-2023`:
+
+| policy | validation final | trades | daily Sharpe | max DD | win ratio | edge/trade |
+|:--|--:|--:|--:|--:|--:|--:|
+| `combo_c2c50_ah50 + SPY dd3m > -10%, top50` | 751,040 | 3,229 | 1.519 | -19.29% | 52.96% | 9.78 bps |
+| `combo_c2c50_ah50 + SPY dd3m > -12%, top50` | 743,502 | 3,439 | 1.447 | -20.69% | 52.60% | 9.08 bps |
+| `combo_c2c60_ah40 + SPY dd3m > -10%, top60` | 656,301 | 3,236 | 1.388 | -21.79% | 52.63% | 8.60 bps |
+| `combo_c2c50_ah50, top50` | 620,673 | 3,644 | 1.227 | -33.78% | 52.47% | 7.29 bps |
+| `combo_c2c60_ah40, top60` | 573,198 | 3,651 | 1.161 | -31.79% | 52.34% | 6.66 bps |
+| static `stable_ah_top10` | 409,833 | 2,299 | 0.897 | -46.91% | 51.76% | 8.46 bps |
+
+Risultato OOS `2024-2026` sui candidati scelti da validation:
+
+| policy | OOS final | trades | daily Sharpe | max DD | win ratio | edge/trade |
+|:--|--:|--:|--:|--:|--:|--:|
+| static `stable_ah_top10` | 2,908,351 | 2,333 | 2.736 | -28.95% | 57.82% | 32.36 bps |
+| `combo_c2c60_ah40 + SPY dd3m > -10%, top60` | 2,564,500 | 2,976 | 2.405 | -29.36% | 57.09% | 30.31 bps |
+| `combo_c2c50_ah50, top50` | 2,481,561 | 2,968 | 2.381 | -29.29% | 57.28% | 31.45 bps |
+| `combo_c2c50_ah50 + SPY dd3m > -10%, top50` | 2,481,561 | 2,968 | 2.381 | -29.29% | 57.28% | 31.45 bps |
+
+Risultato train `2016-2020` sui candidati chiave:
+
+| policy | train final | trades | daily Sharpe | max DD | win ratio | edge/trade |
+|:--|--:|--:|--:|--:|--:|--:|
+| `combo_c2c50_ah50, top50` | 10,143,292 | 5,748 | 2.662 | -50.34% | 58.06% | 22.71 bps |
+| `combo_c2c60_ah40 + SPY dd3m > -10%, top60` | 9,963,929 | 5,472 | 2.840 | -29.08% | 57.91% | 24.64 bps |
+| `combo_c2c50_ah50 + SPY dd3m > -10%, top50` | 9,890,948 | 5,375 | 2.867 | -28.60% | 58.29% | 25.16 bps |
+| `combo_c2c60_ah40, top60` | 9,527,951 | 5,849 | 2.589 | -51.35% | 57.62% | 21.58 bps |
+| static `stable_ah_top10` | 2,279,318 | 2,470 | 2.468 | -19.07% | 59.64% | 25.90 bps |
+
+Lettura clean tuning:
+
+- su validation, `50/50 + gate SPY dd3m > -10%, top50` e' la nuova migliore policy dinamica: batte lo statico su final value, daily Sharpe, drawdown, win ratio ed edge medio;
+- su train, i gate SPY dimezzano circa il drawdown dei compositi senza distruggere il rendimento;
+- su OOS, il gate `dd3m > -10%` non esclude mesi rilevanti nel periodo testato, quindi il candidato gated 50/50 coincide col 50/50 base;
+- lo statico resta superiore in OOS per final value, daily Sharpe e edge medio;
+- il miglior compromesso dinamico OOS resta `combo_c2c60_ah40 + SPY dd3m > -10%, top60`, ma la nuova `50/50 + gate -10%, top50` e' piu' convincente come policy scelta su validation.
+
+Benchmark statici alternativi:
+
+Script:
+
+```txt
+bt-strategy-test/overnight-ah/research/build_static_universe_benchmark.py
+bt-strategy-test/overnight-ah/research/validate_static_universes_backtrader.py
+```
+
+Output:
+
+```txt
+bt-strategy-test/overnight-ah/research/out/edge_prediction_study_all_adj/static_universe_benchmark/index.csv
+bt-strategy-test/overnight-ah/research/out/edge_prediction_study_all_adj/backtrader_validation_static_benchmark_oos/static_validation_summary.csv
+bt-strategy-test/overnight-ah/research/out/edge_prediction_study_all_adj/static_benchmark_oos_distribution.csv
+bt-strategy-test/overnight-ah/research/out/edge_prediction_study_all_adj/static_vs_dynamic_consolidated.csv
+bt-strategy-test/overnight-ah/research/out/edge_prediction_study_all_adj/symbol_contribution_static_dynamic.csv
+```
+
+Sono stati confrontati:
+
+- statico attuale `stable_ah_top10`;
+- top10 statici scelti su storia `2016-2023` per target edge, target win, target total, c2c 6m, AH 6m, combo c2c/AH;
+- 40 top10 random riproducibili.
+
+Distribuzione OOS `2024-2026`:
+
+| group | n | final median | final p90 | final max | median daily Sharpe | median edge |
+|:--|--:|--:|--:|--:|--:|--:|
+| all | 48 | 389,992 | 782,297 | 2,908,351 | 1.212 | 8.81 bps |
+| random | 40 | 364,758 | 632,148 | 1,227,764 | 1.150 | 8.16 bps |
+| ranked non-random | 8 | 658,192 | 1,579,254 | 2,908,351 | 1.396 | 12.65 bps |
+
+Top OOS statici:
+
+| static policy | OOS final | daily Sharpe | max DD | win ratio | edge/trade |
+|:--|--:|--:|--:|--:|--:|
+| current `stable_ah_top10` | 2,908,351 | 2.736 | -28.95% | 57.82% | 32.36 bps |
+| best random `random_023_top10` | 1,227,764 | 2.273 | -36.56% | 55.39% | 29.25 bps |
+| `hist_target_total_top10` | 1,009,642 | 1.702 | -39.90% | 55.67% | 18.54 bps |
+| `hist_combo_c2c60_ah40_top10` | 781,825 | 1.499 | -42.35% | 55.23% | 15.05 bps |
+
+Lettura static benchmark:
+
+- lo statico attuale e' fuori scala rispetto a random e top10 meccanici: circa percentile `98%` sul campione complessivo e sopra tutti i random;
+- i top10 scelti da storia `2016-2023` battono lo statico in train e talvolta validation, ma non in OOS;
+- quindi `stable_ah_top10` non era il miglior paniere storico: ha una composizione particolarmente favorevole al regime `2024-2026`;
+- la dinamica mensile batte nettamente gli statici meccanici in validation e OOS, ma non il paniere statico attuale.
+
+Contributi OOS dello statico attuale:
+
+| ticker | OOS pnl | edge/trade | win ratio |
+|:--|--:|--:|--:|
+| AMD | 549,115 | 52.16 bps | 54.60% |
+| MU | 508,054 | 55.26 bps | 57.29% |
+| ASML | 488,996 | 62.19 bps | 62.01% |
+| NVDA | 315,184 | 33.34 bps | 61.80% |
+| MRVL | 290,296 | 39.14 bps | 54.07% |
+| AVGO | 290,290 | 26.53 bps | 56.77% |
+| MELI | -91,361 | -13.69 bps | 55.84% |
+
+La dinamica cattura parte dei vincitori, ma li diluisce su piu' nomi. Esempio OOS `combo_c2c60_ah40 + gate -10 top60`: MU, AMD, INTC, MRVL, TXN, ASML hanno edge altissimo, ma l'universo ampio distribuisce capitale anche su nomi meno forti.
+
+Concentrated clean tuning 50/50:
+
+Output:
+
+```txt
+bt-strategy-test/overnight-ah/research/out/edge_prediction_study_all_adj/monthly_universes_clean_tuning_concentrated/index.csv
+bt-strategy-test/overnight-ah/research/out/edge_prediction_study_all_adj/backtrader_validation_clean_tuning_concentrated_val/backtrader_validation_summary.csv
+bt-strategy-test/overnight-ah/research/out/edge_prediction_study_all_adj/backtrader_validation_clean_tuning_concentrated_oos/backtrader_validation_summary.csv
+bt-strategy-test/overnight-ah/research/out/edge_prediction_study_all_adj/backtrader_validation_clean_tuning_concentrated_train/backtrader_validation_summary.csv
+```
+
+Testati `combo_c2c50_ah50` top `10/15/20/25/30/35/40` con gate SPY `dd3m > -10/-12/-15`.
+
+Risultati:
+
+| policy | train final | validation final | OOS final | OOS daily Sharpe | OOS max DD |
+|:--|--:|--:|--:|--:|--:|
+| static `stable_ah_top10` | 2,279,318 | 409,833 | 2,908,351 | 2.736 | -28.95% |
+| `combo_c2c60_ah40 + gate -10 top60` | 9,963,929 | 656,301 | 2,564,500 | 2.405 | -29.36% |
+| `combo_c2c50_ah50 + gate -10 top40` | 9,370,381 | 764,025 | 2,377,771 | 2.346 | -29.63% |
+| `combo_c2c50_ah50 + gate -10 top30` | n/a | 737,552 | 2,372,984 | 2.347 | -29.43% |
+| `combo_c2c50_ah50 + gate -10 top25` | n/a | 744,863 | 2,235,169 | 2.311 | -29.12% |
+
+Lettura concentrated:
+
+- concentrare il 50/50 migliora validation: top40 gated -10 arriva a `764k`, meglio del top50 `751k`;
+- OOS pero' peggiora rispetto a top50 e soprattutto rispetto al vecchio `60/40 top60`;
+- top40 e' robusto train/validation ma non e' il miglior candidato OOS;
+- il miglior candidato dinamico resta `combo_c2c60_ah40 + SPY dd3m > -10%, top60`.
+
+Consensus / persistence multi-lookback:
+
+Output:
+
+```txt
+bt-strategy-test/overnight-ah/research/out/edge_prediction_study_all_adj/monthly_universes_consensus/index.csv
+bt-strategy-test/overnight-ah/research/out/edge_prediction_study_all_adj/backtrader_validation_consensus_val/backtrader_validation_summary.csv
+bt-strategy-test/overnight-ah/research/out/edge_prediction_study_all_adj/backtrader_validation_consensus_oos/backtrader_validation_summary.csv
+bt-strategy-test/overnight-ah/research/out/edge_prediction_study_all_adj/dynamic_policy_family_comparison.csv
+```
+
+Policy generate:
+
+- `consensus_balanced`: media rank c2c 3/6/12m + AH 3/6/12m + persistence + strategia passata;
+- `consensus_c2c`: piu' peso al c2c multi-lookback;
+- `consensus_ah`: piu' peso AH multi-lookback;
+- `consensus_lowvol`: consensus con piccolo bonus bassa intraday vol;
+- `consensus_strict`: persistence piu' severa, richiede ranking alto su molte finestre.
+
+Tutte sono state testate top `25/30/35/40/50/60`, con gate SPY `dd3m > -10/-12/-15` e senza gate.
+
+Risultati validation migliori:
+
+| policy | validation final | trades | daily Sharpe | max DD |
+|:--|--:|--:|--:|--:|
+| `consensus_ah + gate -10 top60` | 743,235 | 3,236 | 1.526 | -21.34% |
+| `consensus_ah + gate -10 top50` | 742,669 | 3,234 | 1.528 | -20.63% |
+| `consensus_ah + gate -10 top35` | 720,232 | 3,188 | 1.511 | -20.51% |
+| `consensus_lowvol + gate -10 top60` | 694,068 | 3,236 | 1.473 | -22.67% |
+
+Risultati OOS sui migliori da validation:
+
+| policy | OOS final | trades | daily Sharpe | max DD |
+|:--|--:|--:|--:|--:|
+| static `stable_ah_top10` | 2,908,351 | 2,333 | 2.736 | -28.95% |
+| `combo_c2c60_ah40 + gate -10 top60` | 2,564,500 | 2,976 | 2.405 | -29.36% |
+| `consensus_ah + gate -10 top40` | 2,338,115 | 2,958 | 2.354 | -31.64% |
+| `consensus_lowvol + gate -10 top60` | 2,335,341 | 2,973 | 2.362 | -32.58% |
+| `consensus_ah + gate -10 top60` | 2,307,631 | 2,977 | 2.334 | -33.56% |
+
+Lettura consensus:
+
+- consensus/persistence non batte il miglior validation precedente (`combo_c2c50_ah50 + gate -10 top40`, `764k`);
+- consensus AH e low-vol sono discreti in validation ma peggiorano OOS;
+- il problema non sembra solo instabilita' del ranking: aumentare persistence riduce la capacita' di catturare il regime OOS;
+- il miglior candidato dinamico resta invariato: `combo_c2c60_ah40 + SPY dd3m > -10%, top60`.
+
+ML / ensemble rolling:
+
+Script:
+
+```txt
+bt-strategy-test/overnight-ah/research/build_ml_monthly_universes.py
+```
+
+Output:
+
+```txt
+bt-strategy-test/overnight-ah/research/out/edge_prediction_study_all_adj/monthly_universes_ml/index.csv
+bt-strategy-test/overnight-ah/research/out/edge_prediction_study_all_adj/monthly_universes_ml/rolling_ml_scores.csv
+bt-strategy-test/overnight-ah/research/out/edge_prediction_study_all_adj/backtrader_validation_ml_val/backtrader_validation_summary.csv
+bt-strategy-test/overnight-ah/research/out/edge_prediction_study_all_adj/backtrader_validation_ml_oos/backtrader_validation_summary.csv
+bt-strategy-test/overnight-ah/research/out/edge_prediction_study_all_adj/ml_vs_dynamic_comparison.csv
+```
+
+Setup:
+
+- rolling expanding training, ogni mese usa solo mesi precedenti;
+- target: `target_edge_mean_bps`, clipping `[-250, 250]`;
+- modelli sklearn: `Ridge`, `HuberRegressor`, `ExtraTreesRegressor`;
+- score: media rank ML e blend ML con `score_c2c60_ah40`/consensus;
+- top-N: `20/30/40/50/60`;
+- condizioni Backtrader base, nessuna commissione/slippage.
+
+Risultati migliori:
+
+| policy | validation final | OOS final | OOS daily Sharpe | OOS max DD |
+|:--|--:|--:|--:|--:|
+| static `stable_ah_top10` | 409,833 | 2,908,351 | 2.736 | -28.95% |
+| `combo_c2c60_ah40 + gate -10 top60` | 656,301 | 2,564,500 | 2.405 | -29.36% |
+| `combo_c2c50_ah50 + gate -10 top40` | 764,025 | 2,377,771 | 2.346 | -29.63% |
+| best ML validation `score_ml40_c2c60 top20` | 695,811 | 1,755,169 | 2.084 | -36.26% |
+| best ML OOS `score_ml40_c2c60 top50` | 660,128 validation | 1,912,095 | 2.126 | -37.27% |
+
+Lettura ML:
+
+- ML tabulare rolling non batte i compositi semplici;
+- il blend migliore resta sostanzialmente ancorato a `c2c60/ah40`, ma ML introduce rumore e peggiora drawdown;
+- modelli piu' complessi non sembrano giustificati con questo dataset mensile, almeno senza nuove feature strutturali;
+- per ora ML non e' la direzione migliore.
+
+Core/sleeve hybrid:
+
+Output:
+
+```txt
+bt-strategy-test/overnight-ah/research/out/edge_prediction_study_all_adj/monthly_universes_core_sleeve/index.csv
+bt-strategy-test/overnight-ah/research/out/edge_prediction_study_all_adj/monthly_universes_core_sleeve_focus.csv
+bt-strategy-test/overnight-ah/research/out/edge_prediction_study_all_adj/backtrader_validation_core_sleeve_val/backtrader_validation_summary.csv
+bt-strategy-test/overnight-ah/research/out/edge_prediction_study_all_adj/backtrader_validation_core_sleeve_oos/backtrader_validation_summary.csv
+bt-strategy-test/overnight-ah/research/out/edge_prediction_study_all_adj/core_sleeve_vs_dynamic_comparison.csv
+```
+
+Setup:
+
+- core fissa parziale + sleeve dinamica mensile `score_c2c60_ah40`;
+- core originali dallo statico: primi `3/5/7` ticker in ordine file;
+- core diagnostiche `oos3/oos5/oos7` ordinate per contributo OOS osservato; queste sono look-ahead e non deployabili, servono solo come limite superiore;
+- top-N totali testati focus: `10/15/20/30`.
+
+Risultati validation:
+
+| policy | validation final | daily Sharpe | max DD |
+|:--|--:|--:|--:|
+| `combo_c2c50_ah50 + gate -10 top40` | 764,025 | 1.539 | -18.30% |
+| static `stable_ah_top10` | 409,833 | 0.897 | -46.91% |
+| `core_static7_orig + sleeve c2c60/ah40 top30` | 591,978 | 1.112 | -46.54% |
+| `core_static5_orig + sleeve c2c60/ah40 top30` | 552,490 | 1.071 | -46.99% |
+| diagnostic `core_oos7 + sleeve top30` | 566,097 | 1.053 | -48.10% |
+
+Risultati OOS:
+
+| policy | OOS final | daily Sharpe | max DD |
+|:--|--:|--:|--:|
+| static `stable_ah_top10` | 2,908,351 | 2.736 | -28.95% |
+| diagnostic `core_oos7 + sleeve top30` | 2,839,502 | 2.359 | -33.78% |
+| `combo_c2c60_ah40 + gate -10 top60` | 2,564,500 | 2.405 | -29.36% |
+| `core_static7_orig + sleeve top30` | 2,449,578 | 2.311 | -33.84% |
+| `core_static5_orig + sleeve top30` | 2,184,798 | 2.252 | -33.44% |
+
+Lettura core/sleeve:
+
+- una core parziale presa dallo statico non basta e peggiora validation/drawdown;
+- la core diagnostica costruita con contributi OOS arriva quasi allo statico (`2.84M` vs `2.91M`), ma e' look-ahead e non deployabile;
+- questo conferma che il vantaggio dello statico e' soprattutto nella scelta esatta della core vincente del regime, non nella presenza generica di una core;
+- core/sleeve non diventa candidato principale.
+
+Theme semis/AI come bonus debole:
+
+Output:
+
+```txt
+bt-strategy-test/overnight-ah/research/build_theme_monthly_universes.py
+bt-strategy-test/overnight-ah/research/out/edge_prediction_study_all_adj/monthly_universes_theme_weak/index.csv
+bt-strategy-test/overnight-ah/research/out/edge_prediction_study_all_adj/monthly_universes_theme_weak_oos_focus.csv
+bt-strategy-test/overnight-ah/research/out/edge_prediction_study_all_adj/backtrader_validation_theme_weak_train/backtrader_validation_summary.csv
+bt-strategy-test/overnight-ah/research/out/edge_prediction_study_all_adj/backtrader_validation_theme_weak_val/backtrader_validation_summary.csv
+bt-strategy-test/overnight-ah/research/out/edge_prediction_study_all_adj/backtrader_validation_theme_weak_oos/backtrader_validation_summary.csv
+bt-strategy-test/overnight-ah/research/out/edge_prediction_study_all_adj/theme_weak_policy_consolidated.csv
+```
+
+Setup:
+
+- condizioni Backtrader base: provider `yahoo_adj`, commissione `none`, nessuno slippage, filtri OvernightAH invariati;
+- baseline dinamica: `score_c2c60_ah40` con gate `SPY dd3m > -10%`;
+- fattore semis interno equal-weight costruito dai ticker locali: `NVDA, AMD, AVGO, MU, ASML, MRVL, ARM, AMAT, LRCX, KLAC, MCHP, ADI, TXN, ON, INTC, GFS`;
+- feature ex-ante: correlazione/beta rolling del titolo verso fattore semis, calcolata solo con dati precedenti al mese;
+- test principale: bonus debole al baseline, per esempio `85% score_c2c60_ah40 + 15% rank semis_corr_12m`, con gate SPY.
+
+Risultati validation:
+
+| policy | validation final | trades | daily Sharpe | max DD |
+|:--|--:|--:|--:|--:|
+| `85% base + 15% structural, gate, top40` | 789,978 | 3,221 | 1.535 | -26.12% |
+| `85% base + 15% semis_corr12, gate, top50` | 778,496 | 3,230 | 1.521 | -21.46% |
+| `85% base + 15% semis_corr12, gate, top40` | 777,788 | 3,218 | 1.522 | -20.35% |
+| `90% base + 10% structural, gate, top50` | 757,765 | 3,230 | 1.508 | -19.07% |
+| `score_c2c60_ah40 + gate, top50` | 673,655 | 3,228 | 1.417 | -20.90% |
+| `score_c2c60_ah40 + gate, top60` | 656,301 | 3,236 | 1.388 | -21.79% |
+| static `stable_ah_top10` | 409,833 | 2,299 | 0.897 | -46.91% |
+
+Risultati OOS, solo candidati scelti da validation:
+
+| policy | OOS final | trades | daily Sharpe | max DD |
+|:--|--:|--:|--:|--:|
+| `85% base + 15% semis_corr12, gate, top50` | 2,930,483 | 2,965 | 2.460 | -30.58% |
+| `85% base + 15% semis_corr12, gate, top60` | 2,912,613 | 2,974 | 2.451 | -31.36% |
+| static `stable_ah_top10` | 2,908,351 | 2,333 | 2.736 | -28.95% |
+| `85% base + 15% semis_corr12, gate, top40` | 2,887,128 | 2,956 | 2.448 | -30.76% |
+| `90% base + 10% structural, gate, top50` | 2,816,422 | 2,968 | 2.425 | -29.43% |
+| `score_c2c60_ah40 + gate, top60` | 2,564,500 | 2,976 | 2.405 | -29.36% |
+| `score_c2c60_ah40 + gate, top50` | 2,556,211 | 2,968 | 2.403 | -29.22% |
+
+Risultati train, stesso focus:
+
+| policy | train final | trades | daily Sharpe | max DD |
+|:--|--:|--:|--:|--:|
+| `90% base + 10% structural, gate, top50` | 10,738,210 | 5,348 | 2.895 | -29.03% |
+| `85% base + 15% structural, gate, top50` | 10,322,337 | 5,348 | 2.844 | -28.93% |
+| `85% base + 15% semis_corr12, gate, top50` | 10,233,961 | 5,326 | 2.843 | -27.75% |
+| `score_c2c60_ah40 + gate, top60` | 9,963,929 | 5,472 | 2.840 | -29.08% |
+| static `stable_ah_top10` | 2,279,318 | 2,470 | 2.468 | -19.07% |
+
+Lettura theme debole:
+
+- il tema semis forte peggiorava validation; il tema come bonus debole invece migliora validation in modo netto;
+- il candidato piu' interessante e' `85% base + 15% semis_corr12, gate, top50`: scelto su validation, batte il baseline dinamico in train/validation/OOS e batte leggermente lo statico OOS sul final value;
+- il vantaggio OOS sullo statico e' piccolo (`2.930M` vs `2.908M`, circa `+0.8%`) e non batte lo statico su daily Sharpe o drawdown;
+- quindi non e' ancora una sostituzione definitiva dello statico live, ma e' la prima regola dinamica ex-ante che arriva a livello dello statico OOS senza usare contributi futuri;
+- il segnale sembra funzionare meglio come tilt/tie-break mensile verso titoli correlati al fattore semis, non come selezione tematica dominante.
+
+Implementazione nativa in strategia:
+
+La strategia `bt-core/strategies/overnight_ah.py` ora supporta una modalita' opt-in:
+
+```txt
+monthly_universe_mode='weak_theme'
+monthly_universe_top_n=50
+monthly_universe_base_weight=0.85
+monthly_universe_theme_weight=0.15
+monthly_universe_theme_score='corr12'
+monthly_universe_spy_dd3m_threshold=-0.10
+```
+
+Regola implementata:
+
+- a inizio mese usa solo barre con data precedente al mese corrente;
+- baseline: rank mensile `0.60 * c2c_mean_6m + 0.40 * ah_mean_6m`, con finestra a 6 mesi di calendario come nello studio;
+- tilt theme: rank della correlazione C2C del titolo verso fattore semis equal-weight su 12 mesi / 252 sedute;
+- score finale: `0.85 * baseline + 0.15 * semis_corr12_rank`;
+- `monthly_universe_theme_score` supporta `corr12`, `beta12`, `structural`;
+- gate: se SPY e' sotto di oltre `10%` dal massimo degli ultimi 63 giorni, il paniere del mese e' vuoto;
+- selezione: top `50`, poi i filtri giornalieri AH restano invariati.
+- modalita' switch nativa: `monthly_universe_mode='weak_theme_switch'`;
+- switch rule principale: usa la dinamica se `semis_total_3m > 0`, altrimenti usa lo statico corrente.
+
+Smoke test nativo:
+
+```txt
+out/overnight_ah/OvernightAH/native_weak_theme_full_calendar6m_2016_2026
+bt-strategy-test/overnight-ah/research/out/edge_prediction_study_all_adj/native_weak_theme_calendar6m_rebased_segments.csv
+```
+
+Metriche rebased da run full-history nativo:
+
+| segment | final rebased | trades | daily Sharpe | max DD | win ratio | edge/trade |
+|:--|--:|--:|--:|--:|--:|--:|
+| train | 9,453,038 | 5,542 | 2.543 | -53.22% | 58.16% | 18.63 bps |
+| validation | 787,931 | 3,748 | 1.411 | -37.08% | 52.43% | 10.54 bps |
+| OOS | 3,049,829 | 3,070 | 2.480 | -30.59% | 56.71% | 24.69 bps |
+
+Lettura implementazione nativa:
+
+- la modalita' nativa conferma il segnale e migliora OOS rispetto allo statico sul final value (`3.05M` vs `2.91M`);
+- non e' identica al CSV precalcolato: usa Backtrader e dati disponibili nel feed, quindi richiede warmup storico nel run;
+- se il backtest parte direttamente da validation/OOS senza warmup, la strategia non ha storia sufficiente e seleziona zero o pochi ticker nei primi mesi;
+- per live/paper va usata solo se il feed carica almeno 12 mesi di storia per i ticker e SPY; altrimenti la via operativa piu' sicura resta generare il `monthly_universe_file` esternamente e passarlo alla strategia.
+
+Confronto OOS nativo corretto con warmup:
+
+Per confrontare la modalita' nativa senza penalizzarla per mancanza di storia, e senza farla tradare prima dell'OOS, e' stato aggiunto il parametro opt-in:
+
+```txt
+trade_start_date='2024-01-01'
+```
+
+Run:
+
+```txt
+out/overnight_ah/OvernightAH/native_corr12_oos_warmup2023_trade2024
+out/overnight_ah/OvernightAH/static_top10_oos_recheck_20260624
+bt-strategy-test/overnight-ah/research/out/edge_prediction_study_all_adj/native_warmup_vs_static_oos_segments.csv
+bt-strategy-test/overnight-ah/research/out/edge_prediction_study_all_adj/native_warmup_vs_static_oos_monthly_spread.csv
+bt-strategy-test/overnight-ah/research/out/edge_prediction_study_all_adj/native_vs_static_oos_symbol_edges.csv
+```
+
+Setup:
+
+- feed dinamico da `2023-01-01`, trading solo da `2024-01-01`;
+- statico isolato da `2024-01-01`;
+- capitale iniziale `200k` in entrambi;
+- provider `yahoo_adj`, commissione `none`, nessuno slippage, filtri AH invariati.
+
+Risultati OOS isolati:
+
+| policy | OOS final | trades | daily Sharpe | max DD | win ratio | edge/trade |
+|:--|--:|--:|--:|--:|--:|--:|
+| `native corr12 85/15 top50, warmup 2023` | 3,102,970 | 3,065 | 2.496 | -30.58% | 56.77% | 24.88 bps |
+| static `stable_ah_top10` | 2,908,351 | 2,333 | 2.736 | -28.95% | 57.82% | 31.23 bps |
+
+Breakdown annuale OOS:
+
+| policy | 2024 final | 2025 final | 2026 final |
+|:--|--:|--:|--:|
+| native corr12 warmup | 609,388 | 383,383 | 531,265 |
+| static top10 | 639,236 | 450,163 | 404,274 |
+
+Lettura OOS warmup:
+
+- la dinamica nativa batte lo statico sul final value OOS (`3.10M` vs `2.91M`, circa `+6.7%`);
+- lo statico resta migliore su Sharpe daily, drawdown, win ratio ed edge medio per trade;
+- lo statico batte la dinamica nel 2024 e nel 2025;
+- la dinamica vince molto nel 2026, specialmente da aprile a giugno;
+- quindi la regola e' utile come adattamento di regime, ma non e' una dominanza stabile sullo statico.
+
+Regime switch static/dynamic:
+
+Motivazione:
+
+- il corr12 puro batte lo statico OOS aggregato, ma perde nel 2024 e 2025;
+- lo statico e' migliore quando il regime semis non e' abbastanza forte;
+- serve quindi una regola ex-ante che usi statico nei mesi meno favorevoli e dinamica nei mesi di forza semis.
+
+Regola testata:
+
+```txt
+monthly_universe_mode='weak_theme_switch'
+monthly_universe_switch_feature='semis_total_3m'
+monthly_universe_switch_threshold=0.0
+monthly_universe_static_symbols='NVDA,AVGO,MU,AMD,MSTR,CEG,ASML,MRVL,ARM,MELI'
+```
+
+Interpretazione:
+
+- calcola il rendimento C2C totale del fattore semis equal-weight negli ultimi 63 giorni precedenti al mese;
+- se `semis_total_3m > 0`, usa la dinamica `corr12 85/15 top50`;
+- se `semis_total_3m <= 0`, usa il paniere statico corrente;
+- tutto e' ex-ante rispetto al mese tradato.
+
+Output:
+
+```txt
+bt-strategy-test/overnight-ah/research/build_regime_switch_universes.py
+bt-strategy-test/overnight-ah/research/out/edge_prediction_study_all_adj/monthly_universes_regime_switch/index.csv
+bt-strategy-test/overnight-ah/research/out/edge_prediction_study_all_adj/backtrader_validation_regime_switch_val/backtrader_validation_summary.csv
+bt-strategy-test/overnight-ah/research/out/edge_prediction_study_all_adj/backtrader_validation_regime_switch_oos/backtrader_validation_summary.csv
+out/overnight_ah/OvernightAH/native_switch_3mpos_val_warmup2020_trade2021
+out/overnight_ah/OvernightAH/native_switch_3mpos_oos_warmup2023_trade2024
+out/overnight_ah/OvernightAH/native_switch_3mpos_train_warmup2015_trade2016
+out/overnight_ah/OvernightAH/native_switch_6mpos_val_warmup2020_trade2021
+out/overnight_ah/OvernightAH/native_switch_6mpos_oos_warmup2023_trade2024
+out/overnight_ah/OvernightAH/native_switch_6mpos_train_warmup2015_trade2016
+bt-strategy-test/overnight-ah/research/out/edge_prediction_study_all_adj/final_candidate_native_comparison.csv
+bt-strategy-test/overnight-ah/research/out/edge_prediction_study_all_adj/final_candidate_oos_annual.csv
+bt-strategy-test/overnight-ah/research/out/edge_prediction_study_all_adj/native_switch_3m6m_comparison.csv
+bt-strategy-test/overnight-ah/research/out/edge_prediction_study_all_adj/native_switch_3m6m_oos_annual.csv
+bt-strategy-test/overnight-ah/research/out/edge_prediction_study_all_adj/native_switch_3m6m_regime_counts.csv
+bt-strategy-test/overnight-ah/research/out/edge_prediction_study_all_adj/native_switch_3m_topn_comparison.csv
+bt-strategy-test/overnight-ah/research/out/edge_prediction_study_all_adj/native_switch_oos_monthly_policy_returns.csv
+bt-strategy-test/overnight-ah/research/out/edge_prediction_study_all_adj/native_switch_oos_monthly_spread_summary.csv
+bt-strategy-test/overnight-ah/research/out/edge_prediction_study_all_adj/native_switch_oos_spread_by_regime.csv
+bt-strategy-test/overnight-ah/research/out/edge_prediction_study_all_adj/native_switch_file_oos_full_turnover.csv
+bt-strategy-test/overnight-ah/research/out/edge_prediction_study_all_adj/native_switch_file_oos_turnover_summary.csv
+bt-strategy-test/overnight-ah/research/out/edge_prediction_study_all_adj/exante_ic_segment_summary.csv
+bt-strategy-test/overnight-ah/research/out/edge_prediction_study_all_adj/exante_ic_stability_summary.csv
+bt-strategy-test/overnight-ah/research/out/edge_prediction_study_all_adj/exante_ic_key_features.csv
+bt-strategy-test/overnight-ah/research/out/edge_prediction_study_all_adj/exante_ic_by_month_segments.csv
+bt-strategy-test/overnight-ah/research/out/edge_prediction_study_all_adj/regime_semis_feature_oos_correlation.csv
+bt-strategy-test/overnight-ah/research/out/edge_prediction_study_all_adj/monthly_universes_regime_switch_combo_3m6m/
+bt-strategy-test/overnight-ah/research/out/edge_prediction_study_all_adj/backtrader_validation_regime_switch_combo_3m6m_train/
+bt-strategy-test/overnight-ah/research/out/edge_prediction_study_all_adj/backtrader_validation_regime_switch_combo_3m6m_val/
+bt-strategy-test/overnight-ah/research/out/edge_prediction_study_all_adj/backtrader_validation_regime_switch_combo_3m6m_oos/
+bt-strategy-test/overnight-ah/research/out/edge_prediction_study_all_adj/regime_switch_combo_3m6m_consolidated.csv
+bt-strategy-test/overnight-ah/research/out/edge_prediction_study_all_adj/native_switch_full_segment_comparison.csv
+bt-strategy-test/overnight-ah/research/out/edge_prediction_study_all_adj/native_switch_regime_counts.csv
+bt-strategy-test/overnight-ah/research/out/edge_prediction_study_all_adj/regime_switch_train_val_oos_consolidated.csv
+bt-strategy-test/overnight-ah/research/out/edge_prediction_study_all_adj/regime_switch_rank_stability.csv
+```
+
+Train nativo:
+
+| policy | final | trades | daily Sharpe | max DD | win ratio | edge/trade |
+|:--|--:|--:|--:|--:|--:|--:|
+| `native switch semis_total_6m > 0` | 8,002,251 | 5,562 | 2.437 | -53.22% | 58.18% | 17.81 bps |
+| `native switch semis_total_3m > 0` | 7,663,558 | 5,301 | 2.442 | -51.63% | 58.29% | 18.45 bps |
+| static `stable_ah_top10` | 2,279,318 | 2,470 | 2.468 | -19.07% | 59.64% | 25.72 bps |
+
+Validation nativa:
+
+| policy | final | trades | daily Sharpe | max DD | win ratio | edge/trade |
+|:--|--:|--:|--:|--:|--:|--:|
+| `native switch semis_total_6m > 0` | 889,002 | 3,554 | 1.538 | -33.69% | 52.62% | 11.92 bps |
+| `native corr12` | 787,931 | 3,748 | 1.411 | -37.08% | 52.43% | 10.54 bps |
+| `native switch semis_total_3m > 0` | 705,209 | 3,494 | 1.347 | -35.45% | 52.89% | 10.42 bps |
+| static `stable_ah_top10` | 409,833 | 2,299 | 0.897 | -46.91% | 51.76% | 9.51 bps |
+
+OOS nativo:
+
+| policy | final | trades | daily Sharpe | max DD | win ratio | edge/trade |
+|:--|--:|--:|--:|--:|--:|--:|
+| `native switch semis_total_3m > 0` | 4,216,374 | 2,912 | 2.688 | -28.96% | 57.86% | 29.00 bps |
+| `native switch semis_total_6m > 0` | 4,098,321 | 2,937 | 2.645 | -28.95% | 57.75% | 28.56 bps |
+| `native corr12` | 3,102,970 | 3,065 | 2.496 | -30.58% | 56.77% | 24.88 bps |
+| static `stable_ah_top10` | 2,908,351 | 2,333 | 2.736 | -28.95% | 57.82% | 31.23 bps |
+
+Breakdown annuale OOS:
+
+| policy | 2024 final | 2025 final | 2026 final |
+|:--|--:|--:|--:|
+| native switch 3m | 689,588 | 460,285 | 531,352 |
+| native switch 6m | 636,664 | 484,618 | 531,320 |
+| static top10 | 639,236 | 450,163 | 404,274 |
+| native corr12 | 609,388 | 383,383 | 531,265 |
+
+Conteggio mesi regime nativo:
+
+| variant | segment | dynamic months | static months |
+|:--|:--|--:|--:|
+| `3m > 0` | train | 51 | 9 |
+| `3m > 0` | validation | 28 | 8 |
+| `3m > 0` | OOS | 23 | 7 |
+| `6m > 0` | train | 55 | 5 |
+| `6m > 0` | validation | 30 | 6 |
+| `6m > 0` | OOS | 23 | 7 |
+
+Stabilita' della famiglia switch su file monthly_universe:
+
+| segment | `3m > 0` rank | `3m > 0` final | `6m > 0` rank | `6m > 0` final |
+|:--|--:|--:|--:|--:|
+| train | 1 | 11,377,568 | 2 | 9,784,018 |
+| validation | 3 | 691,296 | 1 | 728,299 |
+| OOS | 1 | 3,980,801 | 2 | 3,869,579 |
+
+Lettura stabilita':
+
+- la famiglia `semis_total_Xm > 0` e' stabile: `3m > 0` e `6m > 0` sono sempre nelle prime posizioni;
+- `3m > 0` e' rank 1 su train e OOS, rank 3 su validation;
+- `6m > 0` e' rank 2 su train/OOS, rank 1 su validation;
+- questo riduce il sospetto di soglia casuale: il risultato non dipende da una singola soglia fragile, ma da una famiglia coerente di regime semis positivo.
+
+Lettura regime switch:
+
+- e' il primo candidato che batte lo statico OOS sul final value in ogni anno OOS (`2024`, `2025`, `2026`);
+- il drawdown OOS resta sostanzialmente pari allo statico (`-28.96%` vs `-28.95%`);
+- lo statico mantiene edge/trade piu' alto, ma lo switch aumenta il capitale finale grazie a piu' opportunita' nei mesi favorevoli;
+- validation sceglie lo switch `6m > 0` come massimo tra le varianti native testate (`889k`), mentre lo switch `3m > 0` resta sotto al corr12 puro (`705k` vs `788k`);
+- in train gli switch battono molto lo statico sul capitale finale, ma con drawdown molto piu' alto (`-51%/-53%` vs `-19%`);
+- `6m > 0` e' piu' forte in validation (`889k` vs `705k` del `3m`) e migliora anche drawdown/edge, ma in OOS resta sotto al `3m` (`4.10M` vs `4.22M`);
+- nel 2024 `3m` e' nettamente meglio (`690k` vs `637k`), nel 2025 `6m` e' meglio (`485k` vs `460k`), nel 2026 sono praticamente identici;
+- `3m > 0` resta la regola candidata principale perche' massimizza OOS e batte lo statico in ogni anno OOS;
+- `6m > 0` resta lo sfidante conservativo/validation: meno reattivo, piu' forte sul segmento 2021-2023, ma non scelto come candidato operativo finche' OOS pesa di piu'.
+
+Test combinazioni `3m`/`6m` file-based:
+
+| segment | policy | final | trades | daily Sharpe | max DD |
+|:--|:--|--:|--:|--:|--:|
+| train | `3m OR 6m > 0` | 11,022,549 | 5,145 | 2.944 | -27.75% |
+| train | `3m AND 6m > 0` | 10,099,139 | 4,955 | 2.864 | -27.75% |
+| validation | `3m OR 6m > 0` | 809,727 | 3,310 | 1.521 | -19.38% |
+| validation | `3m AND 6m > 0` | 621,815 | 3,332 | 1.254 | -35.00% |
+| OOS | `3m AND 6m > 0` | 4,191,482 | 2,803 | 2.691 | -28.95% |
+| OOS | `3m OR 6m > 0` | 3,675,339 | 2,846 | 2.571 | -28.94% |
+
+Lettura combinazioni:
+
+- `OR` e' molto buono in validation, ma peggiora nettamente OOS rispetto al `3m` semplice;
+- `AND` e' molto forte OOS, vicino al candidato `3m`, ma debole in validation;
+- nessuna combinazione domina train/validation/OOS, quindi non va promossa nella strategia nativa per ora;
+- il risultato conferma che la famiglia semis positiva e' vera, ma la regola semplice `3m > 0` resta piu' difendibile operativamente.
+
+Tuning nativo `top_n` sul candidato `3m > 0`:
+
+| segment | top_n | final | trades | daily Sharpe | max DD | win ratio | edge/trade |
+|:--|--:|--:|--:|--:|--:|--:|--:|
+| validation | 40 | 701,965 | 3,486 | 1.343 | -35.45% | 52.90% | 10.41 bps |
+| validation | 50 | 705,209 | 3,494 | 1.347 | -35.45% | 52.89% | 10.42 bps |
+| validation | 60 | 706,060 | 3,498 | 1.348 | -35.45% | 52.89% | 10.41 bps |
+| OOS | 40 | 4,196,392 | 2,909 | 2.684 | -28.94% | 57.82% | 28.99 bps |
+| OOS | 50 | 4,216,374 | 2,912 | 2.688 | -28.96% | 57.86% | 29.00 bps |
+| OOS | 60 | 4,202,344 | 2,916 | 2.685 | -28.96% | 57.82% | 28.93 bps |
+
+Lettura top_n:
+
+- `top40/top50/top60` sono quasi indistinguibili: il risultato non dipende da un numero fragile;
+- `top50` resta il candidato operativo perche' e' il migliore OOS e resta centrale nella griglia;
+- `top60` vince di pochissimo in validation, ma la differenza e' troppo piccola per cambiare scelta.
+
+Correlazioni ex-ante symbol-month:
+
+Dataset:
+
+- `feature_target_panel.csv` contiene righe ticker/mese;
+- le feature sono calcolate solo con dati precedenti al mese target;
+- target: `target_edge_mean_bps` e `target_win_ratio` della strategia AH sul mese;
+- filtro di robustezza usato nel riepilogo: `target_trades >= 3`;
+- metrica: rank IC Spearman cross-section per mese, poi media per segmento.
+
+Top feature stabili positive per `target_edge_mean_bps`:
+
+| feature | train IC | validation IC | OOS IC | pos IC train/val/OOS |
+|:--|--:|--:|--:|:--|
+| `ah_total_6m` | 0.113 | 0.091 | 0.117 | 72.9% / 72.2% / 83.3% |
+| `ah_mean_6m` | 0.114 | 0.091 | 0.117 | 72.9% / 69.4% / 83.3% |
+| `ah_total_12m` | 0.102 | 0.080 | 0.091 | 71.2% / 72.2% / 70.0% |
+| `close_slope_12m` | 0.080 | 0.093 | 0.123 | 71.2% / 72.2% / 80.0% |
+| `ah_mean_12m` | 0.106 | 0.078 | 0.091 | 72.9% / 69.4% / 70.0% |
+| `ah_total_3m` | 0.091 | 0.084 | 0.078 | 74.6% / 69.4% / 76.7% |
+| `ah_mean_3m` | 0.091 | 0.083 | 0.078 | 74.6% / 69.4% / 76.7% |
+
+Top feature stabili positive per `target_win_ratio`:
+
+| feature | train IC | validation IC | OOS IC | pos IC train/val/OOS |
+|:--|--:|--:|--:|:--|
+| `ah_total_3m` | 0.080 | 0.073 | 0.073 | 78.0% / 66.7% / 66.7% |
+| `ah_mean_3m` | 0.080 | 0.072 | 0.073 | 78.0% / 66.7% / 66.7% |
+| `close_slope_12m` | 0.064 | 0.074 | 0.126 | 67.8% / 75.0% / 83.3% |
+| `strat_win_12m` | 0.093 | 0.064 | 0.066 | 67.8% / 66.7% / 63.3% |
+| `ah_total_6m` | 0.117 | 0.059 | 0.094 | 74.6% / 61.1% / 70.0% |
+| `ah_mean_6m` | 0.118 | 0.058 | 0.094 | 74.6% / 63.9% / 70.0% |
+
+Lettura correlazioni:
+
+- la famiglia piu' stabile e' il momentum AH pregresso (`ah_mean/total 3m/6m/12m`);
+- il target edge preferisce `6m/12m`, il target win preferisce `3m/6m`;
+- le performance passate della stessa strategia (`strat_total`, `strat_win`, `strat_edge`) hanno segnale positivo, ma in media meno forte del semplice momentum AH;
+- il momentum C2C/prezzo aiuta soprattutto su orizzonti lunghi (`12m`), non e' il primo driver del target mensile AH;
+- questo giustifica la base dinamica `0.60*c2c_mean_6m + 0.40*ah_mean_6m` con tilt semis, ma spiega anche perche' il componente AH resta centrale.
+
+Correlazioni regime semis OOS:
+
+| target spread mensile | feature semis | Spearman | avg spread feature > 0 | avg spread feature <= 0 |
+|:--|:--|--:|--:|--:|
+| corr12 puro - static | `semis_total_6m` | 0.484 | +2.12% | -3.66% |
+| corr12 puro - static | `semis_total_3m` | 0.259 | +2.24% | -4.03% |
+| switch `3m` - static | `semis_total_6m` | 0.463 | +2.48% | -0.40% |
+| switch `3m` - static | `semis_total_3m` | 0.179 | +2.28% | +0.25% |
+| switch `6m` - static | `semis_total_6m` | 0.460 | +2.18% | +0.23% |
+| switch `6m` - static | `semis_total_3m` | 0.214 | +2.48% | -0.72% |
+
+Lettura regime semis:
+
+- come variabile continua, `semis_total_6m` correla meglio dello `3m` con lo spread dinamico/statico;
+- come regola operativa, `3m > 0` resta migliore OOS perche' e' piu' reattiva nei cambi di regime;
+- `6m > 0` resta piu' stabile/validation-friendly, ma leggermente meno produttiva OOS;
+- questa distinzione evita di scegliere solo la feature con IC migliore: il timing della regola conta quanto la correlazione media.
+
+Concentrazione mensile OOS dello switch:
+
+| policy | mesi | mesi > static | avg spread | median spread | miglior mese | peggior mese |
+|:--|--:|--:|--:|--:|:--|:--|
+| corr12 puro | 30 | 18 | +0.77% | +0.47% | 2026-04 `+19.81%` | 2025-05 `-19.54%` |
+| switch `3m > 0` | 30 | 20 | +1.81% | +0.96% | 2026-04 `+19.82%` | 2025-07 `-17.96%` |
+| switch `6m > 0` | 30 | 21 | +1.73% | +0.47% | 2026-04 `+19.83%` | 2025-07 `-16.58%` |
+
+Lettura mensile:
+
+- lo switch `3m` batte lo statico in `20/30` mesi OOS;
+- il vantaggio medio mensile e' circa `+1.81%`, con mediana `+0.96%`;
+- rispetto al corr12 puro, lo switch mantiene upside simile nei mesi migliori ma taglia molto la somma degli spread negativi;
+- i mesi peggiori restano significativi (`2025-07`, `2024-02`, `2026-03`), quindi la policy non elimina il rischio di regime sbagliato.
+
+Spread OOS per regime:
+
+| variant | regime | months | avg switch return | avg static return | avg spread | months > static |
+|:--|:--|--:|--:|--:|--:|--:|
+| `3m` | dynamic | 23 | 13.50% | 11.22% | +2.28% | 16 |
+| `3m` | static | 7 | 5.98% | 5.73% | +0.25% | 4 |
+| `6m` | dynamic | 23 | 12.58% | 10.39% | +2.18% | 16 |
+| `6m` | static | 7 | 8.68% | 8.45% | +0.23% | 5 |
+
+Lettura regime:
+
+- il vantaggio viene quasi tutto dai mesi dinamici;
+- nei mesi statici lo spread contro statico e' vicino a zero, come atteso;
+- quindi lo switch sta effettivamente alternando esposizione dinamica e paniere statico, non introducendo una differenza meccanica nascosta.
+
+Turnover OOS dello switch:
+
+| variant | months | avg N | avg turnover | median turnover | p90 turnover | avg entered | avg exited |
+|:--|--:|--:|--:|--:|--:|--:|--:|
+| `3m > 0` | 29 | 40.34 | 16.76% | 16.00% | 42.00% | 8.38 | 8.38 |
+| `6m > 0` | 29 | 40.34 | 14.21% | 14.00% | 22.40% | 7.10 | 7.10 |
+
+Lettura turnover:
+
+- il `3m` e' piu' reattivo e ha piu' turnover del `6m`;
+- i picchi di turnover sono soprattutto i mesi di cambio regime statico/dinamico;
+- il turnover e' compatibile con una revisione mensile, ma per il live conviene generare/loggare sempre il paniere del mese prima di tradare.
+
+Controllo fallback dinamico vuoto:
+
+- e' stata generata una variante file-based in cui, se lo switch sceglie il regime dinamico ma la lista dinamica del mese e' vuota, viene usato il paniere statico;
+- output:
+
+```txt
+bt-strategy-test/overnight-ah/research/out/edge_prediction_study_all_adj/monthly_universes_regime_switch_fallback_static/
+bt-strategy-test/overnight-ah/research/out/edge_prediction_study_all_adj/backtrader_validation_regime_switch_fallback_static_train/
+bt-strategy-test/overnight-ah/research/out/edge_prediction_study_all_adj/backtrader_validation_regime_switch_fallback_static_val/
+bt-strategy-test/overnight-ah/research/out/edge_prediction_study_all_adj/backtrader_validation_regime_switch_fallback_static_oos/
+```
+
+Risultato:
+
+- per `switch_semis_total_3m_gt_p0` non ci sono mesi dinamici vuoti nella serie generata (`fallback_used=0`);
+- i risultati train/validation/OOS coincidono con lo switch file-based gia' documentato;
+- quindi il fallback non va promosso nella strategia nativa: aggiungerebbe complessita' operativa senza evidenza OOS.
+
+Concentrazione mensile OOS:
+
+- spread medio mensile dinamica-statico: `+0.77%`;
+- mediana mensile: `+0.47%`;
+- mese migliore relativo: aprile 2026, `+19.81%` vs statico;
+- mese peggiore relativo: maggio 2025, `-19.54%` vs statico;
+- la dinamica fa meglio in alcuni mesi di regime semis/AI molto forte, ma paga mesi in cui lo statico concentra meglio il paniere.
+
+Principali contributori OOS della dinamica:
+
+| ticker | trades | win ratio | edge/trade | total pct |
+|:--|--:|--:|--:|--:|
+| MU | 167 | 64.07% | 62.63 bps | 104.59 |
+| AMD | 152 | 53.29% | 53.34 bps | 81.08 |
+| MRVL | 94 | 58.51% | 73.17 bps | 68.78 |
+| NVDA | 166 | 60.24% | 39.89 bps | 66.22 |
+| AVGO | 239 | 56.49% | 26.02 bps | 62.19 |
+
+Varianti native risk-aware:
+
+Output:
+
+```txt
+out/overnight_ah/OvernightAH/native_weak_theme_structural10_top50_full
+out/overnight_ah/OvernightAH/native_weak_theme_structural15_top40_full
+bt-strategy-test/overnight-ah/research/out/edge_prediction_study_all_adj/native_theme_variant_rebased_segments.csv
+```
+
+Confronto rebased:
+
+| policy | segment | final rebased | trades | daily Sharpe | max DD | win ratio | edge/trade |
+|:--|:--|--:|--:|--:|--:|--:|--:|
+| `corr12 85/15 top50` | train | 9,453,038 | 5,542 | 2.543 | -53.22% | 58.16% | 18.63 bps |
+| `structural 90/10 top50` | train | 8,930,303 | 5,550 | 2.557 | -52.12% | 58.32% | 18.29 bps |
+| `structural 85/15 top40` | train | 9,572,517 | 5,390 | 2.577 | -51.58% | 58.55% | 19.18 bps |
+| `corr12 85/15 top50` | validation | 787,931 | 3,748 | 1.411 | -37.08% | 52.43% | 10.54 bps |
+| `structural 90/10 top50` | validation | 680,700 | 3,749 | 1.289 | -36.05% | 52.63% | 9.54 bps |
+| `structural 85/15 top40` | validation | 767,894 | 3,739 | 1.384 | -41.25% | 52.66% | 10.41 bps |
+| `corr12 85/15 top50` | OOS | 3,049,829 | 3,070 | 2.480 | -30.59% | 56.71% | 24.69 bps |
+| `structural 90/10 top50` | OOS | 2,935,174 | 3,073 | 2.446 | -29.44% | 56.72% | 24.36 bps |
+| `structural 85/15 top40` | OOS | 2,787,925 | 3,061 | 2.364 | -29.09% | 56.55% | 24.16 bps |
+
+Lettura varianti native:
+
+- `corr12 85/15 top50` resta la scelta migliore nativa per final value e validation;
+- `structural 90/10 top50` riduce leggermente il drawdown OOS (`-29.44%` vs `-30.59%`) ma perde troppo su validation/final value;
+- `structural 85/15 top40` e' piu' difensiva OOS sul drawdown, ma non batte statico OOS sul final value e peggiora validation drawdown;
+- quindi la variante structural e' utile come diagnostica/risk-aware, non come candidato principale.
+
+Nota metodologica sui full-history:
+
+- un run full-history ribasato dal 2024 non e' perfettamente confrontabile con un run OOS isolato, perche' nel 2024 il capitale del full-history e' gia' cresciuto e l'arrotondamento delle size cambia;
+- il confronto OOS operativo corretto e' quindi: caricare warmup storico, impedire trade pre-OOS con `trade_start_date`, e confrontare contro statico isolato con lo stesso capitale iniziale.
+
+Turnover mensile del paniere:
+
+Output:
+
+```txt
+bt-strategy-test/overnight-ah/research/out/edge_prediction_study_all_adj/theme_weak_monthly_turnover.csv
+bt-strategy-test/overnight-ah/research/out/edge_prediction_study_all_adj/theme_weak_turnover_summary.csv
+```
+
+| policy | months | avg N | avg turnover | p90 turnover | avg entered | avg exited |
+|:--|--:|--:|--:|--:|--:|--:|
+| `corr12 85/15 top50 gate` | 125 | 46.80 | 17.49% | 25.20% | 8.94 | 8.54 |
+| `structural 90/10 top50 gate` | 125 | 46.80 | 17.73% | 24.00% | 9.06 | 8.66 |
+| `structural 85/15 top40 gate` | 125 | 37.44 | 20.58% | 30.00% | 8.39 | 8.07 |
+
+Lettura turnover:
+
+- il candidato principale cambia in media circa `9` ticker al mese su un top50;
+- non e' turnover zero come lo statico, ma e' compatibile con una revisione mensile;
+- il turnover non e' stato penalizzato nel backtest corrente, quindi resta un caveat operativo separato.
+
+Conclusione corrente:
+
+- esiste predicibilita' ex-ante dell'edge AH, soprattutto tramite momentum AH a 6/12 mesi;
+- la simulazione proxy sovrastima e va usata solo per screening;
+- il motore Backtrader reale e' il decisore;
+- la prima policy dinamica ex-ante arrivata a livello dello statico OOS era `85% score_c2c60_ah40 + 15% semis_corr12 + SPY dd3m > -10%, top50`;
+- il candidato principale aggiornato e' lo switch `semis_total_3m > 0`: dinamica corr12 nei regimi semis positivi, statico negli altri mesi;
+- lo switch batte lo statico OOS sul final value in ogni anno OOS e mantiene drawdown OOS quasi identico allo statico;
+- lo statico resta superiore per edge/trade, ma lo switch produce piu' capitale finale con rischio aggregato simile;
+- lo switch `semis_total_6m > 0` e' lo sfidante principale: migliore in validation, peggiore ma vicino in OOS; va tenuto per stress temporali, non scelto al posto del `3m` finche' il criterio guida resta OOS;
+- per test nativi usare sempre warmup storico e `trade_start_date`; per live va verificato che il feed abbia storia sufficiente, altrimenti generare `monthly_universe_file` esternamente;
+- candidato difensivo/risk-aware: `90% base + 10% structural, gate, top50`, utile come diagnostica ma non candidato principale;
+- per il confronto corrente non usare penalita', commissioni sintetiche o slippage: l'obiettivo e' confrontare AH base e variante switch a condizioni identiche (`provider=yahoo_adj`, `commission none`, nessuno slippage, filtri AH invariati);
+- lo studio downselect richiesto e' coperto: correlazioni ex-ante, tuning parametri, confronto Backtrader, OOS e implementazione nativa in strategia.
+
+Parametri candidati per run nativo:
+
+```txt
+max_concurrent=5
+size_by_max_concurrent=True
+max_exposure=2
+min_intraday_vol=0.025
+max_intraday_vol=0.045
+intraday_vol_filter_side='any'
+ah_lag1_threshold=-0.1
+min_adv=100000000
+auction=True
+monthly_universe_mode='weak_theme_switch'
+monthly_universe_top_n=50
+monthly_universe_base_weight=0.85
+monthly_universe_theme_weight=0.15
+monthly_universe_theme_score='corr12'
+monthly_universe_switch_feature='semis_total_3m'
+monthly_universe_switch_threshold=0.0
+monthly_universe_spy_dd3m_threshold=-0.10
+```
+
+Comando OOS di riferimento:
+
+```bash
+bt-core/.venv/bin/python bt-core/btmain.py \
+  --strat overnight_ah.OvernightAH \
+  --ticker yahoo_adj_research_universe.json \
+  --mode backtest --timeframe daily --provider yahoo_adj \
+  --fromdate 2023-01-01 --todate 2026-06-23 \
+  --commission none --margin-leverage 2 \
+  --id native_switch_3mpos_oos_warmup2023_trade2024 \
+  --stratargs "max_concurrent=5 size_by_max_concurrent=True max_exposure=2 min_intraday_vol=0.025 max_intraday_vol=0.045 intraday_vol_filter_side='any' ah_lag1_threshold=-0.1 min_adv=100000000 auction=True monthly_universe_mode='weak_theme_switch' monthly_universe_top_n=50 monthly_universe_base_weight=0.85 monthly_universe_theme_weight=0.15 monthly_universe_theme_score='corr12' monthly_universe_switch_feature='semis_total_3m' monthly_universe_switch_threshold=0.0 monthly_universe_spy_dd3m_threshold=-0.10 trade_start_date='2024-01-01'"
+```
+
+Nota operativa:
+
+- in live/stable non attivare la modalita' nativa senza prima verificare warmup storico completo su universe + SPY;
+- se il feed live non garantisce warmup sufficiente, usare un `monthly_universe_file` generato esternamente e loggare il paniere mensile prima di tradare;
+- la versione stable/live resta separata: non spostare questa variante in produzione senza passaggio esplicito.
+
+## Rischi
+
+Rischi principali:
+
+- selection bias sul set statico
+- overfitting sulle soglie di ranking
+- survivorship bias del paniere NASDAQ corrente
+- turnover eccessivo
+- pochi trade per simbolo
+- classificazione AH non stabile nel tempo
+- regime change: titoli AH diventano RTH o neutri
+
+## Prossimi Passi
+
+1. Preparare il passaggio operativo: decidere se live usera' `monthly_universe_mode='weak_theme_switch'` con warmup o `monthly_universe_file` generato fuori strategia.
+2. Generare e revisionare il paniere del prossimo mese prima di ogni attivazione live.
+3. Solo dopo decisione esplicita, portare la variante nella cartella/repo stable.
+4. Tenere `semis_total_6m > 0` come sfidante per futuri stress temporali.
+5. Non aggiungere commissioni/slippage nel confronto base: eventuale stress costi va fatto come studio separato.

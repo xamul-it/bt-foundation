@@ -1,0 +1,6 @@
+PORT=18082
+BT_DASH_HOST=127.0.0.1
+
+# Frontend published behind reverse proxy on ilz.duckdns.org.
+# Keeping a relative /api path avoids hard-coding the backend host in the bundle.
+VUE_APP_API_URL=/api

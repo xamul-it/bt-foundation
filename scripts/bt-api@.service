@@ -1,0 +1,13 @@
+[Unit]
+Description=Backtrader API (%i)
+After=network-online.target
+
+[Service]
+WorkingDirectory=/home/htpc/backtrader/bt-api
+EnvironmentFile=/home/htpc/backtrader/env/bt-api-%i
+ExecStart=/home/htpc/backtrader/bt-api/start.sh
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=default.target

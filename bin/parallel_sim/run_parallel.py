@@ -20,10 +20,13 @@ Usage:
 Output:
     out/<module>/<Strategy>/paper/  ← paper trading
     out/<module>/<Strategy>/sim/    ← simulazione
+
+Path runtime fissati:
+    - launcher in repo root: bin/parallel_sim/run_parallel.py
+    - interpreter: bt-core/.venv/bin/python
 """
 
 import subprocess
-import sys
 import os
 import signal
 import argparse
@@ -39,11 +42,10 @@ logging.basicConfig(
 )
 logger = logging.getLogger('parallel_sim')
 
-BACK_DIR = Path(__file__).parent.parent.parent  # repo root
+BACK_DIR = Path(__file__).resolve().parents[2]  # repo root
 BT_CORE_DIR = BACK_DIR / 'bt-core'
 BTMAIN = BT_CORE_DIR / 'btmain.py'
-_VENV_PYTHON = BT_CORE_DIR / '.venv' / 'bin' / 'python'
-PYTHON = str(_VENV_PYTHON) if _VENV_PYTHON.exists() else sys.executable
+PYTHON = BT_CORE_DIR / '.venv' / 'bin' / 'python'
 
 PAPER_ID = 'paper'
 SIM_ID = 'sim'
@@ -102,7 +104,7 @@ def spawn(label, cmd_args, log_file):
         full_cmd,
         stdout=f,
         stderr=subprocess.STDOUT,
-        cwd=str(BT_CORE_DIR),
+        cwd=str(BACK_DIR),
         preexec_fn=os.setsid  # nuovo process group per kill pulito
     )
     return proc, f
@@ -152,6 +154,12 @@ def graceful_stop(processes, grace_seconds=STOP_GRACE_SECONDS):
 
 def main():
     args = parse_args()
+    if not PYTHON.exists():
+        raise FileNotFoundError(
+            f"Interpreter mancante: {PYTHON}. Usa bt-core/.venv come ambiente runtime."
+        )
+    if not BTMAIN.exists():
+        raise FileNotFoundError(f"File mancante: {BTMAIN}")
     logger.info(f'Python interpreter: {PYTHON}')
 
     # Dir log per questa sessione

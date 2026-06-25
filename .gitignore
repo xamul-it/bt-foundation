@@ -6,12 +6,17 @@ __pycache__/
 .venv/
 venv/
 venv
-env/
+env/*
+!env/
+!env/*.example
+!env/README.md
 
 # Runtime outputs
 logs/
 out/
+**/out/
 *.log
+data/
 
 # Local secrets / machine-specific env files
 .PA1

@@ -1,0 +1,8 @@
+# Replay ZMQ Proxy — porte separate 5557/5558
+# Data: 2026-01-12 (compatibile con tutti i simboli unici di HMA_top9 nei dump locali)
+# Uso: bt-env replay  oppure  EnvironmentFile=.../env/replay
+REPLAY_DATE=2026-01-12
+REPLAY_SPEED=60
+REPLAY_LOG_DIR=/home/htpc/backtrader/out/dump
+PROXY_ADDR=tcp://localhost:5557
+proxy_pub_addr=tcp://localhost:5558

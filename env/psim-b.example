@@ -1,0 +1,23 @@
+# Parallel Paper + Simulation
+# Uso: bt-env psim  oppure  EnvironmentFile=.../env/psim
+PSIM_STRAT=overnight_ah.OvernightAH
+PSIM_TICKER="stable_ah_top10.json"
+#PSIM_STRATARGS="period=8 inverted=True exitbar=6 amount=2000 use_calendar=True sl_pct=0.01"
+PSIM_STRATARGS="max_concurrent=5 max_intraday_vol=0.045 min_intraday_vol=0.025"
+PSIM_TIMEFRAME=minutes
+PSIM_CASH=95418
+PSIM_COMMISSION=none
+PSIM_DEBUG=
+PSIM_AUDIT=1
+PSIM_PAPER_DIR=/home/htpc/backtrader/backtrader/out/intraday/HMA/paper
+PSIM_SIM_DIR=/home/htpc/backtrader/backtrader/out/intraday/HMA/sim
+PSIM_OUT_DIR=/home/htpc/backtrader/backtrader/out/intraday/HMA
+PSIM_TOLERANCE=300
+ALPACA_PORTFOLIO_NAME="OvernightAH"
+# Account Alpaca PA2 — paper account #2
+# Uso: bt-env pa2  oppure  EnvironmentFile=.../env/pa2
+ALPACA_API_KEY=CHANGE_ME
+ALPACA_SECRET_KEY=CHANGE_ME
+BROKER_API_KEY=CHANGE_ME
+BROKER_SECRET_KEY=CHANGE_ME
+DISABLE_SSL_VERIFY=true

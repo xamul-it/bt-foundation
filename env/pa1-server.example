@@ -1,0 +1,10 @@
+#!/usr/bin/env bash
+# Profilo composto: PA1 + SERVER (Flask con account #1)
+# Uso shell: bt-env pa1-server
+# Uso systemd: EnvironmentFile=.../env/pa1  +  EnvironmentFile=.../env/server
+_BT_D="$(dirname "${BASH_SOURCE[0]}")"
+# shellcheck source=pa1
+source "${_BT_D}/pa1"
+# shellcheck source=server
+source "${_BT_D}/server"
+unset _BT_D

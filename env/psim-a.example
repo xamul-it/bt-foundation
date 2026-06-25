@@ -1,0 +1,21 @@
+# Parallel Paper + Simulation
+# Uso: bt-env psim  oppure  EnvironmentFile=.../env/psim
+PSIM_STRAT=intraday.HMA
+PSIM_TICKER="HMA_top9.json"
+#PSIM_STRATARGS="period=8 inverted=False exitbar=6 amount=2000 use_calendar=True sl_pct=0.01"
+PSIM_STRATARGS="period=8 inverted=False amount=2000 exitbar=240 use_calendar=True valid_seconds=60 pct_close=0.0000 tp_pct=0.001 sl_pct=0.012"
+PSIM_TIMEFRAME=minutes
+PSIM_CASH=95418
+PSIM_COMMISSION=none
+PSIM_DEBUG=
+PSIM_AUDIT=1
+PSIM_PAPER_DIR=/home/htpc/backtrader/backtrader/out/intraday/HMA/paper
+PSIM_SIM_DIR=/home/htpc/backtrader/backtrader/out/intraday/HMA/sim
+PSIM_OUT_DIR=/home/htpc/backtrader/backtrader/out/intraday/HMA
+PSIM_TOLERANCE=300
+ALPACA_API_KEY=CHANGE_ME
+ALPACA_SECRET_KEY=CHANGE_ME
+ALPACA_PORTFOLIO_NAME="HMA-plain"
+BROKER_API_KEY=CHANGE_ME
+BROKER_SECRET_KEY=CHANGE_ME
+DISABLE_SSL_VERIFY=true

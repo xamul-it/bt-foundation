@@ -1,0 +1,7 @@
+# Account ZMQ proxy — terzo account Alpaca (solo per proxy, no trading)
+# Porte produzione: REQ=5555, PUB=5556
+# Uso: bt-env zmq  oppure  EnvironmentFile=.../env/zmq
+ALPACA_API_KEY=CHANGE_ME
+ALPACA_SECRET_KEY=CHANGE_ME
+PROXY_ADDR=tcp://localhost:5555
+proxy_pub_addr=tcp://localhost:5556

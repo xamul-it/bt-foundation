@@ -1,0 +1,10 @@
+#!/usr/bin/env bash
+# Profilo composto: PA2 + REPLAY
+# Uso shell: bt-env pa2-replay
+# Uso systemd: EnvironmentFile=.../env/pa2  +  EnvironmentFile=.../env/replay
+_BT_D="$(dirname "${BASH_SOURCE[0]}")"
+# shellcheck source=pa2
+source "${_BT_D}/pa2"
+# shellcheck source=replay
+source "${_BT_D}/replay"
+unset _BT_D

@@ -1,0 +1,9 @@
+LOG_LEVEL=DEBUG
+
+# Dev frontend can run on varying localhost ports.
+ALLOWED_ORIGINS=http://127.0.0.1:*,http://localhost:*
+
+# Optional webhook/runtime values can stay here if needed later.
+# GITHUB_WEBHOOK_SECRET=
+# GITHUB_REPO_PATH=/home/htpc/backtrader
+# GITHUB_RESTART_SERVICE=zmq-proxy
