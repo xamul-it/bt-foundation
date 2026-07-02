@@ -21,7 +21,7 @@ ALPACA_FEED="${ALPACA_FEED:-sip}"
 MAX_EXPOSURE="${MAX_EXPOSURE:-1}"
 MARGIN_LEVERAGE="${MARGIN_LEVERAGE:-1}"
 RUN_ID="${RUN_ID:-}"
-BASE_STRATARGS="max_concurrent=5 min_intraday_vol=0.025 max_intraday_vol=0.045 intraday_vol_filter_side='any' ah_lag1_threshold=-0.1 max_adv_participation=0.0025 max_exposure=$MAX_EXPOSURE min_price=0 min_adv=100000000"
+BASE_STRATARGS="max_concurrent=5 min_intraday_vol=0.025 max_intraday_vol=0.045 intraday_vol_filter_side='any' ah_lag1_threshold=-0.1 max_adv_participation=0.0025 max_exposure=$MAX_EXPOSURE min_price=0 min_adv=100000000 post_up_cooldown_threshold=0.05 post_up_cooldown_days=5 risk_overlay_mode='off' risk_overlay_lookback=10 risk_overlay_threshold=-0.10 risk_overlay_stress_exposure=1.25"
 STRATARGS="${STRATARGS:-$BASE_STRATARGS auction=$AUCTION ${STRATARGS_EXTRA:-}}"
 
 log() { echo "[$(date '+%F %T %Z')] [$PSIM_ENV mode=$TRADING_MODE auction=$AUCTION] $*"; }
