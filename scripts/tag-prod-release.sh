@@ -29,12 +29,12 @@ ROOT=$(git rev-parse --show-toplevel)
     echo "Production releases must be tagged from branch prod" >&2
     exit 78
 }
-[[ -z $(git -C "$ROOT" status --porcelain) ]] || {
+[[ -z $(git -C "$ROOT" status --porcelain --untracked-files=no) ]] || {
     echo "The production worktree is not clean" >&2
     exit 78
 }
 git -C "$ROOT" submodule foreach --quiet --recursive '
-    test -z "$(git status --porcelain)" || { echo "$name is dirty" >&2; exit 1; }
+    test -z "$(git status --porcelain --untracked-files=no)" || { echo "$name is dirty" >&2; exit 1; }
 '
 git -C "$ROOT" fetch origin prod --tags
 [[ $(git -C "$ROOT" rev-parse HEAD) == $(git -C "$ROOT" rev-parse origin/prod) ]] || {
