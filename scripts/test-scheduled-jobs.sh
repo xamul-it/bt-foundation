@@ -29,4 +29,9 @@ update_script=$ROOT/scripts/update-prod-checkout.sh
 grep -q 'BT_PROD_SUBMODULES:-bt-core' "$update_script"
 ! grep -q 'submodule update --init --recursive$' "$update_script"
 
+# Release tools must operate on the checkout containing the script, regardless
+# of the caller's current working directory.
+tag_script=$ROOT/scripts/tag-prod-release.sh
+grep -q 'dirname "${BASH_SOURCE\[0\]}"' "$tag_script"
+
 echo "scheduled job tests passed"
