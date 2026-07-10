@@ -8,12 +8,12 @@ CHECKOUT=$(realpath -e "$CHECKOUT")
     echo "$CHECKOUT is not on branch prod" >&2
     exit 78
 }
-[[ -z $(git -C "$CHECKOUT" status --porcelain) ]] || {
+[[ -z $(git -C "$CHECKOUT" status --porcelain --untracked-files=no) ]] || {
     echo "$CHECKOUT is not clean; refusing to update" >&2
     exit 78
 }
 git -C "$CHECKOUT" submodule foreach --quiet --recursive '
-    test -z "$(git status --porcelain)" || { echo "$name is dirty" >&2; exit 1; }
+    test -z "$(git status --porcelain --untracked-files=no)" || { echo "$name is dirty" >&2; exit 1; }
 '
 
 git -C "$CHECKOUT" fetch origin prod --tags
