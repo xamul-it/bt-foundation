@@ -23,4 +23,10 @@ for phase in entry exit exit-fallback; do
     [[ "$output" == *"run:"* ]]
 done
 
+# The production updater must not initialize every foundation submodule. Some
+# are intentionally absent from the scheduled-trading checkout.
+update_script=$ROOT/scripts/update-prod-checkout.sh
+grep -q 'BT_PROD_SUBMODULES:-bt-core' "$update_script"
+! grep -q 'submodule update --init --recursive$' "$update_script"
+
 echo "scheduled job tests passed"

@@ -18,8 +18,11 @@ git -C "$CHECKOUT" submodule foreach --quiet --recursive '
 
 git -C "$CHECKOUT" fetch origin prod --tags
 git -C "$CHECKOUT" merge --ff-only origin/prod
-git -C "$CHECKOUT" submodule sync --recursive
-git -C "$CHECKOUT" submodule update --init --recursive
+read -r -a PROD_SUBMODULES <<<"${BT_PROD_SUBMODULES:-bt-core}"
+for submodule in "${PROD_SUBMODULES[@]}"; do
+    git -C "$CHECKOUT" submodule sync -- "$submodule"
+    git -C "$CHECKOUT" submodule update --init --recursive -- "$submodule"
+done
 
 echo "deployed_commit=$(git -C "$CHECKOUT" rev-parse HEAD)"
 git -C "$CHECKOUT" describe --tags --exact-match 2>/dev/null || echo "warning: deployed commit has no exact tag" >&2

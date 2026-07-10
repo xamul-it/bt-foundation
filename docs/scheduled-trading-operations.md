@@ -64,9 +64,13 @@ Deploy from outside the production checkout with:
 /home/htpc/backtrader/scripts/update-prod-checkout.sh /home/htpc/backtrader-prod
 ```
 
-The update refuses dirty worktrees and uses only a fast-forward. It then checks
-out the submodule commits pinned by the main repository. No runtime profile or
-credential is stored or edited in `backtrader-prod`.
+The update refuses tracked local changes and uses only a fast-forward. It then
+checks out the production submodules pinned by the main repository. By default
+only `bt-core` is materialized, because the other foundation submodules are not
+part of scheduled trading and some historical gitlinks are no longer available
+from their remotes. Override this explicit allowlist with `BT_PROD_SUBMODULES`
+only after validating the requested commits. No runtime profile or credential
+is stored or edited in `backtrader-prod`.
 
 ## Rollback
 
