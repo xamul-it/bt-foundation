@@ -24,7 +24,7 @@ TAG=$1
     exit 64
 }
 
-ROOT=$(git rev-parse --show-toplevel)
+ROOT=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
 [[ $(git -C "$ROOT" branch --show-current) == prod ]] || {
     echo "Production releases must be tagged from branch prod" >&2
     exit 78
