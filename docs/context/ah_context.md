@@ -1349,3 +1349,125 @@ Rischi principali:
 3. Solo dopo decisione esplicita, portare la variante nella cartella/repo stable.
 4. Tenere `semis_total_6m > 0` come sfidante per futuri stress temporali.
 5. Non aggiungere commissioni/slippage nel confronto base: eventuale stress costi va fatto come studio separato.
+
+## Hedge overnight SQQQ (research, opt-in, non promosso a live)
+
+### Motivazione e ricerca preliminare
+
+Domanda di partenza: esiste un simbolo la cui performance AH è correlata
+negativamente col paniere statico/semis, utilizzabile come copertura nelle
+notti peggiori? Studio in due fasi, script in
+`bt-strategy-test/overnight-ah/research/counter_cyclical_symbol_study.py`:
+
+1. Correlazione mensile (pannello `feature_target_panel.csv` da
+   `edge_prediction_study.py`): nessun candidato robusto — la relazione più
+   negativa (MDLZ) si ribalta di segno tra train e OOS, campione troppo
+   piccolo (max ~120 osservazioni mensili) per trarre conclusioni.
+2. Correlazione giornaliera diretta sui dati OHLC (~2700 osservazioni per
+   ticker): **su tutto il Nasdaq 100 o un universo settoriale diversificato
+   (finanziari, energia, staples, utility, oro/materiali) la correlazione è
+   sempre positiva** — l'overnight risk è dominato da un fattore macro
+   comune, non diversificabile per stock-picking. Le uniche correlazioni
+   negative vere vengono da strumenti cross-asset: **SQQQ (Nasdaq -3x, la
+   più forte, -0.52)**, VXX (vol, -0.40), bond governativi (IEF/TLT, ma
+   regime-dipendente: forte pre-2020, quasi nullo 2021-2023, debole
+   2024-2025 — il noto breakdown della correlazione 60/40 post rialzo
+   tassi), dollaro (UUP, debole). L'oro (GLD/NEM) **non** è una copertura
+   affidabile, contrariamente all'intuizione comune.
+
+SQQQ tenuto sempre (buy&hold) decade pesantemente per il reset giornaliero
+della leva -3x in un mercato strutturalmente rialzista — non utilizzabile
+senza un filtro di timing (`bt-strategy-test/overnight-ah/research/
+sqqq_hedge_timing_study.py`).
+
+### Configurazione validata
+
+Overlay opt-in in `bt-core/strategies/overnight_ah.py` (`hedge_enabled=False`
+di default; **non** presente in `overnight_ah_live.py`):
+
+```txt
+hedge_enabled=True
+hedge_symbol='SQQQ'
+hedge_trend_symbol='QQQ'
+hedge_fast_period=65
+hedge_slow_period=150
+hedge_weight=0.15
+```
+
+Meccanica: EMA veloce < EMA lenta su QQQ (dati noti alla chiusura corrente,
+nessun lookahead) → apre un long overnight su SQQQ con lo stesso meccanismo
+MOC/MOO del resto della strategia, notional = 15% di `equity*max_exposure`.
+Il 15% viene **ritagliato dal budget di leva esistente solo le notti in cui
+l'hedge apre davvero** (non è una riserva permanente finché
+`hedge_enabled=True`): su un orizzonte lungo con l'hedge inattivo per la
+maggior parte del tempo, una riserva permanente costa moltissimo rendimento
+composto per un beneficio concentrato in poche finestre.
+
+Periodi e tipo di media scelti con
+`bt-strategy-test/overnight-ah/research/sqqq_hedge_ma_tuning_study.py`
+(sweep SMA/EMA più ampio di un set iniziale di 4 coppie SMA): EMA(65,150)
+domina SMA(50,200) su tutti e tre i segmenti train/validation/OOS. Testate
+anche una rampa continua sul peso (invece del crossover binario 0/0.15) e
+una variante con componente di momentum
+(`sqqq_hedge_modularity_study.py`): la rampa è statisticamente indistinguibile
+dal binario (differenze nel rumore), il momentum è **dominato** su ogni
+combinazione di parametri testata (nei bear market a scossoni come il 2022
+interpreta i rimbalzi come inizio ripresa e taglia la protezione troppo
+presto). Testato anche un indice sintetico AH-cumulato di QQQ come base del
+trend al posto del close pieno (coerenza con il resto della strategia che
+lavora sulla sola componente overnight): **peggiora** i risultati — il
+segnale isolato sulla sola componente overnight è troppo rumoroso.
+
+### Risultati (Backtrader reale, non solo proxy pandas)
+
+Backtest 2018-2026, paniere statico-10 + QQQ/SQQQ (provider yahoo,
+`--ticker config-common/tickers/stable_ah_top10_hedge_smoke.json`):
+
+| Variante | Rendimento totale | Sharpe | Drawdown 2022 |
+|---|---:|---:|---:|
+| Senza hedge | 976x | 1.430 | -23.9% |
+| Hedge EMA(65,150), ritaglio condizionale | **1129x** | **1.509** | **-3.1%** |
+
+Batte lo statico **sia** in rendimento totale **sia** in Sharpe, con
+drawdown 2022 quasi azzerato.
+
+**Non ancora validato** sull'universo dinamico reale
+`monthly_universe_mode='weak_theme_switch'` (quello di paper/live) — solo
+sul paniere statico-10 di test. Prima di qualunque promozione a
+`overnight_ah_live.py` serve ripetere la validazione su quell'universo.
+
+### Bug scoperto durante l'implementazione (fix applicato, non workaround)
+
+Implementando l'hedge è emerso un bug reale e preesistente in
+`bt-core/broker/broker.py` (non nella strategia): un entry order rifiutato
+per margine insufficiente (da uno dei due percorsi nativi di rifiuto di
+Backtrader) non cancellava l'ordine di chiusura abbinato, sottomesso come
+ordine indipendente nello stesso bar per simulare close-to-next-open in
+backtest — quell'ordine di chiusura eseguiva comunque contro una posizione
+mai aperta, aprendo uno short fantasma che accreditava cassa dal nulla e
+corrompeva la leva per il resto del backtest. Fix: override di
+`Broker._bracketize()` che cancella l'ordine gemello tramite un riferimento
+incrociato (`sibling_ref`) impostato dalla strategia — dettagli completi nel
+codice (`broker/broker.py`, commenti inline) e in memoria
+(`lessons_bt_broker_margin_reject`).
+
+**Verificato non regressivo**: risultato identico bit-per-bit pre/post fix
+sia sul backtest statico-10 (2018-2026) sia sulla configurazione
+`weak_theme_switch` reale (OOS 2023-2026, comando in "Comando OOS di
+riferimento" sopra) — nessuna delle due configurazioni aveva mai incontrato
+la condizione (oversubscription della leva in un singolo bar) che innesca
+il bug. Il bug richiede una fonte di domanda di cassa aggiuntiva oltre al
+normale sizing dei candidati (l'hedge additivo, nella sua prima versione
+senza ritaglio, è stato il primo caso a innescarlo).
+
+### Aperti
+
+- Ri-validare l'hedge su `weak_theme_switch` con l'universo Nasdaq reale.
+- Verificare l'interazione tra hedge e `post_up_cooldown`/`risk_overlay` in
+  configurazioni diverse da quelle già testate (un test diretto con
+  `post_up_cooldown_threshold=0.05 post_up_cooldown_days=5` non ha mostrato
+  differenze di comportamento con/senza hedge, ma la segnalazione di un
+  comportamento anomalo non è stata riprodotta con i parametri esatti usati
+  dall'utente — da approfondire con la configurazione precisa se il dubbio
+  persiste).
+- Decisione di promozione a `overnight_ah_live.py` non ancora presa.

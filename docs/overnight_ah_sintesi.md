@@ -336,3 +336,46 @@ Questa regola non batte la lista statica, ma e molto piu realistica e puo essere
    - salvataggio JSON;
    - uso automatico nello script live/paper del mese successivo.
 
+## Aggiornamento: hedge overnight SQQQ + fix broker margine (research)
+
+Studio successivo, non ancora in produzione. Dettagli completi in
+`docs/context/ah_context.md` (sezione "Hedge overnight SQQQ"). Sintesi:
+
+**Domanda**: esiste un asset la cui performance AH e correlata negativamente
+al paniere statico/semis, utilizzabile come copertura nelle notti peggiori?
+
+**Risposta**: no per singole azioni (ne Nasdaq 100, ne un universo settoriale
+diversificato: finanziari, energia, staples, utility, oro/materiali) — la
+correlazione overnight e sempre positiva, dominata da un fattore macro
+comune. Solo strumenti cross-asset funzionano: SQQQ (Nasdaq -3x, il piu
+forte, -0.52), VXX, bond governativi (regime-dipendente).
+
+**Configurazione validata** (opt-in, `hedge_enabled=False` di default in
+`overnight_ah.py`, non presente in `overnight_ah_live.py`): overlay SQQQ
+attivo quando EMA(65) < EMA(150) su QQQ close, peso 15% ritagliato dal
+budget di leva esistente solo le notti in cui l'hedge apre davvero (non una
+riserva permanente — su un orizzonte lungo una riserva sempre attiva costa
+troppo rendimento composto). Testate e scartate: rampa continua (nel rumore
+vs binario), variante momentum (dominata, taglia la protezione troppo
+presto nei bear market a scossoni), indice AH-only come base del trend
+(peggiora, troppo rumoroso).
+
+Risultato Backtrader (statico-10, 2018-2026): 1128x / Sharpe 1.509 / DD 2022
+-3.1%, contro 976x / Sharpe 1.430 / DD 2022 -23.9% senza hedge.
+
+**Non ancora validato sull'universo dinamico reale `weak_theme_switch`**
+(quello di paper/live) — solo sul paniere statico-10 di test. Passo
+obbligato prima di qualunque promozione a `overnight_ah_live.py`.
+
+**Bug scoperto durante l'implementazione** (fix in `bt-core/broker/
+broker.py`, non nella strategia): un entry order rifiutato per margine
+insufficiente non cancellava l'ordine di chiusura abbinato (sottomesso
+come ordine indipendente nello stesso bar per il pattern MOC/MOO di
+backtest) — quell'ordine eseguiva comunque da flat, aprendo uno short
+fantasma che corrompeva cassa/leva per il resto del backtest. Fix:
+override di `Broker._bracketize()` che cancella l'ordine gemello tramite
+un riferimento incrociato (`sibling_ref`). Verificato non regressivo su
+statico-10 e sulla configurazione OOS `weak_theme_switch` di riferimento
+(risultato identico bit-per-bit pre/post fix in entrambi i casi — nessuna
+delle due aveva mai incontrato la condizione che innesca il bug).
+
