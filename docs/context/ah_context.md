@@ -1472,7 +1472,19 @@ senza ritaglio, è stato il primo caso a innescarlo).
   persiste).
 - Decisione di promozione a `overnight_ah_live.py` non ancora presa.
 
+## Prossimo studio (priorita' attuale): mesi negativi
+
+**Priorita' aggiornata dall'utente**: prima di procedere con la validazione
+hedge qui sotto, il prossimo studio da fare e' un'analisi dei mesi negativi
+della strategia (asset che sporcano il risultato, segnali premonitori,
+pattern riconoscibili, azioni operative da valutare). Specifiche complete e
+autosufficienti in `docs/context/ah_bad_months_study_spec.md`.
+
 ## Prossima analisi: validazione hedge su `weak_theme_switch` (specifiche)
+
+Nota: vedi sopra — questa validazione resta valida ma non e' piu' il
+prossimo passo immediato, e' stata posticipata a favore dello studio sui
+mesi negativi.
 
 Obiettivo: confermare (o smentire) il beneficio dell'hedge EMA(65,150)/peso
 0.15 misurato su statico-10 (+1128x vs +976x, Sharpe 1.509 vs 1.430, DD 2022
