@@ -379,3 +379,8 @@ statico-10 e sulla configurazione OOS `weak_theme_switch` di riferimento
 (risultato identico bit-per-bit pre/post fix in entrambi i casi — nessuna
 delle due aveva mai incontrato la condizione che innesca il bug).
 
+**Prossima analisi**: specifiche complete (comandi esatti, trappola del
+ticker file di controllo, limite della finestra 2023-2026 che non copre il
+2022, criteri di decisione) in `docs/context/ah_context.md`, sezione
+"Prossima analisi: validazione hedge su `weak_theme_switch`".
+

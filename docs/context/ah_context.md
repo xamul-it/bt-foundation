@@ -1471,3 +1471,115 @@ senza ritaglio, è stato il primo caso a innescarlo).
   dall'utente — da approfondire con la configurazione precisa se il dubbio
   persiste).
 - Decisione di promozione a `overnight_ah_live.py` non ancora presa.
+
+## Prossima analisi: validazione hedge su `weak_theme_switch` (specifiche)
+
+Obiettivo: confermare (o smentire) il beneficio dell'hedge EMA(65,150)/peso
+0.15 misurato su statico-10 (+1128x vs +976x, Sharpe 1.509 vs 1.430, DD 2022
+-3.1% vs -23.9%) sull'universo dinamico reale, non solo sul paniere di test.
+Finché questo non è fatto, l'hedge resta research-only.
+
+### Trappola da evitare: contaminazione del paniere di controllo
+
+`config-common/tickers/yahoo_adj_research_universe_hedge.json` aggiunge QQQ e
+SQQQ al file usato per il confronto. Con `hedge_enabled=True` questi due
+simboli vengono esclusi da `_trade_stocks` (stesso trattamento di SPY, vedi
+`overnight_ah.py:__init__`), quindi non entrano mai nel pool di ranking
+mensile (`_ordered_regime_switch_trade_stocks` lavora solo su
+`_trade_stocks`). Ma con `hedge_enabled=False` **non vengono esclusi**: se si
+riusa lo stesso ticker file per il run di controllo senza hedge, QQQ e SQQQ
+diventano candidati AH tradabili a tutti gli effetti, sporcando il confronto.
+**Il run di controllo (baseline, no hedge) deve usare
+`yahoo_adj_research_universe.json` (senza QQQ/SQQQ), non la variante hedge.**
+
+### Comandi
+
+Baseline (no hedge, per confronto — identico al "Comando OOS di riferimento"
+sopra, solo rinominato):
+
+```bash
+bt-core/.venv/bin/python bt-core/btmain.py \
+  --strat overnight_ah.OvernightAH \
+  --ticker yahoo_adj_research_universe.json \
+  --mode backtest --timeframe daily --provider yahoo_adj \
+  --fromdate 2023-01-01 --todate 2026-06-23 \
+  --commission none --margin-leverage 2 \
+  --id hedge_validation_baseline_no_hedge \
+  --stratargs "max_concurrent=5 size_by_max_concurrent=True max_exposure=2 min_intraday_vol=0.025 max_intraday_vol=0.045 intraday_vol_filter_side='any' ah_lag1_threshold=-0.1 min_adv=100000000 auction=True monthly_universe_mode='weak_theme_switch' monthly_universe_top_n=50 monthly_universe_base_weight=0.85 monthly_universe_theme_weight=0.15 monthly_universe_theme_score='corr12' monthly_universe_switch_feature='semis_total_3m' monthly_universe_switch_threshold=0.0 monthly_universe_spy_dd3m_threshold=-0.10 trade_start_date='2024-01-01'"
+```
+
+Variante con hedge (stessi parametri, universo hedge, overlay attivo):
+
+```bash
+bt-core/.venv/bin/python bt-core/btmain.py \
+  --strat overnight_ah.OvernightAH \
+  --ticker yahoo_adj_research_universe_hedge.json \
+  --mode backtest --timeframe daily --provider yahoo_adj \
+  --fromdate 2023-01-01 --todate 2026-06-23 \
+  --commission none --margin-leverage 2 \
+  --id hedge_validation_ema65_150_w015 \
+  --stratargs "max_concurrent=5 size_by_max_concurrent=True max_exposure=2 min_intraday_vol=0.025 max_intraday_vol=0.045 intraday_vol_filter_side='any' ah_lag1_threshold=-0.1 min_adv=100000000 auction=True monthly_universe_mode='weak_theme_switch' monthly_universe_top_n=50 monthly_universe_base_weight=0.85 monthly_universe_theme_weight=0.15 monthly_universe_theme_score='corr12' monthly_universe_switch_feature='semis_total_3m' monthly_universe_switch_threshold=0.0 monthly_universe_spy_dd3m_threshold=-0.10 trade_start_date='2024-01-01' hedge_enabled=True hedge_symbol='SQQQ' hedge_trend_symbol='QQQ' hedge_fast_period=65 hedge_slow_period=150 hedge_weight=0.15"
+```
+
+### Limite noto della finestra 2023-2026: non copre il 2022
+
+Il beneficio misurato finora (DD 2022 -3.1% vs -23.9%) viene interamente
+dal bear market 2022. La finestra `weak_theme_switch` sopra (warmup 2023,
+trade dal 2024) **non copre il 2022** — nessun run `weak_theme_switch` è mai
+stato eseguito su una finestra che lo includa (verificato: nessun
+riferimento a `fromdate` 2021/2022 in questo documento per quella modalità).
+Su questa finestra il test puo' solo confermare che l'hedge **non
+danneggia** il rendimento in un periodo senza drawdown severo (drag/costo
+d'opportunità delle notti in cui apre senza che serva) — non puo' confermare
+il beneficio vero e proprio.
+
+Prima di eseguire i comandi sopra, verificare se e' possibile estendere
+`fromdate`/warmup di `weak_theme_switch` indietro fino al 2021-2022 (dati
+disponibili? feature di regime `semis_total_3m` calcolabile cosi' indietro?
+selezione dinamica stabile con meno storia?). Se si', **preferire quella
+finestra estesa** come test primario (copre il vero stress case) e usare
+2023-2026 come secondo controllo. Se il warmup dinamico non regge prima del
+2023, documentarlo esplicitamente come limite strutturale della validazione,
+non ignorarlo.
+
+### Criteri di decisione
+
+Confrontare baseline vs hedge su:
+
+- rendimento totale e Sharpe sull'intera finestra testata;
+- se la finestra include il 2022 (o un altro drawdown severo): riduzione del
+  max drawdown nel periodo di stress, stessa metrica usata sul test
+  statico-10;
+- numero di notti in cui l'hedge apre (`HEDGE_ENTRY_SIGNAL` nei log) e
+  relativo drag quando il mercato non scende (deve essere piccolo e non
+  sistematico);
+- nessuna esecuzione fantasma / leva anomala nei log (conferma indiretta che
+  il fix broker regge anche su questo universo piu' largo, con piu'
+  candidati contemporanei e quindi piu' occasioni di oversubscription);
+- robustezza per segmento (train/validation/OOS o quanto disponibile con
+  questa finestra piu' corta), non solo la media.
+
+Se l'hedge migliora Sharpe/DD senza deteriorare sistematicamente il
+rendimento nei periodi senza stress → procedere con la richiesta esplicita
+di promozione a `overnight_ah_live.py` (decisione separata, non automatica).
+Se il beneficio non si conferma sull'universo reale (es. troppi pochi
+candidati contemporanei per rendere significativo un carve-out del 15%, o il
+timing della selezione mensile interagisce male con l'apertura dell'hedge)
+→ documentare perché e considerare l'hedge chiuso come risultato negativo,
+analogamente a quanto già fatto per momentum/AH-index/singole azioni.
+
+### Item secondario: cooldown "nessun effetto" (in attesa dell'utente)
+
+Segnalazione dell'utente: con la nuova configurazione (hedge EMA) sembra che
+`post_up_cooldown_threshold=0.05 post_up_cooldown_days=5` non abbia più
+effetto. Test di controllo eseguiti in questa sessione (hedge on/off, stessi
+parametri di cooldown) hanno mostrato 84 eventi di trigger identici in
+entrambi i casi e un effetto misurabile su trade/Sharpe/TimeReturn — quindi
+non riprodotto con i parametri usati qui. Prima di investigare oltre, serve
+dall'utente il comando/config esatto con cui ha osservato l'anomalia
+(ticker file, date, altri stratargs oltre a hedge e cooldown).
+
+### Non-goal
+
+Nessuna modifica a `overnight_ah_live.py` finché questa validazione non è
+completata e la promozione non è stata richiesta esplicitamente.
