@@ -351,7 +351,7 @@ comune. Solo strumenti cross-asset funzionano: SQQQ (Nasdaq -3x, il piu
 forte, -0.52), VXX, bond governativi (regime-dipendente).
 
 **Configurazione validata** (opt-in, `hedge_enabled=False` di default in
-`overnight_ah.py`, non presente in `overnight_ah_live.py`): overlay SQQQ
+`overnight_ah.py`, non abilitato nella configurazione prod): overlay SQQQ
 attivo quando EMA(65) < EMA(150) su QQQ close, peso 15% ritagliato dal
 budget di leva esistente solo le notti in cui l'hedge apre davvero (non una
 riserva permanente — su un orizzonte lungo una riserva sempre attiva costa
@@ -365,7 +365,10 @@ Risultato Backtrader (statico-10, 2018-2026): 1128x / Sharpe 1.509 / DD 2022
 
 **Non ancora validato sull'universo dinamico reale `weak_theme_switch`**
 (quello di paper/live) — solo sul paniere statico-10 di test. Passo
-obbligato prima di qualunque promozione a `overnight_ah_live.py`.
+obbligato prima di qualunque promozione al checkout prod
+(`/home/htpc/backtrader-prod`, branch `prod` — vedi `ah_context.md` per
+come funziona davvero la promozione, via git, non un file duplicato in
+questo repo).
 
 **Bug scoperto durante l'implementazione** (fix in `bt-core/broker/
 broker.py`, non nella strategia): un entry order rifiutato per margine
@@ -379,12 +382,69 @@ statico-10 e sulla configurazione OOS `weak_theme_switch` di riferimento
 (risultato identico bit-per-bit pre/post fix in entrambi i casi — nessuna
 delle due aveva mai incontrato la condizione che innesca il bug).
 
+## Aggiornamento: studio mesi negativi (completato)
+
+Studio richiesto dall'utente con priorita' sulla validazione hedge, ora
+completato. Dettagli completi in `docs/context/ah_context.md`, sezione
+"Studio mesi negativi (completato)"; script e output in
+`bt-strategy-test/overnight-ah/research/bad_months_*.py` e
+`.../out/bad_months_study/`. Sintesi:
+
+- **Mesi negativi**: 31/126 su static-10, 30/126 su weak_theme_switch (soglia
+  0%, coincide col bottom quartile storico).
+- **Worst-contributor ricorrenti**: AMD su static-10 (30% dei mesi negativi,
+  binomiale p=0.017), NVDA/AMD su weak_theme_switch — ma **non** per rumore
+  RTH: l'ipotesi "AH-dominance" e' stata testata e **confutata** (i worst
+  contributor hanno AH-dominance piu' alta della media, non piu' bassa).
+- **Segnali premonitori robusti** trovati solo per weak_theme_switch:
+  `semis_total_6m/12m`, `semis_mean_12m`, `semis_ma126_ratio` — regime semis
+  debole su 6-12 mesi (non 3m come il gate attuale) precede i mesi negativi;
+  spunto di tuning non ancora testato in Backtrader.
+- **Pattern**: la maggioranza dei mesi negativi (81-90%) e' regime-wide
+  (drawdown macro SPY/QQQ o breadth di mercato elevata), non idiosincratica;
+  stagionalita' debole a febbraio-aprile (non settembre-ottobre); mesi
+  negativi per lo piu' isolati ma con sequenze fino a 4-5 mesi consecutivi.
+- **Meccanismo CUSUM `ah_gain_cusum`** (implementato in Backtrader come
+  token opt-in di `risk_overlay_mode`, combinabile con `strategy_throttle`)
+  — **chiuso come risultato negativo dopo validazione approfondita**. Due
+  versioni tentate: v1 (baseline congelata una sola volta all'inizio) sembrava
+  ottima sui 3 segmenti isolati (h=23), ma su un run continuo 2000-2026
+  si e' rivelata catastrofica (-90% di capitale, drawdown peggiore non
+  migliore) perche' la baseline si congelava durante il crollo dot-com e
+  restava quella per 25 anni. v2 (baseline mobile, ricalcolata ogni giorno,
+  redesign richiesto dall'utente per evitare l'isteria di un
+  ricongelamento periodico su un singolo periodo estremo) migliora ma non
+  risolve: su un deployment realistico con warmup corretto (2013-2026, trade
+  dal 2016 — niente piu' punto cieco iniziale) taglia il capitale finale del
+  65% e **peggiora** il drawdown peggiore (-36.5% contro -28.6% senza
+  overlay), nonostante fermate ragionevolmente temporizzate durante
+  l'episodio di stress reale. Il costo cumulato di ~48 cicli fermata/
+  ripartenza su 10 anni (perlopiu' in periodi normali/buoni) supera il
+  beneficio nei pochi episodi di vera crisi. Resta nel codice come opzione
+  opt-in (default `'off'`), non promosso — dettagli completi e cronologia
+  in `ah_context.md`.
+- **Studio concentrazione/paniere — sospeso su richiesta utente, da
+  riprendere** (stessa finestra realistica 2016-2026, dettagli e tabelle
+  complete in `ah_context.md`): restringere `monthly_universe_top_n` non
+  riduce il drawdown peggiore per niente (identico, -28.95%, per qualunque
+  top_n da 5 a 60) — riduce solo il rendimento. `max_concurrent=5` (default
+  attuale) e' gia' un ottimo locale di Sharpe/drawdown. Analisi sistematica
+  di tutti gli episodi di drawdown >=10% (2016-2026, 9 episodi seri): **solo
+  1 e' in regime statico puro** (gen-apr 2025, -28.95%) — gli altri 8,
+  inclusi i piu' gravi (2019 -27.8%, COVID -23.0%, 2026 -24.0%), sono in
+  **regime dinamico**. In ogni singolo episodio i peggiori contributori sono
+  nomi semis/tech/AI, indipendentemente dal regime. **Diagnosi corretta**:
+  non e' il paniere statico ad essere mal calibrato, e' l'intera strategia
+  — in entrambe le modalita' — strutturalmente concentrata sul tema AI/semis.
+  Test "fallback vuoto" (nessun trade nei mesi statici) conferma: evita
+  l'episodio 2025 ma il worst-case complessivo non migliora (emerge
+  l'episodio 2019, dinamico, di pari entita'), costando il 68% del capitale
+  finale. Nessuna modifica implementata — sospeso prima di una proposta
+  operativa.
+
 **Prossima analisi (hedge)**: specifiche complete (comandi esatti, trappola
 del ticker file di controllo, limite della finestra 2023-2026 che non copre
 il 2022, criteri di decisione) in `docs/context/ah_context.md`, sezione
-"Prossima analisi: validazione hedge su `weak_theme_switch`". **Non e'
-pero' il prossimo passo immediato**: l'utente ha chiesto di dare priorita'
-prima a uno studio sui mesi negativi della strategia (asset che sporcano il
-risultato, segnali premonitori, pattern riconoscibili) — specifiche
-complete in `docs/context/ah_bad_months_study_spec.md`.
+"Prossima analisi: validazione hedge su `weak_theme_switch`" — questo resta
+il prossimo passo, ora che lo studio mesi negativi e' concluso.
 

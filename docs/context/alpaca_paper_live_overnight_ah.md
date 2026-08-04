@@ -190,6 +190,14 @@ versione `overnight_ah.OvernightAH` puo' essere usata per ricerca/modifiche, ma
 non va agganciata direttamente al portafoglio live senza promozione esplicita
 della copia stabile.
 
+**Correzione successiva**: `overnight_ah_live.py` in questo repo e' stato
+rimosso (era un file duplicato non referenziato da nessun cron attivo,
+verificato: tutti i profili schedulati `live`/`mirror`/`development`
+impostano esplicitamente `STRAT=overnight_ah.OvernightAH`). La promozione
+reale avviene via git sul checkout separato `/home/htpc/backtrader-prod`
+(branch `prod`), non via file duplicato in questo repo — vedi
+`docs/context/ah_context.md` per il dettaglio.
+
 ### 2026-06-24 - Slot `auc` paper su strategia dinamica dev
 
 Contesto: lo slot `auc` paper e' stato usato per testare in paper la versione

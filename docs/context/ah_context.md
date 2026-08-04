@@ -36,7 +36,17 @@ Nota operativa:
 - `size_by_max_concurrent=True` rende il sizing piu' stabile per slot, invece di dividere solo sui candidati del giorno.
 - il filtro di volatilita' intraday operativo resta applicato sempre (`intraday_vol_filter_side='any'`), come nel comportamento originale.
 - test research Yahoo adjusted 2016-01-04/2026-06-23: `intraday_vol_filter_side='down'` e `min_intraday_vol=0` hanno migliorato PnL/SQN, ma non sono promossi al live senza decisione esplicita.
-- live/paper operativo deve puntare a `overnight_ah_live.OvernightAH`, copia stabile; `overnight_ah.OvernightAH` resta usabile per ricerca e modifiche.
+- la promozione a produzione avviene via git, non via file duplicato:
+  `overnight_ah.OvernightAH` e' l'unico modulo strategia in questo repo
+  (usato sia per ricerca sia dal profilo schedulato `development`); il
+  checkout `/home/htpc/backtrader-prod` (repo separato `bt-foundation`,
+  branch `prod`) e' la copia stabile effettivamente usata dai profili
+  schedulati `live`/`mirror` — promuovere significa aggiornare quel
+  checkout/branch, non un file `_live.py` in questo repo. Rimosso
+  `bt-core/strategies/overnight_ah_live.py` (file duplicato in questo repo,
+  non referenziato da nessun cron attivo — verificato: tutti i profili
+  schedulati (`live`, `mirror`, `development`) impostano esplicitamente
+  `STRAT=overnight_ah.OvernightAH` nei rispettivi `STRATEGY_CONFIG`).
 
 ## Problema Di Fondo
 
@@ -1383,7 +1393,8 @@ sqqq_hedge_timing_study.py`).
 ### Configurazione validata
 
 Overlay opt-in in `bt-core/strategies/overnight_ah.py` (`hedge_enabled=False`
-di default; **non** presente in `overnight_ah_live.py`):
+di default; non abilitato nella configurazione prod, vedi nota promozione
+sopra):
 
 ```txt
 hedge_enabled=True
@@ -1433,8 +1444,8 @@ drawdown 2022 quasi azzerato.
 
 **Non ancora validato** sull'universo dinamico reale
 `monthly_universe_mode='weak_theme_switch'` (quello di paper/live) — solo
-sul paniere statico-10 di test. Prima di qualunque promozione a
-`overnight_ah_live.py` serve ripetere la validazione su quell'universo.
+sul paniere statico-10 di test. Prima di qualunque promozione al checkout
+prod serve ripetere la validazione su quell'universo.
 
 ### Bug scoperto durante l'implementazione (fix applicato, non workaround)
 
@@ -1470,15 +1481,544 @@ senza ritaglio, è stato il primo caso a innescarlo).
   comportamento anomalo non è stata riprodotta con i parametri esatti usati
   dall'utente — da approfondire con la configurazione precisa se il dubbio
   persiste).
-- Decisione di promozione a `overnight_ah_live.py` non ancora presa.
+- Decisione di promozione al checkout prod non ancora presa.
 
-## Prossimo studio (priorita' attuale): mesi negativi
+## Studio mesi negativi (completato)
 
-**Priorita' aggiornata dall'utente**: prima di procedere con la validazione
-hedge qui sotto, il prossimo studio da fare e' un'analisi dei mesi negativi
-della strategia (asset che sporcano il risultato, segnali premonitori,
-pattern riconoscibili, azioni operative da valutare). Specifiche complete e
-autosufficienti in `docs/context/ah_bad_months_study_spec.md`.
+Analisi dei mesi negativi della strategia (asset che sporcano il risultato,
+segnali premonitori, pattern riconoscibili, meccanismo operativo di
+stop/riparti), come richiesto dall'utente prima della validazione hedge.
+Specifiche complete in `docs/context/ah_bad_months_study_spec.md`. Script in
+`bt-strategy-test/overnight-ah/research/bad_months_*.py`, output e
+`summary.md` per fase in
+`bt-strategy-test/overnight-ah/research/out/bad_months_study/`. Nessun nuovo
+backtest: tutto costruito da `returns.csv`/`trades.json` gia' generati e da
+`daily_panel.csv` (studio edge prediction).
+
+### Nota dati importante (verificata prima di procedere)
+
+`bt-core/out/overnight_ah/OvernightAH/native_switch_3mpos_oos_warmup2023_trade2024/`
+e' stato sovrascritto da un run successivo (mtime 2026-07-02) con uno storico
+full 2000-2026 non isolato, diverso da quanto suggerisce il nome (il run
+originale isolato OOS 2024-2026 non esiste piu' in quella directory). Per
+questo studio si e' usato uno slice per data (>= 2024-01-01) del file
+contaminato come proxy dell'OOS `weak_theme_switch` — ragionevole (il sizing
+si basa su equity corrente, non e' path-dependent in modo da invalidare i
+rendimenti daily), ma se serve un run OOS isolato "pulito" per altri scopi va
+rigenerato. Inoltre ogni file `native_switch_3mpos_*` include un warmup che
+si sovrappone al periodo di trading reale del segmento precedente (es.
+warmup 2020 di validation sovrapposto al trading reale 2020 di train): va
+sempre trimmato al proprio floor di trading reale prima di qualunque analisi
+daily (vedi `SWITCH_TRADE_FLOOR` in `bad_months_identify.py`).
+
+### Fase 1 — Identificazione mesi negativi
+
+Soglia scelta: **rendimento mensile compoundato < 0%** — coincide quasi
+esattamente col bottom quartile storico (p25 static-10 = 0.0%, p25
+weak_theme_switch = 0.85%), motivazione preferita alla definizione letterale
+rispetto a soglie arbitrarie (-2%/-5% restano disponibili nei CSV per
+stress-test successivi). Risultato: **31/126 mesi negativi su static-10**,
+**30/126 su weak_theme_switch** (2016-01/2026-06/07, train+validation+oos
+concatenati senza buchi/sovrapposizioni). Il mese peggiore in assoluto e'
+maggio 2019 (-14.8% static-10) — coerente con quanto gia' documentato in
+`docs/overnight_ah_sintesi.md` come "shock quasi universale".
+
+### Fase 2 — Composizione del paniere nei mesi negativi
+
+Da `trades.json` (mai `positions.csv`, verificato inaffidabile per i run
+`native_switch_3mpos_*`: solo 3 colonne `Datetime,SPY,cash` contro 99 simboli
+distinti in `trades.json`). Worst-contributor ricorrenti: **AMD** su
+static-10 (9/30 mesi negativi, tasso osservato 30% contro un tasso base
+uniforme atteso 13.8%, binomiale p=0.017 — sopra il rumore atteso da un
+campione cosi' piccolo); **NVDA e AMD** su weak_theme_switch (4/25 e 4/26,
+p=0.036/0.041). Concentrazione P&L negativo moderata, non dominata da 1-2
+nomi sempre: quota media del worst-contributor sul P&L negativo del mese
+46% (static-10) e 32% (weak_theme_switch, paniere piu' ampio quindi piu'
+diluito).
+
+### Fase 2b — Ipotesi AH-dominance vs rumore RTH (ipotesi utente, confutata)
+
+Ipotesi: i worst-contributor nei mesi negativi sono titoli mossi
+prevalentemente da RTH (non AH), cioe' rumore che "sporca" l'AH. Score
+`ah_dominance` rolling 24m ex-ante costruito da `daily_panel.csv` (stessa
+formula di `ah_pct` in BoCSoO, ma su finestra rolling invece che 5 finestre
+statiche — BoCSoO non e' riusabile direttamente per un filtro ex-ante,
+verificato: le sue classificazioni sono look-ahead su tutta la storia).
+**Risultato opposto all'ipotesi**: il worst-contributor ha `ah_dominance`
+**piu' alta** della media del paniere quel mese in 71% dei casi su
+static-10 e 64% su weak_theme_switch (sign-test contro l'ipotesi p=0.99 e
+p=0.96). AMD e NVDA non sono rumore RTH: sono proprio i nomi piu'
+AH-dominant del paniere, selezionati perche' hanno il maggior edge AH
+storico — quando un nome ad alta convinzione va male, va male sulla sua
+stessa componente AH. **Non promosso**: filtrare per AH-dominance alta non
+avrebbe escluso i worst-contributor storici, li avrebbe confermati.
+
+### Fase 3 — Segnali premonitori
+
+Costruiti (tutti ex-ante, soglie scelte solo su train/validation, OOS
+guardato solo a conferma): `semis_total/mean_{1,3,6,12}m`,
+`semis_ma63/126_ratio` (riuso diretto di `semis_monthly_features()` da
+`build_regime_switch_universes.py`), `spy_dd3m` (replica pandas del gate
+gia' in produzione), dispersione/correlazione cross-sectional e volatilita'
+intraday aggregata del paniere tradato, breadth di mercato (`pct_down_1pct`,
+nuovo — non esisteva nel repo). Frequenza rifiuti margine: **0 eventi
+Margin/Rejected su tutti e 6 i segmenti** (grep diretto su
+`orderhistory.json`), coerente col fix broker gia' applicato.
+
+**4 segnali robusti trovati per weak_theme_switch** (stesso segno e p<0.20
+sia su train sia su validation): `semis_total_6m`, `semis_total_12m`,
+`semis_mean_12m`, `semis_ma126_ratio` — tutti indicano che un regime semis
+debole su orizzonte **lungo (6-12 mesi)**, non 3 mesi come l'attuale
+`monthly_universe_switch_feature='semis_total_3m'`, precede i mesi negativi.
+Spunto per un tuning futuro del feature/soglia di switch, non ancora
+testato in Backtrader. **Nessun segnale robusto per static-10** (atteso: non
+ha selezione universo regime-dipendente).
+
+### Fase 4 — Pattern riconoscibili
+
+- **Stagionalita'**: febbraio-aprile e' il periodo debole per entrambe le
+  policy (tasso mesi negativi 36-45% contro base rate ~24%), **non**
+  settembre-ottobre come l'intuizione da equity generica suggerirebbe —
+  verificato specificamente, non assunto (vincolo esplicito della spec).
+  Gennaio e' invece il mese piu' sicuro (9%/0%).
+- **Clustering**: la maggioranza dei mesi negativi e' isolata (75-78%), ma
+  esistono sequenze fino a 4-5 mesi consecutivi (22-25% dei casi).
+- **Sovrapposizione macro**: costruiti episodi di drawdown SPY/QQQ
+  price-based (11 episodi SPY, 17 QQQ, soglia entrata -10%/uscita -2% —
+  nessun CSV cosi' esisteva nel repo). **La maggior parte dei mesi negativi
+  e' regime-wide**, non idiosincratico: solo **6/31 (19%) su static-10** e
+  **3/30 (10%) su weak_theme_switch** non coincidono ne' con un episodio di
+  drawdown macro ne' con breadth di mercato elevata. Conferma che il
+  problema principale non e' selezione errata del paniere, ma esposizione a
+  regime macro sfavorevole — coerente con la direzione gia' presa
+  dall'hedge SQQQ e dal `risk_overlay`.
+
+### Fase 5 — SPC operativo: stop/riparti via CUSUM
+
+Meccanismo daily (non mensile) disegnato con l'utente su modello controllo
+statistico di processo (analogia catena di montaggio: pochi "pezzi non
+conformi" su finestra piccola fermano la linea, ripartenza solo con
+conferma statistica, non un numero di giorni arbitrario). CUSUM (Page's
+test) scelto tra le opzioni discusse (vs regime-switching di Markov, scartato
+per rischio di stime instabili col campione piccolo di mesi negativi
+disponibile).
+
+Nota di calibrazione (rilevante per chiunque riusi questo script): la prima
+versione centrava lo z-score su media/deviazione standard, che si e' rivelata
+mal posta — i rendimenti giornalieri sono fortemente right-skewed (~60% dei
+giorni train sotto la media), quindi CUSUM scendeva quasi ogni giorno
+"normale" e quasi ogni mese risultava "toccato" da un allarme, indipendente
+da `h`. Fix: centratura mediana/MAD robusta, un mese conta come "toccato"
+solo con >=5 giorni fermati (non uno solo). Trovato e corretto anche un bug
+di segno sulla breadth: il CUSUM e' one-sided lower (rileva derive verso il
+basso), quindi va segnata "basso = cattivo" come il rendimento — la breadth
+grezza (quota titoli in calo) ha "cattivo = alto", la prima versione la usava
+non negata e quindi rilevava mercati calmi, non mercati sotto stress.
+
+**Quattro varianti testate** (oltre a self-referential/breadth, due proposte
+dall'utente per risolvere il problema di osservabilita' sotto): guadagno AH
+potenziale medio cross-sectional (`ah_gain_mean`, media di `known_ah_ret` su
+tutto l'universo Nasdaq quel giorno) e guadagno AH potenziale dei 10 migliori
+candidati (`ah_gain_top10`, "se anche i migliori non rendono, non c'e'
+opportunita' da nessuna parte") — entrambe derivate dal **prezzo**, non
+dall'esecuzione, quindi osservabili ogni giorno indipendentemente dal fatto
+che la strategia abbia aperto posizioni.
+
+Indice di Youden (capture - falso allarme) per variante e segmento:
+
+| policy | variante | train | validation | oos |
+|:--|:--|--:|--:|--:|
+| static-10 | self_return | 0.39 | 0.32 | 0.13 |
+| static-10 | breadth (segno corretto) | 0.16 | 0.03 | 0.46 |
+| static-10 | ah_gain_mean | 0.42 | 0.35 | 0.00 |
+| static-10 | ah_gain_top10 | 0.30 | 0.20 | 0.13 |
+| static-10 | risk_overlay esistente | 0.18 | 0.14 | 0.13 |
+| weak_theme_switch | self_return | 0.43 | 0.50 | 0.42 |
+| weak_theme_switch | breadth (segno corretto) | 0.42 | 0.30 | 0.04 |
+| weak_theme_switch | ah_gain_mean | 0.54 | 0.34 | 0.25 |
+| weak_theme_switch | ah_gain_top10 | 0.35 | 0.28 | 0.13 |
+| weak_theme_switch | risk_overlay esistente | 0.22 | 0.07 | 0.25 |
+
+**Tutte e 4 le varianti CUSUM battono il `risk_overlay` trailing gia' in
+produzione su train e validation**, su entrambe le policy — non un risultato
+fragile legato a un solo segmento. `self_return` resta la piu' consistente
+sui 3 segmenti (mai sotto 0.42 su weak_theme_switch). `ah_gain_mean` (la
+proposta utente) e' la migliore su train per entrambe le policy (0.42/0.54,
+supera self_return li'), ma degrada di piu' in OOS. `ah_gain_top10` non
+batte `ah_gain_mean` su nessun segmento — l'aggregato su tutto l'universo si
+e' rivelato piu' informativo del "ceiling" sui soli top-10 in questo test
+(non da escludere con altri N/percentili, ma non e' il candidato primario
+ora). La breadth, col segno corretto, e' piu' informativa di prima ma resta
+la meno consistente delle 4.
+
+**Caveat operativo su `self_return`** (la variante piu' robusta): non genera
+piu' segnale osservabile una volta fermata la strategia (nessun trade =
+nessun nuovo dato) — problema identificato in questa sessione, risolto
+concettualmente dalla proposta utente `ah_gain_mean`, derivata dai prezzi e
+quindi sempre osservabile anche a strategia ferma.
+
+### Implementazione Backtrader: `ah_gain_cusum` come token di `risk_overlay_mode`
+
+`ah_gain_mean` e' stato implementato in `bt-core/strategies/overnight_ah.py`
+come **secondo token** del parametro esistente `risk_overlay_mode` (non un
+toggle indipendente): `risk_overlay_mode` accetta ora una lista separata da
+virgole di token componibili — `'strategy_throttle'` (il meccanismo trailing
+gia' esistente) e/o `'ah_gain_cusum'` (il nuovo CUSUM). Esempio:
+`risk_overlay_mode='strategy_throttle,ah_gain_cusum'` attiva entrambi
+insieme: la scala finale e' il prodotto delle due — una fermata secca di
+`ah_gain_cusum` azzera l'esposizione indipendentemente da cosa calcola
+`strategy_throttle` quel giorno, altrimenti prevale la scala continua del
+throttle. `self_return` (il segnale piu' robusto ma non osservabile a
+strategia ferma, vedi caveat sopra) non e' stato implementato: la scelta
+architetturale usa direttamente `ah_gain_cusum` sia per la fermata sia per
+la ripartenza, dato che risolve il problema di osservabilita' per
+costruzione.
+
+Disegno: baseline (mediana/MAD robuste) congelata una sola volta sui primi
+`ah_gain_cusum_baseline_min_days` giorni (default 252, fase I stile
+controllo statistico di processo — mai ricalcolata dopo, per non
+contaminarsi con lo stress successivo); CUSUM one-sided lower sulla baseline
+congelata (`ah_gain_cusum_k`/`ah_gain_cusum_h`, default 0.5/16.0 — vedi
+calibrazione sotto); ripartenza solo con K giorni consecutivi entro i limiti
+(`ah_gain_cusum_resume_k`, default 5) E un test bootstrap contro la baseline
+congelata (`ah_gain_cusum_resume_boot_alpha`, default 0.10) — non un numero
+di giorni arbitrario.
+
+Verificato con smoke test Backtrader (`stable_ah_top10` e universo
+`weak_theme_switch` reale, 2016-2018): `risk_overlay_mode='off'` invariato;
+`'strategy_throttle'` da solo identico al comportamento pre-refactor
+(nessuna regressione); `'ah_gain_cusum'` da solo congela la baseline a 252
+giorni e produce cicli fermata/ripartenza coerenti con p-value bootstrap;
+combinato `'strategy_throttle,ah_gain_cusum'` attiva entrambi insieme
+correttamente; un token non valido genera un warning nei log e viene
+ignorato senza interrompere gli altri token validi.
+
+**Bug trovato e corretto prima della validazione train/validation/OOS**:
+l'aggiornamento della cronologia `ah_gain_cusum` avveniva solo dopo il check
+`_before_trade_start` in `next()`, quindi durante il warmup (barre caricate
+prima di `trade_start_date`, usato dai run isolati per segmento) la baseline
+non accumulava nulla — su validation/OOS (che hanno circa un anno di
+warmup) avrebbe sprecato quasi un anno di copertura reale del segmento
+aspettando 252 giorni ripartendo da zero proprio a `trade_start_date`. Fix:
+l'aggiornamento ora avviene in `next()` prima del check `_before_trade_start`
+(solo l'effetto di gating sugli ingressi resta condizionato a
+`trade_start_date`, come prima), stesso pattern gia' usato da
+`semis_total_3m`/`spy_dd3m` che leggono lo storico caricato indipendentemente
+dalla finestra di trading. Verificato: con `fromdate=2020-01-01`,
+`trade_start_date='2021-01-01'`, la baseline si congela il 2020-12-31 (usa
+il warmup), il primo trade reale resta comunque il 2021-01-05 (nessuna
+contaminazione del divieto di trading pre-`trade_start_date`).
+
+**Calibrazione `ah_gain_cusum_h` su `weak_theme_switch`** (script di
+ricerca, griglia raffinata a passo 1 tra h=7 e h=20 dopo che la griglia
+grossolana iniziale — passo largo, salto diretto da 15 a 20 — aveva perso il
+vero ottimo): **h=16** batte il precedente h=15 (scelto dalla griglia
+grossolana) su indice di Youden in **tutti e 3 i segmenti**, non solo sul
+train usato per la selezione:
+
+| h | train Youden | validation Youden | oos Youden |
+|--:|--:|--:|--:|
+| 15 (griglia grossolana) | 0.536 | 0.343 | 0.250 |
+| 16 (griglia fine, scelto) | 0.595 | 0.438 | 0.292 |
+| 17 (pari a 16 su train) | 0.595 | 0.419 | 0.458 |
+
+h=16 e h=17 sono pari sul train; h=16 vince leggermente su validation (unico
+criterio di conferma ammesso prima di guardare l'oos) quindi e' il valore
+scelto e portato come nuovo default in `overnight_ah.py`. L'oos di h=17 e'
+piu' alto ma non e' stato usato per la scelta (avrebbe violato la disciplina
+train-poi-validation-poi-oos-solo-a-conferma). Per static-10 la griglia
+originale indicava ~20 sul train; non ancora ri-verificato con la griglia
+fine (nessuna azione richiesta, static-10 non e' l'obiettivo primario di
+`ah_gain_cusum`).
+
+### Validazione Backtrader nativa train/validation/OOS
+
+Eseguita dopo la calibrazione pandas e il fix del warmup (sopra). Comandi:
+stesso `--stratargs` documentato per `weak_theme_switch` (sezione
+"Implementazione nativa in strategia"), con `trade_start_date` per segmento
+(train 2016-01-01, validation 2021-01-01, oos 2024-01-01) e
+`risk_overlay_mode='ah_gain_cusum' ah_gain_cusum_h=<valore>`. Baseline OOS
+rigenerata pulita (`native_switch_baseline_oos_clean`, stesso comando gia'
+documentato come "Comando OOS di riferimento" ma senza overlay), dato che la
+directory originale era contaminata (vedi Fase 1 dello studio mesi
+negativi). Output completo:
+`bt-strategy-test/overnight-ah/research/out/bad_months_study/native_validation/`.
+
+**Primo tentativo, h=16 (calibrato su indice di Youden dei mesi, dal proxy
+pandas)**: buono su train (DD -51.6%→-15.4%, Sharpe pari), sfumato su
+validation (Sharpe migliora, DD no), **negativo su OOS** (Sharpe 1.661 vs
+2.087 baseline, DD -32.67% vs -28.96%, peggio su entrambi pur rinunciando a
+piu' di meta' del rendimento). Causa identificata: l'indice di Youden e'
+una metrica di *classificazione* dei mesi (capture_rate - false_alarm_rate),
+non pesa la **magnitudine** del rendimento perso nei falsi allarmi — un
+falso allarme durante un mese fortemente positivo (gran parte dell'OOS
+2024-2026, gia' documentato altrove in questo file come regime
+eccezionalmente favorevole) costa molto piu' di quanto suggerisca un
+conteggio di mesi.
+
+**Ricalibrazione su Sharpe/maxDD nativi diretti** (non piu' Youden): griglia
+Backtrader nativa `h=9..30` (passo 1) sul train, poi conferma su
+validation e infine su OOS (mai usato per la scelta). **h=23 domina su
+tutti e 3 i segmenti**:
+
+| segmento | variante | final multiple | max DD | Sharpe |
+|:--|:--|--:|--:|--:|
+| train | baseline | 38.32x | -51.63% | 2.225 |
+| train | ah_gain **h=23** | **40.61x** | -17.68% | **2.607** |
+| validation | baseline | 3.53x | -35.45% | 1.164 |
+| validation | ah_gain **h=23** | 3.36x | **-30.21%** | **1.316** |
+| oos | baseline (pulito) | 17.31x | -28.96% | 2.087 |
+| oos | ah_gain **h=23** | 14.04x | **-27.21%** | 2.068 |
+
+Su train h=23 **batte il baseline su tutti e 3 gli indicatori** (rendimento,
+drawdown, Sharpe) — risultato raro, non il tipico compromesso
+rendimento-vs-rischio. Su validation batte il baseline su Sharpe e drawdown,
+rendimento finale quasi pari. **Su OOS (guardato solo a conferma) tiene**:
+Sharpe sostanzialmente pari al baseline (2.068 vs 2.087), drawdown
+migliore (-27.21% vs -28.96%), a fronte di una rinuncia moderata di
+rendimento (14.04x vs 17.31x) — molto diverso e nettamente migliore del
+fallimento OOS di h=16.
+
+Lettura: la calibrazione via Youden aveva scelto un `h` sistematicamente
+troppo basso/sensibile (troppi falsi allarmi, ognuno costoso in un regime
+favorevole); calibrare direttamente su Sharpe/maxDD nativi porta a un `h`
+piu' alto (meno sensibile, fermate piu' rare ma piu' mirate) che si
+comporta bene ovunque, non solo nel segmento di calibrazione.
+
+**Conclusione preliminare (poi superata, vedi sotto)**: `ah_gain_cusum` con
+**h=23** sembrava un candidato solido sui 3 segmenti isolati
+train/validation/OOS (ciascuno con warmup di ~1 anno recente). Un test
+successivo su un orizzonte molto piu' lungo ha smontato questa conclusione.
+
+### Fallimento su run continuo 2000-2026 e redesign a baseline mobile (v2)
+
+Test dell'utente: stesso comando `weak_theme_switch` con `hedge_enabled=True`
+piu' `risk_overlay_mode='ah_gain_cusum'` (h=23), ma su un run continuo
+**2000-2026** invece dei 3 segmenti isolati. Risultato: **capitale finale
+-90%** (51.958x contro 532.809x senza overlay) e **drawdown peggiore**, non
+migliore (-52.35% contro -51.76%) — l'opposto di quanto promesso dai
+segmenti isolati.
+
+Diagnosi: la baseline (mediana/MAD) si congelava **una sola volta**, sui
+primi 252 giorni osservati — che nel run 2000-2026 cadevano durante il
+crollo dot-com (2000-2001). Quella baseline distorta restava valida per i
+25 anni successivi (bolla, 2008, QE, COVID, rialzo tassi 2022, boom AI),
+mai piu' ricalcolata.
+
+**Obiezione dell'utente** (corretta, ha guidato il redesign): anche un
+ricongelamento periodico (es. annuale) avrebbe lo stesso difetto — se
+l'anno scelto per il ricongelamento e' per caso estremo (pessimo o
+eccezionale), quello diventa la nuova normalita' fino al ricongelamento
+successivo, producendo isteria (normalita' che salta da un estremo
+all'altro invece di seguire un'impronta che si evolve gradualmente). La
+normalita' deve aggiornarsi di continuo, pesando i dati recenti senza
+scartare bruscamente il passato.
+
+**Redesign v2** (`bt-strategy-test/overnight-ah/research/bad_months_spc_cusum_rolling.py`,
+implementato in `overnight_ah.py`): mediana/MAD ricalcolate ogni giorno su
+una finestra MOBILE di `ah_gain_cusum_window_days` giorni strettamente
+precedenti (ex-ante), non piu' un congelamento singolo. Calibrazione 2D
+(finestra x h) sul train: `window_days=756` (~3 anni), `h=30` domina la
+griglia (Sharpe 3.01 vs 2.23 baseline sul train).
+
+### Verdetto finale: anche v2 non basta — chiuso come risultato negativo
+
+Test rigorosi in sequenza, ciascuno smentendo il precedente:
+
+1. **v2 sul run continuo 2000-2026**: meno catastrofico di v1 (71.680x
+   contro 51.958x) ma ancora un taglio dell'86% del capitale finale rispetto
+   al solo hedge (532.809x), **con drawdown sostanzialmente invariato**
+   (-52.38% contro -51.76%).
+2. **Diagnosi precisa** (non piu' ipotesi vaghe): il drawdown peggiore del
+   test 2000-2026 e' lo stesso identico episodio in entrambi i run (picco
+   2000-07-17, minimo 2001-07-09, il crollo dot-com) — e cade quasi
+   interamente PRIMA che il meccanismo avesse accumulato i 252 giorni minimi
+   per attivarsi (prima fermata possibile: 2001-02-27). Non era quindi (solo)
+   un problema di baseline mobile vs congelata: era un punto cieco di
+   warm-up strutturale di un backtest che parte 7 mesi prima del peggior
+   evento della serie.
+3. **Test su deployment realistico** (warmup dal 2013, trading reale dal
+   2016 al 2026 — stesso principio gia' usato per train/validation/OOS,
+   evita il punto cieco): il problema persiste. Hedge da solo: 3.962x,
+   DD -28.61%, Sharpe 2.379. Hedge + v2 rolling: **1.388x (-65%)**,
+   **DD -36.48% (peggio)**, Sharpe 2.248 (peggio). Il drawdown peggiore in
+   entrambi i casi e' lo stesso episodio (picco 2025-01-22).
+4. **Analisi puntuale di quell'episodio**: il meccanismo ha effettivamente
+   fermato la strategia per una parte ragionevole e ben temporizzata
+   dell'episodio (29 giorni su ~99, fermata 10-28 aprile con ripartenza il
+   28, minimo il 30 aprile — timing quasi ottimale), ma ha comunque perso le
+   prime 6 settimane di discesa (picco 22 gennaio, prima fermata 6 marzo,
+   z-score non ancora sopra soglia). **Anche in questo episodio, il suo
+   momento migliore**, il beneficio non basta a compensare il costo
+   cumulato di 48 cicli fermata/ripartenza sparsi sui 10 anni, la maggior
+   parte dei quali cade in periodi normali o buoni, non in crisi.
+
+**Conclusione**: in tre test indipendenti (2000-2026 v1, 2000-2026 v2,
+deployment realistico 2016-2026 v2) `ah_gain_cusum` — con qualunque
+variante di baseline provata finora — non offre un beneficio netto
+positivo su un orizzonte di deployment realistico. I risultati
+apparentemente solidi della calibrazione segmentata (h=23 su train/
+validation/OOS isolati) erano un abbinamento fortunato tra finestra di
+calibrazione e finestra di test, smascherato dal test piu' severo su un
+orizzonte lungo. **Chiuso come risultato negativo, analogamente a quanto
+gia' fatto per l'ipotesi AH-dominance (Fase 2b) e per momentum/AH-index nel
+hedge SQQQ**: il meccanismo resta nel codice come opzione opt-in
+(`risk_overlay_mode` include `'ah_gain_cusum'` come token disponibile,
+default comunque `'off'`), documentato e disponibile per chi volesse
+riprendere il lavoro con un approccio diverso, ma non raccomandato e non
+promosso a `overnight_ah_live.py`/checkout prod.
+
+## Studio concentrazione/paniere (sospeso, da riprendere)
+
+Dopo la chiusura negativa di `ah_gain_cusum`, l'utente ha proposto un angolo
+diverso: invece di meccanismi di *timing* (quando tradare), agire
+sull'**universo** (quali nomi tradare). Studio con lo stesso rigore
+metodologico (finestra realistica 2013-warmup/2016-2026-trade, come sopra —
+niente piu' punti ciechi da cold-start). Sospeso su richiesta esplicita
+dell'utente prima di arrivare a una proposta operativa; questa sezione
+documenta cosa e' stato scoperto per riprendere il lavoro senza ripartire da
+zero.
+
+### Sweep `monthly_universe_top_n` (numero di nomi nel paniere dinamico)
+
+Output: `bt-strategy-test/overnight-ah/research/out/bad_months_study/native_validation/topn_sweep_realistic_2016_2026.csv`.
+
+| top_n | final | max DD | Sharpe |
+|--:|--:|--:|--:|
+| 5 | 121.55x | -28.95% | 1.886 |
+| 10 | 682.14x | -28.95% | 2.067 |
+| 20 | 2,397.82x | -28.95% | 2.226 |
+| 30 | 3,122.09x | -28.95% | 2.266 |
+| 50 (attuale) | 3,671.09x | -28.95% | 2.289 |
+| 60 | 3,857.70x | -28.95% | 2.298 |
+
+**Il max drawdown e' identico — letteralmente -28.95% — per qualunque
+top_n da 5 a 60.** Sharpe e rendimento crescono monotonicamente con piu'
+nomi, senza eccezioni. Causa: `top_n` influenza solo i mesi in regime
+dinamico; nei mesi in regime statico la strategia usa sempre il paniere
+fisso di 10 nomi indipendentemente da `top_n`. Restringere il paniere
+dinamico non tocca affatto il worst-case (che infatti si e' rivelato cadere
+in regime statico — vedi sotto). **Conclusione: restringere `top_n` non
+aiuta, riduce solo il rendimento.**
+
+### Sweep `max_concurrent` (posizioni simultanee)
+
+Output: `bt-strategy-test/overnight-ah/research/out/bad_months_study/native_validation/maxconcurrent_sweep_realistic_2016_2026.csv`.
+
+| max_concurrent | final | max DD | Sharpe |
+|--:|--:|--:|--:|
+| 3 | 11,130.11x | -31.68% | 2.240 |
+| **5 (attuale)** | 3,671.09x | **-28.95% (migliore)** | **2.289 (migliore)** |
+| 7 | 710.92x | -30.95% | 2.080 |
+| 10 | 287.65x | -34.94% (peggiore) | 2.070 |
+| 15 | 79.22x | -33.58% | 1.871 |
+| 20 | 33.71x | -31.76% | 1.764 |
+
+**`max_concurrent=5` (default attuale) e' gia' un ottimo locale**: miglior
+Sharpe e miglior drawdown dell'intero sweep, insieme. Sotto (3): rendimento
+finale molto piu' alto ma Sharpe/DD peggiori (concentrazione per-trade piu'
+alta con `size_by_max_concurrent=True` — capitale diviso su meno slot,
+posizioni piu' grandi, percorso piu' accidentato ma capitalizzazione finale
+piu' alta: Sharpe misura la fluidita' del percorso, non il capitale finale,
+i due possono divergere). Sopra (7+): peggiora tutto insieme, nessun
+compromesso favorevole. **Nessun margine di miglioramento su questa leva.**
+
+### Analisi episodi di drawdown (>=10%, 2016-2026)
+
+Estratti tutti gli episodi significativi dalla curva equity nativa
+(`native_switch_topn_50_realistic`, hedge disattivato, stesso universo
+`weak_theme_switch`), con regime attivo e peggiori contributori per
+ciascuno (finestra picco→minimo esatta, da `trades.json`):
+
+| picco → minimo | DD | regime | peggiori 3 contributori |
+|:--|--:|:--|:--|
+| 2018-01 → 02 | -15.31% | dinamico | PYPL, NVDA, INTC |
+| 2019-05 | -27.75% | dinamico | NXPI, MCHP, AMD |
+| 2020-02 (COVID) | -23.04% | dinamico | LRCX, MSFT, AAPL |
+| 2021-12 → 2022-07 | -22.31% | misto (per lo piu' dinamico) | MRVL, MU, ADBE |
+| 2022-11 → 2023-05 | -18.35% | misto (per lo piu' dinamico) | AMD, WDAY, NVDA |
+| 2024-02 | -21.03% | dinamico | PANW, ZS, CDNS |
+| **2025-01 → 04** | **-28.95%** | **statico (unico puro)** | MU, MRVL, AMD |
+| 2025-07 → 09 | -18.06% | dinamico | MCHP, AMD, LRCX |
+| 2026-02 → 03 | -23.97% | dinamico | AMAT, INTC, LRCX |
+
+**Scoperta chiave, che ribalta la diagnosi iniziale**: su 9 episodi seri,
+**solo 1 e' puramente in regime statico** (gennaio-aprile 2025, quello
+isolato per primo). Gli altri 8 — inclusi i piu' gravi (2019 -27.8%, 2026
+-24.0%, COVID -23.0%) — avvengono in regime **dinamico**, col paniere ampio
+fino a 50 nomi. E in **ogni singolo episodio**, statico o dinamico, i
+peggiori contributori sono nomi semiconduttori/tech/AI (NVDA, INTC, LRCX,
+AMD, MU, MRVL, MCHP, AMAT, PANW, ZS, CDNS, WDAY, ADBE, NXPI).
+
+**Non e' quindi il paniere statico ad essere mal calibrato** — e' l'intera
+strategia, in entrambe le modalita', ad essere strutturalmente concentrata
+sul tema AI/semis: quella dinamica seleziona esplicitamente per
+correlazione al fattore semis (`monthly_universe_theme_score='corr12'`,
+peso 0.15), quella statica e' nata come lista dei migliori performer AH
+storici (anch'essi quasi tutti semis). Il regime-switch distingue *quando*
+usare dinamico vs statico, ma non diversifica *lontano* dal tema in nessuno
+dei due casi.
+
+### Test "fallback vuoto" (nessun trade durante regime statico)
+
+Per isolare "il problema e' essere esposti durante il regime debole, o sono
+questi nomi specifici": `monthly_universe_static_symbols=''` (nessun
+candidato nei mesi statici, strategia flat). Confermato via `returns.csv`:
+rendimento 0.0% per l'intero dicembre 2024-maggio 2025 (1 solo giorno
+non-zero su 113, residuo di chiusura posizione).
+
+| variante | final | max DD | worst episode |
+|:--|--:|--:|:--|
+| static-10 fallback (attuale) | 3,671.09x | -28.95% | 2025-01→04 |
+| fallback vuoto (no trade) | 1,146.35x | -28.07% | **2019-05→08** (diverso!) |
+
+L'episodio 2025 e' completamente evitato, ma il **worst-case complessivo
+non migliora quasi per niente** (-28.07% contro -28.95%) perche' emerge
+l'episodio 2019 (dinamico, non statico) di grandezza comparabile. Andare
+flat durante i mesi statici cura un sintomo specifico (costando il 68% del
+capitale finale) senza risolvere il rischio di fondo — che e' strutturale
+alla strategia, non solo al fallback statico.
+
+### Stato: sospeso su richiesta dell'utente
+
+Nessuna modifica al paniere statico o al regime-switch e' stata
+implementata. Prossimi passi possibili per chi riprende:
+
+- La domanda dell'utente non ancora risolta: `stable_ah_top10` e' stato
+  calibrato/selezionato guardando la sua performance storica complessiva
+  (selection bias gia' documentato altrove in questo file), **non**
+  specificamente per il suo ruolo di fallback nei mesi di regime-switch
+  debole. Andrebbe verificato se un paniere statico scelto *per quel ruolo
+  specifico* (basso beta/correlazione al fattore semis nei mesi in cui il
+  fattore semis e' negativo) si comporta meglio — ma la scoperta sopra (8/9
+  episodi in regime dinamico) suggerisce che questo da solo non basterebbe.
+- Il problema piu' fondamentale — concentrazione tematica strutturale in
+  ENTRAMBI i regimi — richiederebbe di rivedere anche `monthly_universe_theme_score`/
+  `monthly_universe_theme_weight` (il tilt dinamico verso la correlazione
+  semis), non solo il paniere statico.
+- Nessuna delle piste precedenti (throttle, `ah_gain_cusum`, restringere
+  `top_n`) ha funzionato — l'evidenza finora suggerisce che il rischio di
+  coda di questa strategia e' un tratto strutturale legato alla scelta del
+  tema (semis/AI), non un difetto risolvibile con overlay di timing o
+  aggiustamenti di concentrazione/numero di nomi.
+
+### Ipotesi operative emerse (proposte, non implementate/validate in Backtrader)
+
+1. **Tuning switch feature**: testare `monthly_universe_switch_feature`
+   su lookback 6m/12m invece di 3m per `weak_theme_switch`, sulla base dei 4
+   segnali robusti di Fase 3 (stesso spirito del `semis_total_6m > 0` gia'
+   documentato come sfidante sopra, ma qui motivato specificamente da
+   capacita' predittiva sui mesi negativi, non solo da OOS aggregato).
+2. **CUSUM ibrido self+breadth**: fermata su CUSUM self-referential,
+   ripartenza su CUSUM/soglia breadth (o size-canary) — vedi Fase 5.
+3. **Nessuna azione su selezione universo per "rumore RTH"**: l'ipotesi
+   AH-dominance (Fase 2b) e' stata testata e confutata, non procedere in
+   quella direzione senza nuova evidenza.
+
+Prossimo passo esplicito: validare le proposte 1-2 con proxy pandas piu'
+approfondito e poi Backtrader (`btmain.py`), coerente col vincolo "pandas
+prima, Backtrader dopo" gia' seguito nel resto del progetto. Non ancora
+fatto in questa sessione (fuori scope, vedi piano di sessione).
 
 ## Prossima analisi: validazione hedge su `weak_theme_switch` (specifiche)
 
@@ -1573,7 +2113,7 @@ Confrontare baseline vs hedge su:
 
 Se l'hedge migliora Sharpe/DD senza deteriorare sistematicamente il
 rendimento nei periodi senza stress → procedere con la richiesta esplicita
-di promozione a `overnight_ah_live.py` (decisione separata, non automatica).
+di promozione al checkout prod (decisione separata, non automatica).
 Se il beneficio non si conferma sull'universo reale (es. troppi pochi
 candidati contemporanei per rendere significativo un carve-out del 15%, o il
 timing della selezione mensile interagisce male con l'apertura dell'hedge)
@@ -1593,5 +2133,5 @@ dall'utente il comando/config esatto con cui ha osservato l'anomalia
 
 ### Non-goal
 
-Nessuna modifica a `overnight_ah_live.py` finché questa validazione non è
+Nessuna promozione al checkout prod finché questa validazione non è
 completata e la promozione non è stata richiesta esplicitamente.
