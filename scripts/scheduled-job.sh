@@ -102,7 +102,11 @@ HANDLER_PATH=$CODE_ROOT/scripts/scheduled/handlers/$HANDLER.sh
 
 export PROFILE ROLE PHASE CODE_ROOT ACCOUNT_ENV STRATEGY_CONFIG TRADING_MODE
 export SCHEDULED_DRY_RUN=0
-[[ "$ACTION" == dry-run ]] && export SCHEDULED_DRY_RUN=1
+if [[ "$ACTION" == dry-run ]]; then
+    # Exercise scheduled handlers with the same non-trading mode as backtests.
+    TRADING_MODE=backtest
+    export TRADING_MODE
+fi
 
 commit=$(git -C "$CODE_ROOT" rev-parse --short=12 HEAD)
 core_commit=$(git -C "$CODE_ROOT/bt-core" rev-parse --short=12 HEAD 2>/dev/null || echo unavailable)
@@ -110,6 +114,9 @@ echo "profile=$PROFILE phase=$PHASE mode=$TRADING_MODE commit=$commit bt_core_co
 
 if [[ "$ACTION" == check ]]; then
     echo "configuration valid"
+    # Use the handler's dry-run rendering so --check exposes the exact command
+    # configuration without acquiring a lock, writing logs, or placing orders.
+    TRADING_MODE=backtest SCHEDULED_DRY_RUN=1 "$HANDLER_PATH" "$@"
     exit 0
 fi
 
