@@ -13,3 +13,6 @@
 [submodule "bt-core"]
         path = bt-core
         url = git@github.com:xamul-it/bt-core.git
+[submodule "bt-strategy-test"]
+	path = bt-strategy-test
+	url = git@github.com:xamul-it/bt-strategy-test.git
