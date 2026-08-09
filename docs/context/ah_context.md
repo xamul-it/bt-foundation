@@ -2135,3 +2135,170 @@ dall'utente il comando/config esatto con cui ha osservato l'anomalia
 
 Nessuna promozione al checkout prod finché questa validazione non è
 completata e la promozione non è stata richiesta esplicitamente.
+
+## Studio tuning parametri di scoring: oracolo/regret/Model Confidence Set (completato, risultato negativo)
+
+Richiesta dell'utente: tuning dei parametri di **composizione dello score**
+per la selezione mensile del paniere (`monthly_universe_base_weight`/
+`c2c_weight`/`theme_weight`/`theme_score`/`switch_feature`/
+`switch_threshold`/`top_n`/`spy_dd3m_threshold`, più due parametri nuovi non
+esistenti nella strategia — lookback della finestra momentum e frequenza di
+ribilanciamento del paniere), con un benchmark diverso dal solito: non Sharpe
+assoluto (uno Sharpe basso può essere fisiologico in un regime avaro, non un
+sintomo di parametri sbagliati), ma **distanza da un oracolo** (il caso
+migliore possibile), con validazione statistica (Model Confidence Set) invece
+di scegliere "il migliore" su un singolo punto, e un blocco di validazione
+mai guardato fino alla fine. Tutti gli altri filtri della strategia
+(volatilità intraday, prezzo minimo, ADV, `ah_lag1`, earnings) disattivati
+per isolare l'effetto dei soli parametri di scoring/regime.
+
+### Oracolo: nessun paniere, hindsight puro giornaliero
+
+Definizione (decisa con l'utente, corregge un'ipotesi iniziale errata basata
+su un oracolo mensile-bloccato): ogni giorno, tra tutto l'universo (stessi
+filtri disattivati), l'oracolo prende semplicemente i `max_concurrent=5`
+titoli con il miglior `close→next_open` **realizzato quel giorno specifico**
+(nessun vincolo di lock mensile — è esattamente ciò che i parametri sotto
+tuning cercano di approssimare, quindi non ha senso vincolare l'oracolo a
+usare un paniere). Anti-oracolo: stesso meccanismo sui 5 peggiori, usato come
+pavimento per normalizzare il regret tra regimi diversi:
+
+```text
+regret_norm(θ, blocco) = (oracolo - candidato) / max(oracolo - anti_oracolo, span_floor)
+```
+
+scala `[0 = come l'oracolo, 1 = come l'anti-oracolo]`, indipendente dal
+livello assoluto di rendimento del regime. Sul blocco di validazione
+(2022-08-07 → 2026-08-07): oracolo `ann_log_ret=7.28`, anti-oracolo `=-6.88`,
+span `=14.16` — numeri enormi perché è hindsight puro senza vincoli
+strutturali, da leggere solo come ancora di normalizzazione, non come
+benchmark di rendimento raggiungibile.
+
+### Metodologia: blocchi variabili + Model Confidence Set
+
+Storia 2000-2026 divisa in blocco di validazione intonso (ultimi ~4 anni,
+2022-08-07→2026-08-07, mai simulato prima della conferma finale) e pool
+2000-2022 diviso in 12 blocchi calendariali non sovrapposti (~2 anni
+ciascuno). Il metodo statistico per l'insieme "più probabile" (non il
+singolo best) è il **Model Confidence Set** di Hansen/Lunde/Nason,
+implementato in numpy puro (bootstrap 5000 repliche sui blocchi,
+eliminazione iterativa del modello con eccesso di regret standardizzato più
+alto finché il test di parità non rifiuta più), con cross-check bootstrap
+percentile indipendente e rotazioni leave-block-out per verificare la
+stabilità della regione selezionata cambiando quale blocco viene escluso.
+
+Spazio testato: 25.200 combinazioni (enumerazione completa di
+`theme_score`×`switch_feature`×`lookback`×`rebal_freq`, Latin Hypercube
+sampling sui continui `c2c_weight`/`theme_share`/`top_n`/soglie), simulate
+vettorialmente in pandas (25.200 combo × 12 blocchi in ~20 minuti su 22
+worker).
+
+### Risultato screening/MCS: regione trovata sui blocchi 2000-2022
+
+Top-250/25.200 per mediana di `regret_norm` (il MCS ad α=0.10 non ne elimina
+quasi nessuno — segnale onesto: con solo 12 blocchi il test non ha potere
+per distinguere statisticamente tra combinazioni simili, la "regione più
+probabile" è genuinamente larga):
+
+- `c2c_weight` mediana **0.145** contro 0.50 di popolazione — il peso AH
+  domina nettamente sul C2C nello score base;
+- `theme_share` mediana **0.079** contro 0.50 — tilt tematico piccolo;
+- `lookback`: **0% dei survivor usa 1 mese**, 44% usa 12 mesi, 36% usa 3
+  mesi — lookback corto sempre perdente;
+- `rebal_freq`: lieve preferenza per settimanale/mensile su giornaliero
+  (38%/36% contro 26%);
+- `switch_feature`: `semis_ma126_ratio`/`semis_ma63_ratio` leggermente
+  sovra-rappresentate (19.6%/14.0% contro 10% di base).
+
+### Validazione Backtrader reale sul blocco intonso: la regione NON batte il default
+
+**Limite strutturale**: `lookback` e `rebal_freq` non esistono come
+parametri della strategia live — sono cablati (`_shift_month(month_start,
+-6)`, sempre mensile). Solo i survivor con `lookback=6m`/`rebal_freq=mensile`
+(21 su 250) sono nativamente validabili senza modificare
+`overnight_ah.py`. I 6 migliori di questi 21 sono stati eseguiti via
+`btmain.py` reale (universo `yahoo_adj_research_universe.json`, provider
+`yahoo_adj`, filtri disattivati, `trade_start_date='2022-08-07'`) e
+confrontati col default operativo attuale (`c2c_weight=0.6`, `theme_share
+=0.15`, `theme_score='corr12'`, `switch_feature='semis_total_3m'`,
+`switch_threshold=0.0`, `spy_dd3m_threshold=-0.10`, `top_n=50`) sullo stesso
+blocco:
+
+| combo | TimeReturn | Sharpe | SQN | regret_norm (vs oracolo) |
+|:--|--:|--:|--:|--:|
+| **default attuale** | **5.364** | **0.847** | **4.627** | **0.4814 (migliore)** |
+| combo 15686 (c2c_weight=0.049) | 5.221 | 0.700 | 4.600 | 0.4818 |
+| combo 9834 (c2c_weight=0.052) | 5.136 | 0.692 | 4.527 | 0.4820 |
+| combo 8158 (c2c_weight=0.103) | 5.125 | 0.670 | 4.543 | 0.4820 |
+| combo 22446 (c2c_weight=0.069) | 5.124 | 0.656 | 4.491 | 0.4820 |
+| combo 20761 (c2c_weight=0.058) | 4.962 | 0.645 | 4.439 | 0.4825 |
+| combo 16564 (c2c_weight=0.033) | 4.835 | 0.683 | 4.374 | 0.4829 |
+
+Il default attuale batte **tutti e 6** i candidati MCS su ogni metrica,
+inclusa la distanza dall'oracolo. **Conclusione onesta**: la regione a
+`c2c_weight` basso/AH-dominante, forte e consistente sui blocchi storici
+2000-2022, non generalizza al periodo mai guardato 2022-2026 — il default
+attuale (`c2c_weight=0.6`) resta il migliore dei 7 testati su questo
+segmento. Nessuna promozione. Zona grigia non testata: valori intermedi di
+`c2c_weight` (0.3-0.5) non sono stati confrontati sul blocco di validazione,
+resta un'ipotesi aperta se si vuole approfondire.
+
+### Verifica aggiuntiva: chiusura-chiusura invece di chiusura-apertura (confermata negativa)
+
+Domanda dell'utente: dato che `c2c_weight=0.6` (peso C2C dominante nello
+score di **selezione**) funziona meglio, converrebbe **tradare** anche
+chiusura-chiusura (tenere la posizione anche nella sessione regolare del
+giorno dopo) invece di chiusura-apertura? Verificato sullo stesso paniere
+reale già validato (`c2c_weight=0.6`/`theme_share=0.15`/`corr12`/
+`semis_total_3m`):
+
+| leg | ann_log_ret storia intera (2000-2026) | ann_log_ret blocco validazione |
+|:--|--:|--:|
+| chiusura→apertura (attuale) | **0.363** | **0.459** |
+| chiusura→chiusura (tenendo anche il giorno dopo) | 0.250 | 0.456 |
+| solo il pezzo aggiunto (RTH del giorno dopo) | **-0.107 (negativo)** | ~0.000 (piatto) |
+
+Correlazione fra il leg overnight e il pezzo aggiunto: **-0.016** (nessuna
+sinergia). Confirma la "session disjunction" già documentata in questo file
+(sezione BoCSoO, `AH return % vs RTH Sharpe: -0.756`): il peso C2C nello
+score serve a **selezionare** bene (momentum generale come segnale
+predittivo), ma il rendimento da **incassare** resta specificamente quello
+overnight — allungare la detenzione diluisce l'edge con una gamba a valore
+atteso nullo o negativo. Il disegno MOC/MOO attuale resta corretto così
+com'è; non procedere in questa direzione senza nuova evidenza.
+
+### File e output
+
+Script (`bt-strategy-test/overnight-ah/research/`):
+`daily_panel_full_history.py` (dataset 2000-2026 filtri neutralizzati),
+`oracle_daily.py`, `score_panel.py` (rank C2C/AH per lookback, tema, regime,
+drawdown SPY, tutti ex-ante), `simulate_basket_rotation.py` (riferimento
+corretto, validato contro Backtrader reale — vedi fedeltà sotto),
+`parameter_sweep_scoring.py` (fast-path vettoriale, verificato identico al
+riferimento su spot-check casuali, `max_abs_diff=0.0`), `mcs_selection.py`,
+`validate_top_survivors_backtrader.py`.
+
+Output bulk (fuori da `/home`, disco `/home` quasi saturo — vedi nota
+disco): `/mnt/Backup/overnight_ah_tuning/` (daily panel, score panel,
+oracolo, sweep, MCS, risultati validazione). `bt-core/out/` e
+`bt-strategy-test/overnight-ah/research/out/` sono stati spostati su
+`/mnt/Backup/backtrader_archive/` con symlink al loro posto (nessun path
+relativo esistente rotto), per liberare spazio su `/home` (3.6GB liberi
+prima, ~205GB dopo).
+
+**Verifica di fedeltà pandas↔Backtrader** (obbligatoria prima di fidarsi
+dello sweep): dopo aver corretto un disallineamento di 1 giorno
+nell'indicizzazione (Backtrader registra il rendimento sul giorno di
+*uscita*, il proxy pandas lo indicizza sul giorno di *entrata* — stesso
+identico rendimento, etichetta diversa), correlazione giornaliera **0.98**
+su un anno di test, paniere mensile sovrapposto per 3/5 titoli — stesso
+livello di approssimazione (finestra calendario via rolling time-based
+invece della logica esatta a 252 barre + filtro calendario) già usato e
+accettato in `edge_prediction_study.py`.
+
+### Non-goal
+
+Nessuna modifica ai parametri operativi attuali. Nessuna implementazione di
+`lookback`/`rebal_freq` come parametri nativi della strategia (necessaria
+solo se si vuole approfondire il segnale pandas su questi due assi, non
+richiesta né decisa in questa sessione).
