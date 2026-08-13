@@ -2302,3 +2302,227 @@ Nessuna modifica ai parametri operativi attuali. Nessuna implementazione di
 `lookback`/`rebal_freq` come parametri nativi della strategia (necessaria
 solo se si vuole approfondire il segnale pandas su questi due assi, non
 richiesta né decisa in questa sessione).
+
+## Studio 2: indicatori tecnici univariati, close standard vs serie AH-only (completato, risultato negativo)
+
+Seguito diretto dello studio precedente: se il tuning dei pesi c2c/ah/theme
+non batte il default, forse altri indicatori tecnici (medie mobili, momentum
+via regressione, MACD, RSI/StochRSI, SuperTrend, volatilità, volume) hanno
+un effetto predittivo che lo score attuale non cattura. Riusa integralmente
+l'infrastruttura oracolo/regret/blocchi/validazione dello Studio 1 (nessuna
+ricostruzione).
+
+### Richiesta chiave dell'utente: doppia serie di input
+
+Dato che la strategia trada solo la gamba overnight (chiusura→apertura),
+ogni indicatore basato su una serie di prezzo (medie mobili, momentum,
+MACD, RSI, StochRSI) è stato calcolato **due volte**: una sul `close`
+standard (suffisso `_cc`, cattura C2C = AH+RTH insieme) e una su una serie
+sintetica costruita **solo** dalla componente overnight:
+
+```text
+P_AH[t] = P_AH[t-1] * (1 + known_ah_ret[t]),  P_AH[0] = 1
+```
+
+Verificato esattamente (`P_AH[t]/P_AH[t-1]-1 == known_ah_ret[t]`, diff
+~1e-16) e per correlazione: il momentum grezzo su `P_AH` correla 0.992
+(Spearman) con `ah_mean_6m` già validato nello Studio 1, quello su `close`
+correla 0.977 con `c2c_mean_6m` — la costruzione ex-ante è corretta.
+Indicatori che richiedono High/Low/Volume (ATR%, SuperTrend, volume) non
+hanno un analogo AH pulito nei dati daily disponibili e restano a singola
+variante; l'eccezione è la volatilità, dove `ah_gap_vol_mean` (media
+rolling di `|known_ah_ret|`) è l'analogo naturale AH-specifico di
+`intraday_vol_mean` (RTH-specifico), non un porting forzato.
+
+Totale: 35 indicatore-parametrizzazioni nel primo giro, poi allargato a
+**89** (griglia di lookback più fitta per famiglia, es. SMA ratio a 9
+lookback invece di 3, regressione a 7 invece di 3) prima di scegliere il
+migliore per famiglia/serie.
+
+### Bug reale trovato e corretto durante la verifica di fedeltà
+
+Il port di `SuperTrend` (`bt-core/indicators/supertrend.py`) usava ATR a
+media semplice (`true_range().rolling(period).mean()`) invece che smussata
+alla Wilder — `SuperTrendBand` usa internamente
+`bt.indicators.AverageTrueRange`, la cui docstring dice esplicitamente
+"Formula: SmoothedMovingAverage(TrueRange, period)" (diverso da
+`ATR_SMA_Pct` in `atr_sma.py`, che è SMA-based *per design*, non la stessa
+classe). Con ATR SMA-based il fidelity check su Cerebro reale mostrava fino
+al **49% di divergenza relativa** (un singolo flip di banda mal temporizzato
+per la differenza di ATR cascata fino al flip successivo). Fix: ATR
+smussata alla Wilder (`ewm(alpha=1/period, adjust=False)`, stesso pattern
+già usato per RSI) in `supertrend_distance`. Dopo il fix: diff massima
+0.001-0.2% (floating point/transiente EMA, non un problema). RSI Wilder e
+OBV erano già fedeli al confronto con Backtrader reale (`bt.indicators.RSI`,
+`OnBalanceVolume` da `LZIndicator.py`); OBV mostra solo un offset costante
+sul giorno 0 (nessun close precedente da confrontare, dovuto a una
+convenzione di inizializzazione diversa), verificato innocuo perché
+invariante per una slope di regressione.
+
+### Risultato principale: la serie AH-only batte nettamente il close standard
+
+Verificato con una calibrazione indipendente: lo stesso codice di
+regressione applicato al feature già validato `ah_mean_6m` (Studio 1) dà un
+t-stat di Fama-MacBeth di 14.0 — praticamente identico al miglior indicatore
+nuovo `sma_ratio_ah_252` (13.9) — quindi la forza dei nuovi indicatori non è
+un artefatto del codice, è un segnale reale confrontabile in scala.
+
+| Indicatore | Serie | t-stat FM (pool 2000-2022) | % blocchi stesso segno |
+|---|---|---:|---:|
+| `sma_ratio_200` | AH | **13.9** | 100% |
+| `sma_ratio_200` | c-c | 1.4 | 83% |
+| `reg_slope_126` | AH | **12.9** | 100% |
+| `reg_slope_126` | c-c | 2.5 | 83% |
+| `rsi_wilder_14` | AH | **10.0** | 100% |
+| `rsi_wilder_14` | c-c | -2.8 | 58% |
+
+Conferma quantitativa della "session disjunction" già nota (BoCSoO,
+`AH return % vs RTH Sharpe: -0.756`): l'informazione utile per prevedere
+l'overnight sta nell'overnight, non nel prezzo misto AH+RTH. Bonus non
+previsto: anche la famiglia volatilità (`ah_gap_vol_mean`,
+`intraday_vol_mean`, `atr_pct`) mostra segnale solido (t-stat 7.5-9.7).
+
+### Nessun indicatore singolo batte il default sul blocco di validazione
+
+Selezionato il miglior lookback per 18 famiglie/serie (MCS α=0.25 + libero
+da 89), poi validati i 21 con `lookback=6m`/`rebal_freq=mensile` (gli unici
+nativamente supportati dalla strategia — `lookback` e `rebal_freq` non sono
+parametri della strategia live, sono cablati) via Backtrader reale sul
+blocco intonso:
+
+| candidato | regret_norm validazione |
+|---|---:|
+| **default attuale** | **0.4814 (migliore)** |
+| 6 migliori candidati singoli testati | 0.4818–0.4829 |
+
+Stesso esito dello Studio 1: forte sui blocchi storici, non regge sul
+blocco mai guardato. Tabella completa (89 indicatori, statistico+economico):
+`/mnt/Backup/overnight_ah_tuning/indicator_sweep/indicator_study_summary.csv`.
+
+### Verifica aggiuntiva: chiusura-chiusura invece di chiusura-apertura (confermata negativa)
+
+Ipotesi dell'utente: dato che il peso C2C (60%) nello score di selezione
+funziona, converrebbe tradare anche chiusura-chiusura (tenere la posizione
+anche il giorno regolare successivo) invece di chiusura-apertura? Verificato
+sullo stesso paniere reale già validato:
+
+| leg | ann_log_ret storia intera (2000-2026) | ann_log_ret blocco validazione |
+|---|---:|---:|
+| chiusura→apertura (attuale) | **0.363** | **0.459** |
+| chiusura→chiusura | 0.250 | 0.456 |
+| solo il pezzo aggiunto (RTH giorno dopo) | **-0.107 (negativo)** | ~0.000 (piatto) |
+
+Correlazione fra il leg overnight e il pezzo aggiunto: -0.016 (nessuna
+sinergia). Il peso C2C serve a **selezionare** bene (momentum generale come
+segnale predittivo), ma il rendimento da **incassare** resta specificamente
+quello overnight — allungare la detenzione diluisce l'edge con una gamba a
+valore atteso nullo o negativo. Il disegno MOC/MOO attuale resta corretto
+così com'è.
+
+### File e output
+
+Script (`bt-strategy-test/overnight-ah/research/`): `indicator_panel.py`
+(35→89 indicatori, porting da `bt-core/indicators/regression.py`,
+`MACD.py`, `supertrend.py`, `atr_sma.py`, `LZIndicator.py`),
+`indicator_bt_fidelity_check.py`, `indicator_fama_macbeth.py` (regressione
+cross-sezionale per periodo + aggregazione nel tempo, non lo stderr OLS di
+un singolo periodo — quello sottostimerebbe l'incertezza),
+`indicator_single_factor_basket.py`, `indicator_report.py`. Output:
+`/mnt/Backup/overnight_ah_tuning/{indicator_panel,indicator_fm,indicator_sweep}/`.
+
+### Non-goal
+
+Nessuna modifica ai parametri operativi. Nessuna composizione di score
+tentata in questo studio (indicatori testati solo singolarmente, come
+richiesto esplicitamente dall'utente prima di passare alla composizione).
+
+## Studio 3: tilt di volatilità sullo score esistente (completato, risultato negativo)
+
+Prima di comporre un nuovo score con gli indicatori dello Studio 2, l'utente
+ha fatto notare un punto metodologico importante: lo score attuale è già
+esso stesso un composito di 3 primitive (`c2c_mean_6m`, `ah_mean_6m`,
+`corr12` del tema) — vanno incluse nello stesso pool di candidati, non
+trattate come baseline fissa e separata dai 18 indicatori nuovi.
+
+### Scoperta chiave: i "nuovi" indicatori momentum non sono nuova informazione
+
+Correlazione (rank percentile cross-sezionale, dati reali) tra le 3
+primitive attuali e i 18 migliori indicatori dello Studio 2:
+
+- `ah_mean_6m` corr **0.920** con `sma_ratio_ah_252` (il miglior indicatore
+  AH-momentum trovato) — quasi la stessa informazione, solo una formula
+  diversa sullo stesso concetto.
+- `c2c_mean_6m` corr **0.908** con `sma_ratio_cc_200` — stesso discorso lato
+  C2C.
+- `corr12` (tilt tema) corr **~0.00-0.04 con TUTTI e 18** gli indicatori
+  dello Studio 2 e con gli altri due primitive — genuinamente ortogonale,
+  ma già dentro lo score attuale (`theme_weight=0.15`).
+
+Questo spiega perché nessun indicatore singolo ha battuto il default nello
+Studio 2: i migliori candidati erano raffinamenti di informazione già
+catturata, non segnale nuovo. L'unico cluster dello Studio 2 genuinamente
+non rappresentato in nessuna delle 3 primitive è la **volatilità**
+(`atr_pct_cc_21`, `intraday_vol_mean_42`, `ah_gap_vol_mean_63` — corr
+reciproca 0.74-0.94, quasi ridondanti tra loro). Il cluster
+oscillatori/rumore breve (MACD, StochRSI, SuperTrend) resta il più debole
+sia statisticamente sia economicamente in entrambi gli studi — escluso a
+priori dal composito su indicazione dell'utente.
+
+### Test: tilt di volatilità additivo (non sostitutivo)
+
+```text
+score = (1 - vol_share) * score_attuale + vol_share * rank_pct(atr_pct_cc_21)
+```
+
+`atr_pct_cc_21` scelto come rappresentante del cluster volatilità per
+`tstat_pool` massimo (9.35, contro 8.97 e 8.53 degli altri due). Estensione
+**in-place** di `ScoringParams`/`fast_basket_long`
+(`simulate_basket_rotation.py`/`parameter_sweep_scoring.py`, non un modulo
+duplicato), verificata a fedeltà esatta (`max_abs_diff=0.0`) sia per
+`vol_share=0` (nessuna regressione sul comportamento pre-esistente) sia per
+il blend a `vol_share>0`.
+
+5 combinazioni (`vol_share ∈ {0, 0.05, 0.10, 0.15, 0.20}`, `vol_share=0`
+incluso come arma di controllo = score attuale esatto) valutate sui 12
+blocchi pool 2000-2022 (**blocco di validazione deliberatamente non
+toccato** — la soglia minima di miglioramento restava da concordare con
+l'utente, discussione mai arrivata a quel punto perché il segnale non ha
+retto nemmeno sui blocchi storici):
+
+| vol_share | median regret_norm (12 blocchi pool) |
+|---:|---:|
+| **0.00 (controllo)** | **0.4928 (migliore)** |
+| 0.05 | 0.4942 |
+| 0.20 | 0.4944 |
+| 0.10 | 0.4949 |
+| 0.15 | 0.4964 |
+
+Il tilt di volatilità non aiuta in nessuna quantità testata — nominalmente
+il peggiore quasi ovunque tranne `vol_share=0`. MCS: nessuno dei 5 eliminato
+a nessuna soglia (`alpha=0.10` e `0.25` identici, 5/5 sopravvivono) —
+differenze troppo piccole per essere statisticamente distinguibili con 12
+blocchi, ma la direzione è comunque coerente (il controllo non è mai
+peggiore del tilt).
+
+**Terzo risultato negativo consecutivo**, e il più conclusivo dei tre:
+l'unica informazione genuinamente nuova identificata (volatilità) non
+migliora lo score nemmeno sui blocchi storici, prima ancora di arrivare
+alla validazione intonsa.
+
+### File e output
+
+Script: `bt-strategy-test/overnight-ah/research/composite_tilt_sweep.py`
+(riusa `simulate_basket_rotation.py`, `parameter_sweep_scoring.py`,
+`oracle_daily.parquet`, `mcs_selection.py` invariato). Output:
+`/mnt/Backup/overnight_ah_tuning/composite_sweep/`.
+
+### Non-goal / stato
+
+Nessuna modifica ai parametri operativi. Nessuna validazione sul blocco
+intonso eseguita (il segnale non ha superato il primo filtro). In tre
+studi indipendenti (pesi dello score, indicatori singoli, tilt composito di
+volatilità) nulla ha battuto la configurazione operativa attuale — punto di
+decisione aperto con l'utente: cercare nuova informazione da altre fonti
+dati (non solo prezzo/volume/tema settoriale già esplorati), oppure
+considerare lo score attuale sufficientemente robusto così com'è. Nessuna
+decisione presa in questa sessione.
