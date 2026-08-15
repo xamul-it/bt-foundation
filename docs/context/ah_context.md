@@ -2861,3 +2861,105 @@ Nessuna modifica alla strategia di produzione (`overnight_ah.py`
 invariato). Nessuna validazione sul blocco intonso eseguita. Risultato
 positivo ma in-sample — punto di decisione aperto con l'utente: soglia
 minima di miglioramento e se/quando procedere al test di validazione.
+
+## Prova su strada: benchmark reale (parametri development) e diagnosi dello scarto (completato, risultato negativo — causa identificata)
+
+### Setup
+
+Su richiesta dell'utente, confronto diretto con Backtrader reale contro il
+benchmark che conta davvero: la configurazione **development** realmente
+in paper trading (`config-common/scheduled/strategies/
+overnight-ah-development.env`, cron `bt-scheduled development entry`), non
+l'oracolo astratto. Meccanismo: `btmain.py --benchmark` (già esistente,
+CSV in `config-common/benchmark/`, formato `index,return` — ogni run
+scrive già il proprio `returns.csv` in questo formato, pronto per essere
+copiato). Periodo: **intero, 2000→oggi, inclusa la validazione** —
+decisione esplicita e consapevole dell'utente di superare la regola
+"validazione mai toccata" seguita negli Studi 1-6, presa qui apposta per
+questa prova.
+
+**Bug scoperto e corretto durante la verifica del benchmark** (prima di
+procedere, come richiesto): il primo run con `max_exposure=2` (valore
+reale della config development) su 26 anni continui è esploso a
+**$200k → $1.989 trilioni**, posizioni da miliardi di azioni — compounding
+a leva su un periodo lunghissimo, senza vincoli di capacità/liquidità nel
+motore di backtest (nessun bug nella strategia di produzione, mai toccata
+— nessuno Studio precedente aveva mai fatto girare un backtest continuo
+così lungo con leva). Corretto: `max_exposure=1.0` per entrambi i run
+(stessa convenzione unlevered di tutti gli Studi 1-6).
+
+### Risultato del confronto (26 anni, 2000→2026-08, tutti i filtri/hedge/cooldown reali attivi)
+
+Bug trovato anche nel report `stats.html` di QuantStats: la tabella di
+confronto integrata mostrava il composito vincente (472.205% vs 416.886%
+di rendimento cumulativo) — **numeri fuorvianti**, dovuti al modo in cui
+QuantStats tronca la serie di benchmark alla prima data non-nulla della
+strategia. Ricalcolato direttamente dai due `returns.csv` (stessa finestra
+esatta):
+
+| metrica | benchmark (dev, score legacy) | composito (Studio 5) |
+|---|---:|---:|
+| moltiplicatore cumulativo (26 anni) | **4753x** | 4196x |
+| ann_log_ret | **0.3187** | 0.3140 |
+| Sharpe (giornaliero) | 1.883 | 1.884 (pari) |
+| SQN nativo Backtrader | 4.553 | **4.803** |
+| Sharpe nativo Backtrader | 1.252 | **1.301** |
+
+Quadro misto: il benchmark è leggermente avanti su rendimento
+cumulativo/annualizzato; il composito è leggermente migliore sulle
+metriche a livello di trade (SQN, Sharpe nativo). Molto lontano dal
+vantaggio netto (+1.9pp/anno) trovato nello Studio 6.
+
+### Diagnosi: da cosa dipende lo scarto rispetto allo Studio 6
+
+Lo Studio 6 e questa prova differiscono su 5 fattori contemporaneamente:
+filtri operativi (intraday vol/ADV/ah_lag1), hedge SQQQ, post_up_cooldown,
+`max_concurrent` (5→3), periodo (pool-only → intero). Riattivati uno alla
+volta a partire dal setup esatto dello Studio 6, sempre sul periodo pool
+(`diagnose_road_test_gap.py`, Backtrader reale, controllo vs composito a
+ogni step):
+
+| step | control ann_log_ret | composito ann_log_ret | delta |
+|---|---:|---:|---:|
+| **Studio 6 (nessun filtro/hedge/cooldown, max_conc=5)** | 0.3634 | 0.3822 | **+0.0188** |
+| **+ filtri intraday/ADV/ah_lag1** | 0.2263 | 0.2288 | **+0.0025** |
+| + hedge SQQQ | 0.2279 | 0.2305 | +0.0025 |
+| + post_up_cooldown | 0.2331 | 0.2315 | -0.0016 |
+| + `max_concurrent` 5→3 (= dev, periodo pool) | 0.2952 | 0.2987 | +0.0035 |
+| + periodo esteso a oggi (prova su strada) | 0.3187 | 0.3140 | -0.0047 |
+
+**Causa quasi interamente concentrata in un solo fattore**: i filtri
+operativi giornalieri (`min_intraday_vol`/`max_intraday_vol`/
+`ah_lag1_threshold`/`min_adv`) fanno crollare il vantaggio del composito
+da +0.0188 a +0.0025 — **-87%** — al primo step. Tutti gli altri fattori
+(hedge, cooldown, `max_concurrent`, estensione del periodo) producono solo
+oscillazioni di ±0.003-0.005 attorno a questo livello già azzerato,
+nessuno paragonabile ai filtri.
+
+Interpretazione (non ancora verificata quantitativamente, da approfondire
+se si vuole isolare quale dei tre filtri pesa di più): questi filtri
+agiscono ogni giorno, DOPO la selezione mensile del paniere, scartando
+candidati per volatilità intraday odierna, liquidità e gap overnight di
+ieri. Il vantaggio del composito viene dal ranking mensile migliore, ma se
+i nomi meglio classificati (pesati su volatilità/momentum come
+`supertrend_dist_cc_10_3`, `intraday_vol_mean_42`, `obv_slope_126`)
+vengono sistematicamente scartati dal filtro giornaliero, il vantaggio del
+ranking si diluisce — nessuno Studio precedente (1-6) aveva mai testato il
+composito in presenza di questi filtri, sempre disattivati di proposito
+per isolare la sola composizione dello score.
+
+### File e output
+
+Script: `bt-strategy-test/overnight-ah/research/
+diagnose_road_test_gap.py`. Strategia sperimentale riusata invariata
+(`overnight_ah_flat_composite.py`). Benchmark:
+`config-common/benchmark/overnight_ah_dev_auction_full.csv`. Output:
+`/mnt/Backup/overnight_ah_tuning/composite_weight_opt_v2/
+road_test_gap_diagnosis.csv`.
+
+### Non-goal / stato
+
+Nessuna modifica alla strategia di produzione. Nessuna decisione di
+promuovere il composito. Causa dello scarto identificata (filtri operativi
+giornalieri) ma non ancora scomposta nei tre filtri singoli — punto aperto
+con l'utente su come procedere.
