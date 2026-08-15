@@ -2519,10 +2519,120 @@ Script: `bt-strategy-test/overnight-ah/research/composite_tilt_sweep.py`
 ### Non-goal / stato
 
 Nessuna modifica ai parametri operativi. Nessuna validazione sul blocco
-intonso eseguita (il segnale non ha superato il primo filtro). In tre
-studi indipendenti (pesi dello score, indicatori singoli, tilt composito di
-volatilità) nulla ha battuto la configurazione operativa attuale — punto di
-decisione aperto con l'utente: cercare nuova informazione da altre fonti
+intonso eseguita (il segnale non ha superato il primo filtro).
+
+## Studio 4: ottimizzazione congiunta del vettore di pesi (completato, risultato negativo)
+
+Ipotesi dell'utente: le combinazioni di indicatori potrebbero riservare
+sorprese per complementarità (un indicatore non "top" da solo potrebbe
+aiutare in composizione), da testare ottimizzando direttamente un vettore
+di pesi sull'obiettivo economico reale invece di una griglia discreta.
+Valutata anche l'opzione rete neurale/tensori e scartata **prima** di
+partire: campione piccolo (271 periodi mensili pool), lezione già
+documentata nel repo (ML tabulare — Ridge/HuberRegressor/ExtraTreesRegressor
+— non batte i compositi semplici in questo dominio), e lo spazio
+informativo genuinamente nuovo oltre alle 3 primitive attuali è quasi
+mono-dimensionale (solo il cluster volatilità, vedi Studio 3) — un modello
+flessibile non avrebbe materiale su cui generalizzare.
+
+### Fase A — regressione multivariata (complementarità statistica)
+
+Estensione di `indicator_fama_macbeth.py` a una regressione OLS con più
+regressori simultanei (rank percentile), per isolare l'effetto **parziale**
+di ciascun candidato controllando per gli altri — non solo l'effetto
+marginale/univariato già misurato negli studi precedenti. Candidati:
+`c2c_mean_6m`, `ah_mean_6m`, `corr12` (le 3 primitive) + `atr_pct_cc_21`
+(rappresentante volatilità, Studio 3) + `obv_slope_126` (il meno
+ridondante tra i "duplicati" momentum, corr 0.64 con `c2c_mean_6m`):
+
+| indicatore | t-stat univariato | t-stat parziale (controllando per gli altri 4) |
+|---|---:|---:|
+| `ah_mean_6m` | 14.03 | **12.97** |
+| `atr_pct_cc_21` | 9.35 | **7.18** |
+| `obv_slope_126` | 4.53 | 1.92 (non significativo → escluso dalla Fase B) |
+| `corr12` | -0.82 (non signif.) | **-2.58** |
+| `c2c_mean_6m` | 2.56 | **-2.34** |
+
+Due risultati degni di nota, entrambi verificati con un secondo check
+mirato prima di accettarli:
+
+- **`c2c_mean_6m` cambia segno** (da +2.56 a -2.34) una volta controllato
+  per `ah_mean_6m`. Spiegazione meccanica confermata sui dati: dato che
+  C2C ≈ AH + RTH (in log-return, stessa finestra), il residuo di
+  `c2c_mean_6m` dopo aver rimosso la quota spiegata da `ah_mean_6m`
+  correla **0.847** con `rth_mean_6m` (la componente RTH già isolata nella
+  tabella riepilogativa precedente). `rth_mean_6m` è già noto avere un
+  effetto **negativo e significativo** sui rendimenti overnight futuri
+  (t-stat=-5.45, session disjunction). Controllando per `ah_mean_6m`, ciò
+  che resta di `c2c_mean_6m` è quindi in gran parte esposizione RTH — e
+  l'RTH è un cattivo predittore dell'overnight. Non un artefatto: è la
+  stessa session disjunction già documentata, vista da un'altra angolazione.
+- **`corr12`** non è mai stato significativo da solo (t-stat univariato
+  -0.82, mai testato prima d'ora come predittore diretto — nello score è
+  un tilt tematico, non un segnale di rendimento) ma diventa marginalmente
+  significativo (-2.58) una volta ripulito dal rumore condiviso con gli
+  altri regressori — un effetto "suppressor" classico in regressione
+  multipla, non un cambio di direzione economica: resta un segnale debole.
+
+### Fase B — ottimizzazione libera del vettore di pesi sull'obiettivo economico
+
+Estensione **in-place** di `ScoringParams`/`fast_basket_long`
+(generalizzazione del `vol_share` singolo dello Studio 3 a
+`extra_weights: tuple[(col, peso), ...]`, N componenti simultanee),
+verificata a fedeltà esatta (`max_abs_diff=0.0`) prima di usarla. Solo
+`atr_pct_cc_21` sopravvive al filtro di significatività parziale della
+Fase A ed entra come variabile libera insieme a `c2c_weight`/`theme_share`
+(anch'essi lasciati liberi, non fissati al default — lo Studio 1 aveva già
+mostrato che il punto ottimo sul pool non è detto generalizzi).
+
+Ottimizzazione con `scipy.optimize` (Nelder-Mead vincolato, non griglia
+discreta) sulla mediana di `regret_norm` sui 12 blocchi pool: **55 punti
+valutati**, spazio continuo `c2c_weight∈[0,1]`, `theme_share∈[0,0.4]`,
+peso `atr_pct_cc_21∈[0,0.3]`.
+
+| combo | median regret_norm (12 blocchi pool) |
+|---|---:|
+| **punto di controllo (default attuale, extra=0)** | **0.4920 (migliore di tutti i 55 punti)** |
+| ottimo trovato dall'ottimizzatore (`c2c_weight=0.62, theme_share=0.155, atr=0.095`) | 0.4929 |
+
+Il punto di controllo (configurazione operativa attuale) è risultato
+**il migliore tra tutti e 55** i punti esplorati liberamente
+dall'ottimizzatore — nessuna direzione dello spazio continuo lo batte. MCS
+(α=0.10: 52/55 sopravvivono; α=0.25: 49/55) e bootstrap-percentile (55/55
+in overlap con il migliore) confermano che le differenze osservate sono
+dentro il rumore statistico. Leave-block-out stabile 12/12: il punto di
+controllo non perde mai contro la popolazione sul blocco tenuto fuori.
+
+Nota di interpretazione: nonostante `c2c_mean_6m` abbia effetto parziale
+negativo in Fase A, l'ottimizzatore economico converge comunque vicino a
+`c2c_weight≈0.6` (non verso `ah_mean_6m` puro). La spiegazione: la
+regressione FM misura una relazione lineare media su tutta la
+cross-section; l'obiettivo economico reale è la selezione **rank-based dei
+soli top-5 su ~50**, un meccanismo non lineare che non è governato dallo
+stesso coefficiente. Coerente con quanto già osservato nello Studio 1
+(§ perché il peso maggiore è sull'indicatore con t-stat più basso): il
+segno/forza di un coefficiente di regressione non predice cosa funziona
+per la selezione top-5.
+
+### File e output
+
+Script: `bt-strategy-test/overnight-ah/research/composite_weight_optimization.py`
+(Fase A + Fase B in un unico orchestratore; riusa `simulate_basket_rotation.py`,
+`parameter_sweep_scoring.py`, `indicator_fama_macbeth.py` esteso con
+`cross_sectional_regression_multi`, `oracle_daily.parquet`,
+`mcs_selection.py` invariato). Output:
+`/mnt/Backup/overnight_ah_tuning/composite_weight_opt/`.
+
+### Non-goal / stato
+
+Nessuna modifica ai parametri operativi. Nessuna rete neurale/tensori
+utilizzata (scartata per analisi preliminare, vedi sopra). Nessuna
+validazione sul blocco intonso eseguita (il segnale non ha superato il
+filtro pool). In **quattro studi indipendenti** (pesi dello score,
+indicatori singoli, tilt composito di volatilità, ottimizzazione libera
+del vettore di pesi — quest'ultimo con un metodo di ricerca continuo, non
+più a griglia) nulla ha battuto la configurazione operativa attuale — punto
+di decisione aperto con l'utente: cercare nuova informazione da altre fonti
 dati (non solo prezzo/volume/tema settoriale già esplorati), oppure
 considerare lo score attuale sufficientemente robusto così com'è. Nessuna
 decisione presa in questa sessione.
