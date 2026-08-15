@@ -2628,11 +2628,129 @@ Script: `bt-strategy-test/overnight-ah/research/composite_weight_optimization.py
 Nessuna modifica ai parametri operativi. Nessuna rete neurale/tensori
 utilizzata (scartata per analisi preliminare, vedi sopra). Nessuna
 validazione sul blocco intonso eseguita (il segnale non ha superato il
-filtro pool). In **quattro studi indipendenti** (pesi dello score,
-indicatori singoli, tilt composito di volatilità, ottimizzazione libera
-del vettore di pesi — quest'ultimo con un metodo di ricerca continuo, non
-più a griglia) nulla ha battuto la configurazione operativa attuale — punto
-di decisione aperto con l'utente: cercare nuova informazione da altre fonti
-dati (non solo prezzo/volume/tema settoriale già esplorati), oppure
-considerare lo score attuale sufficientemente robusto così com'è. Nessuna
-decisione presa in questa sessione.
+filtro pool).
+
+## Studio 5: composizione economica di tutti gli indicatori finalisti, nessun pre-filtro statistico (completato, risultato misto)
+
+### Correzione metodologica dell'utente
+
+Negli Studi 2-4 gli indicatori erano stati scartati dal pool di
+composizione sulla base di correlazione grezza con le primitive esistenti
+(es. `sma_ratio_ah_252` escluso per corr 0.92 con `ah_mean_6m`, Studio 3) o
+di significatività statistica parziale (Fase A dello Studio 4:
+`obv_slope_126` escluso per t-stat parziale 1.92<2.0). L'utente ha fatto
+notare l'incoerenza: il default stesso combina `c2c_mean_6m` e
+`ah_mean_6m`, correlati (pearson 0.43) — e la Fase A dello Studio 4 aveva
+appena mostrato che l'effetto *parziale* di `c2c_mean_6m` è negativo,
+eppure la combinazione batte `ah_mean_6m` da solo. La
+correlazione/significatività di un singolo indicatore non predice se
+aggiunge valore in una composizione — va lasciato decidere all'obiettivo
+economico stesso, senza filtro statistico a monte.
+
+Verifica aggiuntiva (test di complementarità a 3 termini,
+`c2c_mean_6m`+`ah_mean_6m`+candidato, sui 18 vincitori dello Studio 2):
+diversi indicatori scartati per correlazione nello Studio 3 mostrano t-stat
+parziale significativo anche controllando per entrambe le primitive (es.
+`sma_ratio_ah_252` t-stat parziale 4.44, `rsi_wilder_cc_25` -4.62,
+`reg_slope_r2_ah_252` 4.41) — ulteriore conferma che lo screening a coppie
+usato finora era insufficiente. Risultato non salvato a parte, riportato
+qui come motivazione dello studio.
+
+### Metodo: score piatto a 21 componenti, nessun pre-filtro
+
+Pool: `c2c_mean_6m`, `ah_mean_6m`, `corr12` (primitive attuali) + i 18
+vincitori per famiglia dello Studio 2 — **21 componenti, tutte a peso
+libero**, `score = sum_i w_i * rank_pct(indicator_i)`, `w_i≥0`,
+`sum(w_i)=1` (softmax di 21 reali non vincolati). Estensione **in-place** e
+retrocompatibile di `ScoringParams` (nuovo campo `flat_weights`, sostituisce
+la formula nidificata quando impostato; `None` riproduce esattamente il
+comportamento degli Studi 1-4). Verifica di fedeltà a 3 livelli (nested
+invariato, punto di controllo via `flat_weights` = stesso risultato del
+riferimento, punto di controllo piatto = stessa formula nidificata) — tutte
+`max_abs_diff=0.0`; un primo tentativo aveva un bug (i rank venivano
+calcolati sull'universo intero invece che solo tra i titoli eleggibili
+c2c/ah, `max_abs_diff=3e-2`), corretto prima di fidarsi di qualunque
+risultato.
+
+Dato il salto a 21 parametri liberi, due difese aggiuntive concordate con
+l'utente:
+- **Blocchi pool a `block_years=1`** invece di 2 (23 blocchi invece di 12,
+  quasi il doppio delle osservazioni indipendenti per MCS/bootstrap/
+  leave-block-out; parametro già esistente in `build_blocks`, nessun nuovo
+  codice). Blocco di validazione invariato (2022-08→2026-08).
+- **Penalità di concentrazione** nell'obiettivo (quadratica oltre un peso
+  singolo di 0.5) per scoraggiare soluzioni degeneri su 1-2 indicatori.
+
+Ottimizzazione a due stadi: `scipy.optimize.differential_evolution`
+(globale, gradient-free, 21 dimensioni, 34.020 valutazioni, parallelizzato
+su 22 processi) + raffinamento locale `Nelder-Mead`. Nota tecnica: scipy
+usa di default `forkserver` invece di `fork` per il pool di processi (per
+evitare deadlock) — i worker `forkserver` non vedono lo stato del processo
+principale impostato *dopo* l'avvio del server, quindi i grandi DataFrame
+condivisi via variabili globali di modulo risultavano `None` nei worker.
+Risolto forzando esplicitamente `multiprocessing.set_start_method("fork")`
+prima di lanciare l'ottimizzatore.
+
+### Risultato: miglioramento sulla mediana, ma non su un test appaiato rigoroso
+
+| combo | median regret_norm (23 blocchi pool) |
+|---|---:|
+| punto di controllo (default attuale, forma piatta) | 0.4971 |
+| **ottimo trovato** (`ah_mean_6m` 0.285, `obv_slope_126` 0.183, `reg_slope_r2_ah_252` 0.164, `supertrend_dist_cc_10_3` 0.142, `intraday_vol_mean_42` 0.112, `corr12` 0.033, `c2c_mean_6m` **0.017 (quasi azzerato)**, resto <2%) | **0.4833** |
+
+Il salto (0.4971→0.4833) è il più grande osservato in cinque studi — molto
+più ampio delle differenze di 2ª/3ª decimale viste finora. Verificato che
+**non è un artefatto del cambio a `block_years=1`**: rieseguendo la sola
+coppia `c2c_weight`/`theme_share` (senza i 18 indicatori nuovi) sotto lo
+stesso schema a 23 blocchi, il range resta 0.492–0.506 — nessuna
+combinazione nested si avvicina a 0.4833, serve davvero la composizione a
+21 componenti.
+
+Il primo MCS eseguito è risultato **non informativo**: il punto di
+controllo si è classificato 423°/423 (ultimo) tra tutti i punti valutati
+dall'ottimizzatore, quindi escluso a monte dallo screening top-250 di
+`mcs_selection.py` — l'MCS ha solo confermato che i migliori 250 punti sono
+intercambiabili tra loro, non che battono il controllo. Rifatto il
+confronto corretto, **appaiato blocco per blocco** (non solo la mediana
+aggregata):
+
+- L'ottimo batte il controllo su **14/23 blocchi (61%)**, perde su 9/23.
+- **Wilcoxon signed-rank: p=0.33** — non significativo.
+- Leave-block-out: **instabile, 18/23** — 5 rotazioni su 23 mostrano il
+  composito peggiorare della popolazione sul blocco tenuto fuori quando
+  quello specifico blocco non è nel training set (mai successo negli Studi
+  1/3/4, sempre stabili 12/12).
+
+### Interpretazione
+
+Il punto dell'utente era corretto: rimuovendo il pre-filtro statistico
+l'ottimizzatore trova un beneficio economico reale — il maggiore visto in
+cinque studi — che gli screening precedenti avrebbero nascosto (coerente
+con la scoperta che `c2c_mean_6m` viene quasi azzerato, esattamente come
+suggerito dal suo effetto parziale negativo nello Studio 4). Ma il test
+rigoroso mostra che il miglioramento è **concentrato su una minoranza di
+blocchi storici favorevoli** (14/23), non un vantaggio diffuso: il test
+appaiato non è significativo e il leave-block-out è instabile per la prima
+volta in questa serie di studi — pattern coerente con l'overfitting
+parziale segnalato prima di partire (21 parametri liberi anche su 23
+blocchi è un rapporto ancora teso). Non è né un quinto risultato negativo
+netto né una vittoria validata: è un segnale reale ma fragile, da trattare
+con cautela.
+
+### File e output
+
+Script: `bt-strategy-test/overnight-ah/research/composite_weight_optimization_v2.py`
+(riusa `simulate_basket_rotation.py`, `parameter_sweep_scoring.py` estesi
+con `flat_weights`, `build_blocks(block_years=1)`, `oracle_daily.parquet`,
+`mcs_selection.py` invariato per lo screening preliminare). Output:
+`/mnt/Backup/overnight_ah_tuning/composite_weight_opt_v2/`.
+
+### Non-goal / stato
+
+Nessuna modifica ai parametri operativi. Nessuna validazione sul blocco
+intonso eseguita — il segnale, pur promettente sulla mediana, non ha
+ancora superato un test di robustezza pool sufficiente per giustificare
+di guardare la validazione. Punto di decisione aperto con l'utente su come
+procedere (raffinare l'obiettivo per premiare esplicitamente la stabilità
+leave-block-out, accettare il rischio e testare comunque in validazione, o
+altro) — non deciso in questa sessione, da discutere.
