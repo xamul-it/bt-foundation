@@ -2754,3 +2754,110 @@ di guardare la validazione. Punto di decisione aperto con l'utente su come
 procedere (raffinare l'obiettivo per premiare esplicitamente la stabilità
 leave-block-out, accettare il rischio e testare comunque in validazione, o
 altro) — non deciso in questa sessione, da discutere.
+
+## Studio 6: conferma Backtrader reale sul periodo pool completo (completato, risultato positivo in-sample)
+
+### Correzione metodologica dell'utente
+
+Il test appaiato blocco-per-blocco dello Studio 5 (14/23 blocchi vinti,
+Wilcoxon non significativo) tratta ogni blocco storico alla pari, ma il
+regime di mercato cambia completamente da un periodo all'altro (dot-com,
+GFC, COVID) — un blocco di crisi non è comparabile a un blocco calmo. La
+domanda economica giusta è la **performance aggregata sul periodo
+complessivo** (un unico backtest continuo), non un conteggio di blocchi
+discreti. L'utente ha chiesto due cose: (1) confermare con **Backtrader
+reale**, non solo la simulazione pandas veloce; (2) rifare lo Studio 5
+**senza la penalità di concentrazione**, per vedere se l'ottimo naturale è
+più concentrato.
+
+### Studio 5b: stesso Studio 5, senza penalità di concentrazione
+
+`composite_weight_optimization_v3_no_penalty.py` (wrapper minimo su
+composite_weight_optimization_v2.py, `LAMBDA_CONC=0`). Risultato: anche
+senza penalità l'ottimo non è degenere — resta diffuso su 6+ componenti
+(il maggiore, `reg_slope_r2_ah_252`, pesa 33%), non collassa su 1-2
+indicatori. Punteggio pool pandas praticamente identico allo Studio 5
+(0.4836 vs 0.4833 — la penalità non stava vincolando la ricerca in modo
+significativo).
+
+### Nuova strategia sperimentale (produzione NON toccata)
+
+Per il test con Backtrader reale, creata `bt-core/strategies/
+overnight_ah_flat_composite.py` — **sottoclasse** di `OvernightAH`
+(`overnight_ah.py` di produzione invariato, zero rischio per paper/live),
+`live_enabled=False` (solo backtest). Aggiunge 3 parametri opzionali
+(`monthly_universe_score_mode`, `_indicator_panel`, `_flat_weights`);
+default `score_mode='legacy'` delega interamente a `super()` — verificato
+`returns.csv` identico bit-per-bit alla classe base sullo stesso periodo.
+Con `score_mode='flat_panel'` sostituisce solo il calcolo dello score nel
+ramo dinamico (`_compute_weak_theme_monthly_universe`) con un blend piatto
+sul pannello indicatori dello Studio 5 (`export_flat_panel_csv.py`,
+`;`-delimited, root risolta come `_load_monthly_universe`) — gating (SPY
+gate, regime switch, fallback statico) ereditati invariati. Non
+reimplementa dal vivo i 18 indicatori (lavoro enorme, alto rischio di
+fedeltà, duplicherebbe `indicator_panel.py` già validato) — per questo la
+modalità resta backtest-only, non pronta per paper/live.
+
+### Risultato: periodo pool completo (2000→2022-08-07, un unico backtest, 5685 giorni)
+
+| combo | ann_log_ret | regret_norm |
+|---|---:|---:|
+| controllo (pesi piatti = default attuale) | 0.3634 | 0.4914 |
+| **Studio 5 (con penalità di concentrazione)** | **0.3822** | **0.4897** |
+| Studio 5b (senza penalità) | 0.3624 | 0.4914 |
+
+Sull'aggregato dell'intero periodo — la lente corretta secondo l'utente —
+**lo Studio 5 batte il controllo con Backtrader reale**: +1.9 punti
+percentuali annui di rendimento log, non nella simulazione pandas ma
+nell'esecuzione reale (ordini, fill, sizing, margine). È il segnale più
+forte di tutta la serie di studi.
+
+Notevole: **la variante senza penalità (5b) non regge** lo stesso test —
+sostanzialmente pari al controllo (0.3624 vs 0.3634), nonostante un
+punteggio pool pandas leggermente migliore. La composizione 5b è dominata
+per l'83% da `reg_slope_r2_ah_252` (33%) + `intraday_vol_mean_42` (16%);
+quella dello Studio 5, più diversificata (nessun peso oltre il 29%), è
+quella che si conferma sul motore reale — la penalità di concentrazione
+non era solo una precauzione, sembra aver selezionato una composizione più
+robusta/generalizzabile.
+
+### Fedeltà verificata
+
+1. `score_mode='legacy'` (default) → `returns.csv` identico bit-per-bit
+   alla classe base `OvernightAH` sullo stesso periodo (smoke test
+   2019-2021).
+2. `score_mode='flat_panel'` col punto di controllo → stesso ordine di
+   grandezza del legacy (2020: 0.924 vs 0.943; 2021: 0.342 vs 0.370) —
+   scarto atteso da convenzioni di rolling leggermente diverse (calendario
+   vs trading day), stessa tolleranza già accettata nello Studio 1 quando
+   si confermò il default via Backtrader reale.
+
+### Limite importante: risultato ancora in-sample
+
+I pesi dello Studio 5 sono stati ottimizzati proprio su questo stesso
+periodo pool — il miglioramento qui riportato non è una conferma
+out-of-sample, è la stessa popolazione su cui l'ottimizzatore ha
+cercato. Il blocco di validazione (2022-08→2026-08) **non è stato
+toccato**, come da regola invariata in tutti gli studi precedenti. Dato
+che è il segnale più forte finora, è il momento naturale per riprendere
+la discussione sulla soglia minima di miglioramento (rimandata dallo
+Studio 3) prima di un eventuale test in validazione — decisione non presa
+in questa sessione.
+
+### File e output
+
+Script: `bt-strategy-test/overnight-ah/research/
+composite_weight_optimization_v3_no_penalty.py`,
+`export_flat_panel_csv.py`, `validate_flat_weights_backtrader.py`.
+Strategia: `bt-core/strategies/overnight_ah_flat_composite.py` (nuova,
+sperimentale). Output: `/mnt/Backup/overnight_ah_tuning/
+composite_weight_opt_v3_no_penalty/`,
+`bt-strategy-test/overnight-ah/research/out/flat_panel.csv`,
+`/mnt/Backup/overnight_ah_tuning/composite_weight_opt_v2/bt_pool_period_results.csv`.
+
+### Non-goal / stato
+
+Nessuna modifica alla strategia di produzione (`overnight_ah.py`
+invariato). Nessuna validazione sul blocco intonso eseguita. Risultato
+positivo ma in-sample — punto di decisione aperto con l'utente: soglia
+minima di miglioramento e se/quando procedere al test di validazione.
