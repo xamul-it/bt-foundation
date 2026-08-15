@@ -2963,3 +2963,95 @@ Nessuna modifica alla strategia di produzione. Nessuna decisione di
 promuovere il composito. Causa dello scarto identificata (filtri operativi
 giornalieri) ma non ancora scomposta nei tre filtri singoli — punto aperto
 con l'utente su come procedere.
+
+## Seguito prova su strada: rimozione filtri (con hedge+cooldown) — il composito torna a vincere
+
+### Chiarimento metodologico: un controllo fisso, non uno diverso a ogni test
+
+L'utente ha fatto notare che cambiare il "controllo" a ogni test (a parità
+di fattori, per isolarli uno alla volta) confonde il quadro complessivo.
+Fissato da qui in avanti un **controllo di riferimento unico**:
+`benchmark_dev_auction_unlevered` (config development reale, filtri+hedge+
+cooldown+`max_concurrent=3` attivi, periodo 2000-2026,
+**475.206,59%** di rendimento cumulativo) — le varianti sperimentali si
+confrontano sempre contro questo stesso numero, non contro un controllo
+ricalcolato ogni volta.
+
+### Chiarimento: cooldown e hedge NON sono la causa dello svantaggio
+
+Test diretto: composito con hedge+cooldown (dev completo) = **-11,71%**
+vs controllo fisso; composito **senza** hedge+cooldown = **-31,08%** vs
+controllo fisso — togliendoli lo scarto peggiora, non migliora. Cooldown e
+hedge aiutano il composito in termini assoluti (es. `ann_log_ret`
+0,2305→0,2315 aggiungendo cooldown nella catena di diagnosi) — il piccolo
+calo di *delta relativo* osservato in precedenza (+0,0025→-0,0016) è dovuto
+al fatto che il cooldown aiuta il controllo un filo di più (+0,0052) del
+composito (+0,0010), non a un danno assoluto per il composito.
+
+### Test: filtri intraday/ADV/ah_lag1 rimossi, hedge+cooldown+max_concurrent=3 mantenuti
+
+Ipotesi dell'utente: se i filtri sono la causa, provare a togliere *solo*
+quelli mantenendo hedge+cooldown+`max_concurrent=3`+periodo intero.
+Nuovo benchmark salvato per riuso:
+`config-common/benchmark/overnight_ah_no_filters_hedge_cooldown.csv`
+(cartella run: `bt-core/out/overnight_ah/OvernightAH/nofilters_full_control/`).
+
+| | rendimento cumulativo | vs controllo fisso (con filtri) |
+|---|---:|---:|
+| controllo fisso (dev completo, **con** filtri) | 475.206,59% | — |
+| controllo, **senza** filtri (hedge+cooldown+maxconc3) | 2.915.112,86% | +513,33% |
+| **composito, senza filtri** (hedge+cooldown+maxconc3) | **3.117.295,31%** | **+555,87%** |
+| composito vs controllo, stesso setup senza filtri | — | **+6,94%** |
+
+Qui il composito batte il controllo in modo netto (+6,94%, non i decimi di
+punto visti con i filtri attivi) — confermata l'ipotesi: sono i filtri
+intraday/ADV/ah_lag1 a diluire il vantaggio del composito, non hedge/
+cooldown. Nessun errore/warning nei log di entrambi i run.
+
+**Avvertenza**: togliere quei filtri fa esplodere il rendimento di
+*entrambe* le strategie di oltre 5x rispetto al controllo reale — segnale
+che quei filtri tagliano molta crescita "sulla carta". Esistono
+presumibilmente per un motivo operativo reale (liquidità minima,
+volatilità intraday, gap overnight estremi) che il backtest non prezza
+(nessuno slippage/impatto di mercato modellato per i trade più rischiosi
+che i filtri escludono) — un rendimento 5-6x più alto solo togliendo un
+filtro di liquidità è altrettanto un segnale di sovrastima
+dell'eseguibilità reale quanto un merito del composito.
+
+### Chiarimento: `max_exposure=2` non è un bug
+
+L'utente ha chiarito che `max_exposure=2` (esposizione target 200%,
+leva reale) non è il bug trovato a inizio prova su strada — quel bug era
+la combinazione leva+periodo lunghissimo+nessun vincolo di capacità che
+produceva risultati assurdi ($200k→$1.989 trilioni). Rieseguito lo stesso
+test "senza filtri, hedge+cooldown+maxconc3" con `max_exposure=2`
+(`--margin-leverage 2` invariato, era già presente in tutti i run
+precedenti come vincolo broker inerte a `max_exposure=1.0`):
+
+| | rendimento cumulativo |
+|---|---:|
+| controllo (lev2, no filtri, hedge+cooldown) | 19.742.501.511% |
+| composito (lev2, no filtri, hedge+cooldown) | 21.534.961.218% |
+| **composito vs controllo** | **+9,08%** |
+
+Verificato esplicitamente **nessun bug**: zero errori/warning nei log,
+zero rifiuti di margine (incluso il caso specifico già noto in passato —
+ordine di apertura/chiusura collegato rifiutato per margine, che apriva
+uno short fantasma — non si è presentato), trade count coerente (~19.150-
+19.170 in entrambi i run, in linea con la versione senza leva), SQN/Sharpe
+finiti e sensati (SQN 5,07/4,41, Sharpe 1,09/1,12 — più bassi che a leva 1x,
+atteso perché la leva amplifica la volatilità più del rendimento medio nel
+calcolo Sharpe). Il vantaggio relativo del composito regge e migliora
+leggermente con la leva (+9,08% vs +6,94% a leva 1x). I numeri assoluti
+enormi sono l'effetto atteso di leva 2x composta ogni notte per 26 anni
+senza vincoli di capacità nel motore di backtest, non un errore di calcolo.
+
+### Non-goal / stato
+
+Nessuna modifica alla strategia di produzione. Nessuna decisione di
+promuovere il composito o di rimuovere i filtri operativi in produzione —
+la rimozione filtri è un test diagnostico, non una raccomandazione: il
+backtest non prezza slippage/impatto di mercato per i trade che i filtri
+escludono, quindi il vantaggio osservato senza filtri potrebbe essere in
+parte un artefatto di eseguibilità irrealistica. Punto aperto con l'utente
+su come interpretare/proseguire.
