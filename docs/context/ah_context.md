@@ -3055,3 +3055,77 @@ backtest non prezza slippage/impatto di mercato per i trade che i filtri
 escludono, quindi il vantaggio osservato senza filtri potrebbe essere in
 parte un artefatto di eseguibilità irrealistica. Punto aperto con l'utente
 su come interpretare/proseguire.
+
+## Isolamento dei tre filtri operativi uno alla volta
+
+Meccanica esatta dei tre filtri (`overnight_ah.py::_filter_reason`,
+righe 1449-1502, applicati ogni giorno a ogni candidato prima dell'entry):
+
+- **`min_intraday_vol`/`max_intraday_vol`**: banda su
+  `(high[0]-low[0])/open[0]` della barra di OGGI (il giorno stesso
+  dell'eventuale entry) — scarta se il range del giorno è fuori
+  `[min,max]`. `intraday_vol_filter_side` limita l'applicazione a giorni
+  up/down/any.
+- **`min_adv`**: ADV$ stimato come `SMA(volume,20)[-1]` (di ieri, ex-ante)
+  × `close[0]` (di oggi) — scarta se sotto soglia (liquidità minima).
+- **`ah_lag1_threshold`**: guarda il gap overnight appena concluso
+  `(open[0]-close[-1])/close[-1]` — scarta se il gap della notte
+  precedente era già molto negativo (evita re-entry dopo una notte pesante
+  sullo stesso titolo).
+
+Ipotesi iniziale (poi confermata parzialmente errata): dato che il
+composito pesa `intraday_vol_mean_42` (11,2%) e altri indicatori di
+trend/momentum correlati alla volatilità realizzata, ci si aspettava che
+il filtro di volatilità fosse la causa dominante. Isolati i tre filtri uno
+alla volta (controllo fisso sempre `benchmark_dev_auction_unlevered`,
+hedge+cooldown+`max_concurrent=3`+periodo intero 2000-2026 invariati in
+ogni riga, `max_exposure=1.0`, nessun errore/warning in nessun run):
+
+| scenario | controllo | composito | **composito vs controllo (stesso setup)** | composito vs benchmark fisso |
+|---|---:|---:|---:|---:|
+| TUTTI i filtri attivi | 475.207% | 419.536% | -11,71% | -11,71% |
+| solo vol tolta (ADV+ah_lag1 attivi) | 1.050.980% | 941.371% | -10,43% | +98,08% |
+| solo ah_lag1 tolto (vol+ADV attivi) | 478.984% | 427.358% | -10,78% | -10,07% |
+| solo ADV tolto (vol+ah_lag1 attivi) | 1.000.052% | 974.898% | **-2,51%** | +105,13% |
+| solo ah_lag1 attivo (vol+ADV disattivati) | 2.547.893% | 3.102.540% | **+21,77%** | +552,77% |
+| tutti e 3 tolti | 2.915.113% | 3.117.295% | +6,94% | +555,87% |
+
+**Lezione chiave (già osservata più volte in questa sessione, qui di
+nuovo)**: la colonna "vs benchmark fisso" è fuorviante quando i due lati
+non hanno lo stesso set di filtri attivi (mescola "quanto rende togliere
+un filtro" con "il composito sceglie meglio") — l'unica colonna valida per
+giudicare se il composito batte il controllo è quella a parità di setup
+("comp vs ctrl, stesso setup").
+
+**Risultato**: `min_adv` da solo è il fattore con l'impatto maggiore
+(-2,51%, il più vicino a zero tra i singoli filtri); vol e ah_lag1 tolti
+singolarmente non spostano quasi nulla (-10,43%/-10,78%, quasi identico al
+caso con tutti i filtri). Nessun singolo filtro spiega da solo il
+recupero completo (+6,94%, tutti e tre tolti insieme) — somma degli
+effetti isolati ≈ +11,4pp attesi contro +6,94% osservato: interazione non
+additiva tra i filtri, non un effetto di un solo fattore dominante.
+Risultato sorprendente non ancora pienamente spiegato: "solo ah_lag1
+attivo" (vol e ADV disattivati insieme) dà il risultato migliore in
+assoluto per il composito (+21,77%, meglio persino di "tutti tolti") — un
+punto aperto, non ancora indagato a fondo (possibile interazione
+vol×ADV che penalizza il composito più della somma dei due presi
+singolarmente).
+
+### File e output
+
+Nuovi benchmark salvati in `config-common/benchmark/`:
+`overnight_ah_novolfilter_control.csv`,
+`overnight_ah_noahlag1_control.csv`, `overnight_ah_noadv_control.csv`,
+`overnight_ah_onlyahlag1_control.csv`. Nessuno script nuovo — run diretti
+via `btmain.py`, stessa metodologia (controllo salvato come benchmark,
+composito eseguito con `--benchmark`, confronto ricalcolato direttamente
+dai `returns.csv` per evitare il troncamento fuorviante di QuantStats già
+documentato).
+
+### Non-goal / stato
+
+Nessuna modifica alla strategia di produzione. Causa isolata solo
+parzialmente: `min_adv` pesa di più, ma l'interazione tra i tre filtri
+resta poco chiara (in particolare il risultato "solo ah_lag1 attivo").
+Nessuna decisione di modificare i parametri operativi reali — prossimo
+passo: verificare se/come aggiornare i parametri del run "development".
