@@ -3291,3 +3291,157 @@ disattivazione. Punto aperto con l'utente su quali valori applicare
 (es. disattivazione totale vs un punto intermedio più conservativo come
 `ah_lag1_threshold=-0,20` + `post_up_cooldown_threshold=0,08
 days=3`, che recupera gran parte del guadagno restando meno estremo).
+
+## Ritaratura ripetuta senza compounding: nuova sizing_policy `fixed_notional`
+
+### Causa del dubbio dell'utente e correzione
+
+L'utente ha fatto notare che i numeri sopra (+893.396pp) non tornavano
+con l'esperienza pregressa sulla strategia, e ha proposto la causa
+corretta: tutte le `sizing_policy` esistenti (`legacy`,
+`selectable_fixed`, ecc., vedi `_candidate_allocations` in
+`overnight_ah.py`) dimensionano ogni trade come frazione di
+`cash_avail = _sizing_equity() * exposure`, quindi **sempre
+proporzionale all'equity corrente** — su un backtest di 26 anni un
+piccolo vantaggio ricorrente si **compone** in modo non lineare e può
+gonfiare enormemente le differenze misurate, esattamente il fenomeno
+già diagnosticato per la leva (`max_exposure`) e per i filtri
+vol/ADV/ah_lag1 in questa stessa sessione.
+
+**Fix**: aggiunta una nuova `sizing_policy='fixed_notional'` +
+parametro `fixed_notional_per_trade` (default `0.0` = policy non
+utilizzabile) a `overnight_ah.py` (produzione, additivo, default
+`legacy` invariato) — ogni trade riceve sempre lo stesso importo in $,
+indipendentemente da quanto è cresciuto/calato il conto. Verificato con
+smoke test: stesso numero di trade della policy legacy sulla stessa
+finestra, notional costante dal primo all'ultimo trade (log
+`cash_per_trade=20000.00` identico su 2 anni), nessuna regressione sulla
+policy di default.
+
+### Ripetizione ah_lag1/cooldown sotto `fixed_notional` ($20.000/trade)
+
+Stesso controllo (`development` attuale, salvato come
+`config-common/benchmark/overnight_ah_fixed_notional_current.csv`),
+stesso periodo 2000→2026, tutti i run puliti (0 errori/warning).
+Risultato: **stessa direzione, magnitudine reale ~300.000 volte più
+piccola**:
+
+| scenario | vs controllo (legacy/compounding) | vs controllo (`fixed_notional`) |
+|---|---:|---:|
+| entrambi disattivati | +893.396pp | **+2,94%** |
+| solo ah_lag1 disattivato | — | +1,05% |
+| solo cooldown disattivato | — | +2,83% |
+
+Griglia completa `ah_lag1_threshold` (cooldown fisso 0,05/5):
+
+| valore | vs controllo |
+|---|---:|
+| -0,05 | -2,74% |
+| -0,10 (controllo) | 0,00% |
+| -0,15 | +0,95% |
+| -0,20 | +1,02% |
+| -999 (off) | +1,05% |
+
+Si appiattisce dopo -0,15 — allentare oltre non porta quasi nulla.
+
+Griglia completa `post_up_cooldown` (ah_lag1 fisso -0,10):
+
+| threshold \ days | 3 | 5 | 8 |
+|---|---:|---:|---:|
+| 0,03 | -1,55% | -8,96% | -10,18% |
+| 0,05 | +2,07% | 0,00% (controllo) | -2,43% |
+| 0,08 | +1,98% | +1,54% | +0,95% |
+| disattivato | | +2,83% | |
+
+`threshold=0,03` è una trappola (peggiora, specie con days lunghi);
+`days=3` batte sempre `days=5/8` a parità di soglia; disattivato resta
+il migliore ma di poco su `0,05-0,08 + days=3`.
+
+**Conclusione**: la direzione del segnale (allentare aiuta) era corretta
+anche nello studio precedente, ma la sua magnitudine era quasi
+interamente un artefatto di compounding — un miglioramento del +2,94%
+in 26 anni è un risultato piccolo ma credibile, molto meno esposto al
+rischio di sovrastima dell'eseguibilità già segnalato (l'avvertenza
+resta comunque valida in linea di principio, solo su una scala molto
+più modesta ora).
+
+### Hedge: stessa metodologia, scoperta più importante (correzione in corsa)
+
+Controllo con `hedge_enabled=True hedge_weight=0.15
+hedge_fast_period=65 hedge_slow_period=150` (valori attuali di
+`development`). **Limite dati**: `config-common/data/d/yahoo_adj/SQQQ.csv`
+inizia l'11 febbraio 2010 — il confronto sull'hedge copre di fatto solo
+2010→2026 (16 anni), non l'intero 2000→2026 come gli altri test
+(prima del 2010 l'hedge resta sempre spento per mancanza dati,
+qualunque sia il parametro impostato).
+
+Prima misura (solo rendimento cumulativo) — **fuorviante**, corretta
+sotto:
+
+| `hedge_weight` | vs controllo (rendimento) |
+|---|---:|
+| spento | -6,04% |
+| 0,05 | -4,41% |
+| 0,15 (controllo) | 0,00% |
+| 0,30 | +7,84% |
+| 0,50 | +16,79% |
+
+Monotono, nessun plateau fino a 0,50 — sembrava indicare "più peso
+meglio è". **Controllo rischio (richiesto dall'utente prima di fidarsi)
+ribalta la conclusione**:
+
+| `hedge_weight` | rend. cum. | vol ann. | **Sharpe** | max drawdown |
+|---|---:|---:|---:|---:|
+| **spento** | 326,91% | 3,98% | **1,392** | **-8,63%** |
+| 0,05 | 334,32% | 4,04% | 1,388 | -8,81% |
+| 0,10 | 344,50% | 4,11% | 1,386 | -8,81% |
+| 0,15 (controllo) | 354,33% | 4,27% | 1,356 | -8,83% |
+| 0,20 | 365,14% | 4,49% | 1,311 | -8,81% |
+| 0,25 | 376,93% | 4,77% | 1,256 | -8,81% |
+| 0,30 | 389,95% | 5,12% | 1,194 | -8,81% |
+| 0,35 | 395,54% | 5,52% | 1,120 | -10,10% |
+| 0,40 | 410,12% | 5,97% | 1,057 | -11,60% |
+| 0,45 | 421,17% | 6,41% | 1,003 | -13,09% |
+| 0,50 | 430,60% | 6,87% | 0,948 | -14,56% |
+
+**Lo Sharpe più alto di tutta la griglia è a hedge spento (1,392)**,
+scende in modo monotono man mano che il peso sale; il drawdown massimo
+è anche il più basso da spento (-8,63%, peggiora a -14,56% a peso 0,50).
+Il rendimento assoluto sale solo perché si sta aggiungendo leva su un
+titolo -3x (SQQQ), non perché la strategia funzioni meglio — stesso
+fenomeno del compounding, questa volta sul parametro sbagliato (guardare
+solo il rendimento invece del rendimento aggiustato per il rischio).
+**Prima conclusione della sessione ("tenere l'hedge acceso conviene",
+basata solo sul rendimento) corretta**: su base risk-adjusted il punto
+migliore della griglia è hedge **spento**, non i valori attuali.
+
+Griglia EMA (`hedge_fast_period`/`hedge_slow_period`, peso 0,15 fisso,
+solo rendimento — non ripetuto il controllo di rischio, effetto molto
+più piccolo dell'asse peso):
+
+| combo | vs controllo |
+|---|---:|
+| 50/120 | +1,64% |
+| 65/150 (controllo) | 0,00% |
+| tutte le altre 6 combinazioni testate | -0,64% … -3,84% |
+
+Il default 65/150 resta quasi ottimale, coerente con lo studio EMA di
+una sessione precedente (`sqqq_hedge_ma_tuning_study.py`).
+
+### File e output
+
+Codice: `bt-core/strategies/overnight_ah.py` (`fixed_notional_per_trade`,
+`sizing_policy='fixed_notional'`, additivo). Benchmark:
+`config-common/benchmark/overnight_ah_fixed_notional_current.csv`. Run
+via `btmain.py` diretto, nessuno script nuovo — stessa metodologia
+diretta sui `returns.csv` già consolidata in questa sessione.
+
+### Non-goal / stato
+
+Nessuna modifica a `overnight-ah-development.env` — la ritaratura
+ah_lag1/cooldown resta a scala modesta e credibile (+2,94% max), la
+scoperta sull'hedge indica che i valori attuali (peso 0,15) sono già
+vicini all'ottimo risk-adjusted, non serve cambiarli. Punto aperto:
+se applicare comunque un allentamento modesto di ah_lag1/cooldown
+(es. `-0,20` + `0,08/3gg`, +2-3% con rischio addizionale trascurabile),
+o lasciare `development` invariata dato il beneficio piccolo.
