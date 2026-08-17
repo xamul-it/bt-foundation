@@ -3129,3 +3129,165 @@ parzialmente: `min_adv` pesa di più, ma l'interazione tra i tre filtri
 resta poco chiara (in particolare il risultato "solo ah_lag1 attivo").
 Nessuna decisione di modificare i parametri operativi reali — prossimo
 passo: verificare se/come aggiornare i parametri del run "development".
+
+## Ritaratura `ah_lag1_threshold` / `post_up_cooldown` sotto il nuovo regime filtri (completato)
+
+Seguito diretto della sezione precedente: con `min_intraday_vol`/
+`max_intraday_vol`/`min_adv` disattivati in produzione (config
+`development`, commit `0155d80`), `ah_lag1_threshold` (`-0.1`) e
+`post_up_cooldown_threshold`/`post_up_cooldown_days` (`0.05`/`5`) erano
+rimasti ai valori legacy, scelti quando vol/ADV erano ancora attivi —
+mai ritarati sul nuovo regime. Vedi brief di avvio:
+`docs/context/ah_cooldown_ahlag1_tuning_brief.md`.
+
+### Setup
+
+Confermato dall'utente prima di partire: periodo **intero storico
+2000→oggi** (2000-01-03 → 2026-08-14), metodologia **confronto diretto**
+Backtrader reale (non oracolo/regret/MCS), griglie esattamente come
+proposte nel brief. **Controllo fisso per l'intera sessione**: la
+configurazione `development` reale così com'è oggi (vol/ADV disattivati,
+`ah_lag1_threshold=-0.1`, `post_up_cooldown_threshold=0.05`,
+`post_up_cooldown_days=5`, hedge+`max_concurrent=3` invariati,
+`max_exposure=1.0` — convenzione unlevered di tutti gli Studi
+1-6/isolamento) — **riusato senza ri-eseguirlo**: è esattamente la riga
+"solo ah_lag1 attivo" della tabella di isolamento (sezione precedente),
+già salvata in `config-common/benchmark/overnight_ah_onlyahlag1_control.csv`.
+Riproduzione verificata esplicitamente prima di partire (run
+`verify_control_repro`, stesso comando/stratargs): diff massima 0.0 su
+tutte le 6.694 righe di `returns.csv`, rendimento cumulativo identico
+**2.547.892,91%**, nessun errore/warning — controllo confermato affidabile
+senza doverlo ricalcolare. Comando base (`btmain.py`, invariato in ogni
+riga salvo il parametro sotto test):
+
+```
+python btmain.py --strat overnight_ah.OvernightAH \
+  --ticker yahoo_adj_research_universe_hedge.json \
+  --mode backtest --timeframe daily --provider yahoo_adj \
+  --fromdate 2000-01-01 --todate 2026-08-14 \
+  --commission none --margin-leverage 2 --cash 200000 \
+  --id <run_id> \
+  --stratargs "max_concurrent=3 size_by_max_concurrent=True max_exposure=1.0 \
+    min_intraday_vol=0 max_intraday_vol=999 intraday_vol_filter_side='any' min_adv=0 \
+    auction=True monthly_universe_mode='weak_theme_switch' monthly_universe_top_n=50 \
+    monthly_universe_base_weight=0.85 monthly_universe_theme_weight=0.15 \
+    monthly_universe_theme_score='corr12' monthly_universe_switch_feature='semis_total_3m' \
+    monthly_universe_switch_threshold=0.0 monthly_universe_spy_dd3m_threshold=-0.10 \
+    hedge_enabled=True hedge_symbol='SQQQ' hedge_trend_symbol='QQQ' hedge_fast_period=65 \
+    hedge_slow_period=150 hedge_weight=0.15 \
+    ah_lag1_threshold=<V> post_up_cooldown_threshold=<CT> post_up_cooldown_days=<CD>"
+```
+
+Tutti i numeri sotto sono ricalcolati direttamente da `returns.csv`
+(`(1+r).cumprod()` sullo stesso indice comune di 6.694 giorni, mai dalla
+tabella QuantStats) — nessun errore/warning in nessuno dei 14 run
+(verificato `grep -i "error\|traceback"` su ogni `runtime.log`).
+
+### Griglia 1 — `ah_lag1_threshold` (cooldown fisso al valore controllo, 0,05/5gg)
+
+| `ah_lag1_threshold` | rendimento cumulativo | delta vs controllo (pp) | ann_log_ret | trade |
+|---|---:|---:|---:|---:|
+| -0,05 | 1.754.484,76% | **-793.408,15** | 0,3679 | 19.090 |
+| -0,10 (**controllo**) | 2.547.892,91% | — | 0,3819 | 19.133 |
+| -0,15 | 2.868.996,08% | **+321.103,17** | 0,3864 | 19.134 |
+| -0,20 | 2.896.518,19% | **+348.625,28** | 0,3868 | 19.134 |
+| -999 (disattivato) | 2.915.112,86% | **+367.219,95** | 0,3870 | 19.134 |
+
+Trend monotono e netto: irrigidire il filtro (-0,05, più restrittivo del
+controllo) peggiora molto (-793.408pp); allentarlo migliora
+progressivamente, con il massimo raggiunto disattivandolo del tutto
+(-999, +367.220pp). Da -0,15 in su il trade count è già saturo (19.134,
+identico per -0,15/-0,20/-999) — il gap overnight raramente scende sotto
+-15% in questo universo, quindi il filtro sopra quella soglia è quasi
+inerte; il rendimento continua comunque a salire leggermente da -0,15 a
+-999 per via del path-dependency della composizione (stesso conteggio di
+trade, ma non necessariamente gli stessi giorni per ogni titolo).
+
+### Griglia 2 — `post_up_cooldown_threshold` × `post_up_cooldown_days` (ah_lag1 fisso al valore controllo, -0,10)
+
+| threshold \ days | 3 | 5 | 8 |
+|---|---:|---:|---:|
+| 0,03 | 1.907.765,59% (**-640.127,32**) | 795.911,25% (**-1.751.981,66**) | 701.474,86% (**-1.846.418,05**) |
+| 0,05 | 3.173.826,28% (**+625.933,37**) | 2.547.892,91% (**controllo**) | 1.776.476,33% (**-771.416,58**) |
+| 0,08 | 3.032.750,98% (**+484.858,07**) | 2.950.587,44% (**+402.694,53**) | 2.682.818,30% (**+134.925,39**) |
+| 0,0 (**off**) | — | 3.347.318,33% (**+799.425,42**) | — |
+
+(cella = rendimento cumulativo, tra parentesi il delta in punti
+percentuali vs controllo fisso; `threshold=0,0` disattiva il cooldown a
+prescindere da `days`, quindi un solo run rappresenta l'intera riga.)
+
+Due pattern chiari e coerenti su tutta la griglia:
+- **`threshold=0,03` è nettamente peggiore ovunque** (-640k/-1.752k/-1.846k
+  pp) — scatta troppo spesso su giornate positive modeste, sospendendo
+  entry buone; peggiora ulteriormente con `days` più alti (il blocco
+  frequente si allunga).
+- **A parità di `threshold`, `days=3` batte sempre `days=5` e `days=8`**
+  (es. a 0,05: +625.933pp con 3gg vs controllo, -771.417pp con 8gg) — un
+  cooldown più breve recupera più in fretta l'esposizione al mercato dopo
+  una sospensione.
+- Il **cooldown disattivato (`threshold=0,0`) è il miglior singolo punto
+  della griglia** (+799.425pp, ann_log_ret 0,3922 — il più alto di tutta
+  la griglia 2).
+
+### Verifica interazione: ah_lag1 e cooldown disattivati insieme
+
+Dato che entrambe le griglie isolate migliorano monotonamente
+disattivando il rispettivo filtro (esattamente il tipo di pattern che
+nello studio di isolamento precedente si è rivelato non additivo —
+vol+ADV insieme), verificato un run aggiuntivo con entrambi i parametri
+al loro miglior valore isolato insieme (`ah_lag1_threshold=-999
+post_up_cooldown_threshold=0.0`, `--id joint_ahlag1off_cdoff`):
+
+| scenario | rendimento cumulativo | delta vs controllo (pp) | ann_log_ret |
+|---|---:|---:|---:|
+| controllo (produzione attuale) | 2.547.892,91% | — | 0,3819 |
+| solo ah_lag1 disattivato | 2.915.112,86% | +367.219,95 | 0,3870 |
+| solo cooldown disattivato | 3.347.318,33% | +799.425,42 | 0,3922 |
+| **entrambi disattivati insieme** | **3.441.288,54%** | **+893.395,63** | **0,3933** |
+| somma attesa se additivo (367.220+799.425) | — | 1.166.645,37 | — |
+
+Il combinato batte entrambi i singoli (miglior risultato assoluto della
+sessione, ann_log_ret 0,3933) ma è **sub-additivo**: +893.396pp osservati
+contro +1.166.645pp attesi se le due disattivazioni si sommassero
+linearmente — circa il 77% dell'effetto additivo naive. Coerente con il
+pattern di interazione non additiva già visto tra vol/ADV nello studio di
+isolamento — qui però in direzione positiva (entrambi i fattori aiutano,
+solo meno della somma delle parti, non un'inversione).
+
+### File e output
+
+Nessun nuovo file benchmark necessario (controllo riusato da
+`config-common/benchmark/overnight_ah_onlyahlag1_control.csv`). Output
+run in `bt-core/out/overnight_ah/OvernightAH/`: `verify_control_repro`
+(verifica riproduzione controllo), `ahlag1_m005`/`ahlag1_m015`/
+`ahlag1_m020`/`ahlag1_off999` (griglia 1), `cd_t003_d3`/`cd_t003_d5`/
+`cd_t003_d8`/`cd_t005_d3`/`cd_t005_d8`/`cd_t008_d3`/`cd_t008_d5`/
+`cd_t008_d8`/`cd_off` (griglia 2), `joint_ahlag1off_cdoff` (verifica
+interazione). Script di analisi (confronto diretto da `returns.csv`,
+stesso indice comune, nessun uso della tabella QuantStats):
+`/tmp/claude-1000/-home-htpc-backtrader/5b1c7926-6d6c-42da-913f-423a21345604/scratchpad/analyze_tuning_grid.py`
+(temporaneo, non nel repo).
+
+### Non-goal / stato
+
+Nessuna modifica alla strategia di produzione, nessuna modifica a
+`config-common/scheduled/strategies/overnight-ah-development.env` —
+come da istruzione esplicita dell'utente, la ritaratura qui è solo
+documentata, l'aggiornamento della config reale richiede conferma
+separata su quali valori esatti applicare. Risultato netto: sotto il
+nuovo regime (vol/ADV disattivati), sia `ah_lag1_threshold` che
+`post_up_cooldown` ai valori legacy (-0,1 / 0,05×5gg) sono
+**sub-ottimali** — allentare o disattivare entrambi migliora il
+rendimento cumulativo nel backtest su tutto lo storico, con la
+combinazione "entrambi disattivati" migliore in assoluto
+(+893.396pp vs controllo). **Avvertenza già nota da questa sessione**:
+disattivare `ah_lag1_threshold` e/o il cooldown rimuove filtri che
+esistevano per un motivo operativo reale (evitare re-entry dopo notti
+pesanti, evitare sovraesposizione dopo rally forti) — il backtest non
+prezza slippage/impatto di mercato per i trade che questi filtri
+escludono, quindi il miglioramento osservato potrebbe essere in parte
+un artefatto di eseguibilità irrealistica, non solo merito della
+disattivazione. Punto aperto con l'utente su quali valori applicare
+(es. disattivazione totale vs un punto intermedio più conservativo come
+`ah_lag1_threshold=-0,20` + `post_up_cooldown_threshold=0,08
+days=3`, che recupera gran parte del guadagno restando meno estremo).
