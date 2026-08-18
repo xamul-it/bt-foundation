@@ -3618,28 +3618,80 @@ nuovi ingressi sull'intero paniere azionario dopo un giorno forte,
 indipendentemente dall'hedge, quindi cambiare quando l'hedge interviene
 sposta anche quali giorni attivano il cooldown.
 
-**Controllo rischio (obbligatorio dopo la lezione sul peso hedge)** — qui
-il risultato è pulito, non c'è il trade-off visto sul peso hedge:
+**Controllo rischio completo — griglia cooldown intera** (rendimento,
+Sharpe, maxDD insieme per tutti i 9 combinazioni threshold×days più
+disattivato):
+
+| threshold | days | rendimento | Sharpe | maxDD |
+|---:|---:|---:|---:|---:|
+| 0,03 | 3 | 351,61% | **1,449** | **-6,49%** |
+| 0,03 | 5 | 319,84% | 1,408 | -7,19% |
+| 0,03 | 8 | 312,96% | 1,439 | -7,11% |
+| 0,05 | 3 | 370,64% | 1,370 | -8,03% |
+| 0,05 | 5 (controllo) | 362,31% | 1,356 | -8,81% |
+| 0,05 | 8 | 351,05% | 1,361 | -9,37% |
+| 0,08 | 3 | 369,86% | 1,366 | -8,13% |
+| 0,08 | 5 | 368,21% | 1,375 | -8,05% |
+| 0,08 | 8 | 365,55% | 1,371 | -8,08% |
+| disattivato | — | 374,21% | 1,347 | -8,20% |
+
+Lettura importante che la sola classifica per rendimento nascondeva:
+`threshold=0,03` sembrava una trappola guardando solo il rendimento (era
+il punto peggiore della griglia, -10,70/-42,47/-49,35pp vs controllo),
+ma su base risk-adjusted **`0,03/3gg` è il miglior punto di tutta la
+griglia** — Sharpe più alto (1,449) e drawdown più basso (-6,49%) di
+ogni altra combinazione, "disattivato" incluso (che vince solo sul
+rendimento assoluto). Stesso fenomeno già visto con il peso hedge:
+rendimento e rischio non vanno sempre nella stessa direzione.
+
+Griglia `ah_lag1_threshold` con Sharpe/maxDD (cooldown fisso 0,05/5):
+
+| valore | rendimento | Sharpe | maxDD |
+|---:|---:|---:|---:|
+| -0,05 | 349,33% | 1,323 | -9,11% |
+| -0,10 (controllo) | 362,31% | 1,356 | -8,81% |
+| -0,15 | 364,86% | 1,384 | -9,26% |
+| -0,20 | 365,05% | 1,384 | -9,25% |
+| -999 (off) | 365,37% | 1,385 | -9,35% |
+
+Plateau netto da -0,15 in poi: `-0,20` cattura quasi tutto il beneficio
+di Sharpe (1,384) senza disattivare completamente il filtro.
+
+**Combinazione finale testata insieme** (non additiva, mai lo è stata
+in questa sessione: ah_lag1 peggiora leggermente il maxDD da solo,
+cooldown 0,03/3 lo migliora molto — serve il numero della combinazione,
+non la somma). `hedge_fast_period=50 hedge_slow_period=120
+hedge_weight=0.15 ah_lag1_threshold=-0.20 post_up_cooldown_threshold=0.03
+post_up_cooldown_days=3` (run id `fn_ema_combined_candidate`,
+2000-2026, 0 errori/warning):
 
 | variante | rendimento | Sharpe | maxDD |
 |---|---:|---:|---:|
-| controllo (-0,10, 0,05/5) | 362,31% | 1,356 | -8,81% |
-| entrambi disattivati | 374,80% | 1,355 | -8,58% |
-| solo ah_lag1 off | 365,37% | 1,385 | -9,35% |
-| solo cooldown off | 374,21% | 1,347 | -8,20% |
-| ah_lag1=-0,20 | 365,05% | 1,384 | -9,25% |
-| cooldown 0,05/3 | 370,64% | 1,370 | -8,03% |
-| cooldown 0,08/3 | 369,86% | 1,366 | -8,13% |
+| controllo (EMA50/120, ah_lag1=-0,10, cd=0,05/5) | 362,31% | 1,356 | -8,81% |
+| **combinazione finale** (ah_lag1=-0,20, cd=0,03/3) | 352,16% | **1,460** | **-7,09%** |
 
-Sharpe resta piatto o migliora leggermente in ogni variante, il
-drawdown massimo resta uguale o migliora — nessun rischio nascosto,
-a differenza del peso hedge.
+La combinazione batte anche il singolo miglior punto della griglia
+cooldown (Sharpe 1,460 vs 1,449 di `0,03/3` da solo) — l'ah_lag1 più
+stretto aggiunge un piccolo beneficio di Sharpe anche se da solo
+peggiorava il drawdown.
+
+### Applicato a `overnight-ah-development.env` (2026-08-18)
+
+Su richiesta esplicita dell'utente, applicata a produzione la
+combinazione finale sopra: `hedge_fast_period/hedge_slow_period`
+65/150 → **50/120**, `ah_lag1_threshold` -0,1 → **-0,20**,
+`post_up_cooldown_threshold/days` 0,05/5 → **0,03/3**. `hedge_weight`
+invariato a 0,15 (aumentarlo peggiora Sharpe/drawdown in modo
+monotono, non è mai stato il punto migliore risk-adjusted).
+`auction=False` e `max_exposure=$MAX_EXPOSURE` invariati, non toccati.
+STRATARGS precedente archiviato come `#STRATARGS_PRECEDENTE` nel file
+con commento che cita i numeri di backtest sopra.
 
 ### Non-goal / stato (ritaratura EMA 50/120)
 
-Nessuna modifica a `overnight-ah-development.env` — solo ricerca/
-documentazione. Punto aperto per una decisione futura: se applicare a
-`development` la combinazione EMA 50/120 + cooldown disattivato (o
-`0,08/3`) + ah_lag1 allentato (`-0,20` o disattivato), che qui risulta
-un miglioramento pulito (+12-15pp su 26 anni, nessun peggioramento
-risk-adjusted) — non applicato, resta una decisione dell'utente.
+Nessuna modifica al profilo paper `challenger` (composito) né a
+`overnight_ah.py`/`overnight_ah_flat_composite.py` — solo il file di
+configurazione `development`. Decisione presa su backtest 2000-2026
+con `sizing_policy='fixed_notional'` (non compounding, vedi sezioni
+precedenti) — resta da verificare l'effetto in paper trading reale nei
+prossimi cicli.
