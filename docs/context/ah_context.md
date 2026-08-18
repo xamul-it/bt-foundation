@@ -3445,3 +3445,126 @@ vicini all'ottimo risk-adjusted, non serve cambiarli. Punto aperto:
 se applicare comunque un allentamento modesto di ah_lag1/cooldown
 (es. `-0,20` + `0,08/3gg`, +2-3% con rischio addizionale trascurabile),
 o lasciare `development` invariata dato il beneficio piccolo.
+
+### Bug dati SQQQ: le curve rendimento/benchmark sovrapposte fino al 2018
+
+L'utente ha notato, guardando `stats.html` della griglia hedge sopra,
+che la curva della strategia e quella del benchmark restano sovrapposte
+fino al 2018 — ha chiesto di verificare se fosse un problema di dati.
+
+**Causa confermata**: `config-common/data/d/yahoo_adj/SQQQ.csv` ha la
+colonna `Close` (e `Adj Close`) gravemente corrotta per gli anni
+vecchi — non un typo isolato, un decadimento geometrico dal 2010 a
+oggi:
+
+| anno | `Close` nel file | plausibile |
+|---|---:|---:|
+| 2010 | 9.389.154 | ~$50-100 |
+| 2014 | 447.625 | ~$50-100 |
+| 2018 | 38.953 | ~$20-50 |
+| 2022 | 570 | ~$20-40 |
+| 2026 | 67 | corretto |
+
+Verificato che **non è un problema della nostra pipeline** (`load_tickers.py`):
+il file sorgente grezzo `config-common/data/d/yahoo/SQQQ.csv` ha già
+`Close` e `Adj Close` corrotti allo stesso modo (`Adj Factor` invece è
+sano, 0,76-0,98 — non è quello il colpevole). Confermato anche che
+**non è un download vecchio/stale**: una query diretta a `yfinance`,
+oggi, restituisce ancora gli stessi valori assurdi per la storia di
+SQQQ — è un bug persistente lato Yahoo, quasi certamente nel loro
+back-adjustment mal applicato sui reverse split multipli di SQQQ (ETF
+-3x decadente, ne ha subiti diversi). `Raw Close` **non è
+un'alternativa valida**: è derivato dallo stesso `Close` corrotto
+(`Close = Raw Close × Adj Factor`, verificato sul rapporto), quindi
+ugualmente inutilizzabile.
+
+**Effetto pratico sull'hedge**: `_process_hedge` in `overnight_ah.py`
+calcola `size = int(hedge_notional / self._hedge_data.close[0])`; con
+un prezzo gonfiato di 5-6 ordini di grandezza, `size` arrotonda spesso a
+0 e l'apertura viene silenziosamente bloccata (`if size < 1: return
+False`, nessun log di errore/warning) — da qui la sovrapposizione delle
+curve: l'hedge semplicemente non riusciva ad aprire per anni, non
+perché QQQ non fosse in trend ribassista (verificato con una prova
+diretta `bt.indicators.ExponentialMovingAverage` su QQQ: la logica di
+trend-detection è corretta, i cross ribassisti ci sono anche dopo il
+2010, es. 2011-08→10, 2015-09→10, primi mesi 2016).
+
+**Fonte alternativa trovata**: il prezzo raw (non aggiustato) di
+**Alpaca** è sano su tutto lo storico disponibile ($19,82 nel 2016 →
+$68,97 nel 2026, salti solo nei giorni reali di reverse split, nessuna
+esplosione). Anche `adj_close` di Alpaca è corrotto quanto quello di
+Yahoo (stesso tipo di bug nel back-adjustment cumulativo) — motivo in
+più per usare il raw. Limite: **Alpaca copre solo da 2016-01-04**;
+SQQQ è quotato dal 2010-02-11 (nascita reale del titolo, non un limite
+dati) quindi resta un buco 2010-02→2016-01 senza nessuna fonte pulita
+in nessuno dei due provider.
+
+**Implementazione della verifica** (nessuna modifica a codice o a dati
+di produzione): creato un data-root isolato (symlink farm sotto
+scratchpad, `BT_SHARED_CONFIG` puntato lì) che rispecchia
+`config-common/` con un solo file sostituito,
+`data/d/yahoo_adj/SQQQ.csv`, popolato con l'`Open/High/Low/Close/Volume`
+raw scaricato da Alpaca per SQQQ (2016-01-04→oggi). Nessun prezzo
+"adj" fittizio, nessuna patch a `overnight_ah.py` o a `btmain.py` —
+solo una fonte dati diversa per un singolo ticker, usata così com'è.
+Run lanciati con `--data-format csv` (ignora la cache parquet) e
+`--fromdate 2016-01-04` (unico periodo con dati puliti su entrambe le
+gambe del confronto).
+
+**Verifica dell'impatto reale del bug** (confronto controllato: stessa
+finestra 2016→2026, stesso capitale iniziale $200.000, cambia solo la
+fonte di `SQQQ.csv`): la differenza è **trascurabile**, non il
+disastro temuto inizialmente:
+
+| fonte prezzo SQQQ | rendimento 2016-2026 | Sharpe |
+|---|---:|---:|
+| Yahoo (corrotto) | +172,23% | 1,870 |
+| Alpaca raw (corretto) | +171,95% | 1,858 |
+
+Spiegazione: `size` e il ritorno % di ogni trade usano lo **stesso**
+prezzo corrotto — la divisione (sizing) e il rapporto tra prezzi
+ravvicinati (ritorno) si cancellano quasi del tutto su un holding di
+1-2 giorni, anche se il livello assoluto del prezzo è sbagliato di
+ordini di grandezza. Il primo confronto (69% vs 172%) che sembrava
+mostrare un impatto enorme era un artefatto di un raffronto sporco:
+un run pieno 1999-2026 (equity accumulata diversa entro il 2016) contro
+un run fresco dal 2016 — non l'effetto del bug dati.
+
+**Griglia hedge ripetuta sul periodo valido (2016-2026, prezzo Alpaca
+corretto)**, benchmark fisso `config-common/benchmark/overnight_ah_fixed_notional_validwindow.csv`
+(stessi parametri `development` attuali, hedge peso 0,15/EMA 65,150):
+
+| variante | rendimento | Sharpe | max drawdown |
+|---|---:|---:|---:|
+| benchmark (hedge 0,15, attuale) | +171,95% | 2,100 | -5,21% |
+| hedge spento | +155,60% | 2,062 | -5,21% |
+| hedge_weight=0,30 | +187,83% | 1,645 | -8,06% |
+| hedge_weight=0,50 | +207,93% | 1,192 | -14,11% |
+| **EMA 50/120 (peso 0,15)** | **+175,94%** | **2,132** | **-4,26%** |
+
+**Le conclusioni della sezione precedente reggono**: più peso hedge
+aumenta il rendimento grezzo ma peggiora Sharpe e drawdown in modo
+monotono (leva aggiuntiva su un ETF -3x decadente); EMA 50/120 resta
+l'unico miglioramento pulito su rendimento, Sharpe e drawdown insieme.
+Il bug dati SQQQ non era la causa di quei risultati.
+
+### File e output (bug SQQQ)
+
+Nessun file di produzione modificato. Verifiche/run in un data-root
+temporaneo sotto scratchpad (non versionato, non persistente).
+Benchmark salvato: `config-common/benchmark/overnight_ah_fixed_notional_validwindow.csv`.
+
+### Non-goal / stato (bug SQQQ)
+
+Nessuna modifica a `config-common/data/d/yahoo_adj/SQQQ.csv` né alla
+pipeline di download (`load_tickers.py`) — il bug è confermato lato
+Yahoo/yfinance, non nostro, e il suo impatto reale sui risultati già
+documentati è trascurabile. Resta un buco dati onesto 2010-02→2016-01
+(nessuna fonte pulita, QQQ ha avuto un paio di finestre ribassiste in
+quel periodo in cui l'hedge storicamente non ha mai potuto aprire per
+davvero) — non risolto, da tenere presente per eventuali studi futuri
+sull'intero 2000-2026. Se in futuro serve un prezzo SQQQ pulito anche
+in produzione (es. per il profilo paper `challenger` o `development`),
+la soluzione più semplice resta sostituire `SQQQ.csv` con lo storico
+raw di Alpaca (2016+) — non fatto qui, questa sessione era solo di
+verifica/ricerca.
