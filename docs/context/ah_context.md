@@ -3568,3 +3568,78 @@ in produzione (es. per il profilo paper `challenger` o `development`),
 la soluzione più semplice resta sostituire `SQQQ.csv` con lo storico
 raw di Alpaca (2016+) — non fatto qui, questa sessione era solo di
 verifica/ricerca.
+
+### Ritaratura ah_lag1/cooldown sopra i parametri hedge scelti (EMA 50/120)
+
+Ripetuta la stessa griglia ah_lag1/cooldown di prima, ma con un nuovo
+controllo che incorpora la scoperta della sezione hedge: `hedge_fast_period=50
+hedge_slow_period=120` al posto del default 65/150 (unico miglioramento
+pulito confermato su rendimento+Sharpe+drawdown), `hedge_weight=0.15`
+invariato (il peso attuale resta il punto migliore risk-adjusted, non
+va alzato). Stesso periodo 1999→2026, stessa `sizing_policy='fixed_notional'`
+($20.000/trade), stesso `--provider yahoo_adj` di produzione (l'impatto
+del bug SQQQ è trascurabile, vedi sezione sopra). Nuovo benchmark fisso:
+`config-common/benchmark/overnight_ah_fixed_notional_ema50120.csv`
+(rendimento controllo: **+362,31%**, Sharpe 1,356, maxDD -8,81%). 14 run,
+0 errori/warning.
+
+| scenario | vs controllo (rendimento) |
+|---|---:|
+| entrambi disattivati | +12,49pp |
+| solo ah_lag1 disattivato | +3,07pp |
+| solo cooldown disattivato | +11,91pp |
+
+Griglia `ah_lag1_threshold` (cooldown fisso 0,05/5):
+
+| valore | vs controllo |
+|---|---:|
+| -0,05 | -12,98pp |
+| -0,10 (controllo) | 0,00pp |
+| -0,15 | +2,55pp |
+| -0,20 | +2,74pp |
+| -999 (off) | +3,07pp |
+
+Griglia `post_up_cooldown` (ah_lag1 fisso -0,10):
+
+| threshold \ days | 3 | 5 | 8 |
+|---|---:|---:|---:|
+| 0,03 | -10,70pp | -42,47pp | -49,35pp |
+| 0,05 | +8,33pp | 0,00pp (controllo) | -11,25pp |
+| 0,08 | +7,55pp | +5,91pp | +3,24pp |
+| disattivato | | +11,91pp | |
+
+Stesso pattern qualitativo della griglia precedente (65/150): `threshold=0,03`
+è una trappola su days lunghi, `days=3` batte sempre `days=5/8` a parità
+di soglia, disattivare resta il punto migliore. La magnitudine però è
+molto più grande (+12,49pp vs +2,94% con 65/150) — interazione non
+lineare tra il nuovo pattern di trading dell'hedge (50/120 apre/chiude
+più spesso di 65/150) e il cooldown, non un errore: il cooldown sospende
+nuovi ingressi sull'intero paniere azionario dopo un giorno forte,
+indipendentemente dall'hedge, quindi cambiare quando l'hedge interviene
+sposta anche quali giorni attivano il cooldown.
+
+**Controllo rischio (obbligatorio dopo la lezione sul peso hedge)** — qui
+il risultato è pulito, non c'è il trade-off visto sul peso hedge:
+
+| variante | rendimento | Sharpe | maxDD |
+|---|---:|---:|---:|
+| controllo (-0,10, 0,05/5) | 362,31% | 1,356 | -8,81% |
+| entrambi disattivati | 374,80% | 1,355 | -8,58% |
+| solo ah_lag1 off | 365,37% | 1,385 | -9,35% |
+| solo cooldown off | 374,21% | 1,347 | -8,20% |
+| ah_lag1=-0,20 | 365,05% | 1,384 | -9,25% |
+| cooldown 0,05/3 | 370,64% | 1,370 | -8,03% |
+| cooldown 0,08/3 | 369,86% | 1,366 | -8,13% |
+
+Sharpe resta piatto o migliora leggermente in ogni variante, il
+drawdown massimo resta uguale o migliora — nessun rischio nascosto,
+a differenza del peso hedge.
+
+### Non-goal / stato (ritaratura EMA 50/120)
+
+Nessuna modifica a `overnight-ah-development.env` — solo ricerca/
+documentazione. Punto aperto per una decisione futura: se applicare a
+`development` la combinazione EMA 50/120 + cooldown disattivato (o
+`0,08/3`) + ah_lag1 allentato (`-0,20` o disattivato), che qui risulta
+un miglioramento pulito (+12-15pp su 26 anni, nessun peggioramento
+risk-adjusted) — non applicato, resta una decisione dell'utente.
