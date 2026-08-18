@@ -3773,6 +3773,30 @@ drawdown dai `returns.csv`: stessi numeri. Cooldown piu' stretto rende
 i drawdown meno profondi ma piu' prolungati — non un miglioramento a
 costo zero, un trade-off profondita'/durata da tenere presente.
 
+### Confronto con "tutto spento" (no hedge, no cooldown, no ah_lag1)
+
+Stesso metodo (sizing legacy/compounding letterale, `max_exposure=1`
+senza leva, storico pieno 2000-2026, Sharpe giornaliero): un quarto
+punto con `hedge_enabled=False`, `post_up_cooldown_threshold/days=0.0/0`
+e `ah_lag1_threshold=-999`, tutti spenti insieme (run id
+`fn_dev_alloff_unlev`, 0 errori/warning):
+
+| variante | rendimento | Sharpe | maxDD |
+|---|---:|---:|---:|
+| tutto off (no hedge, no cooldown, no ah_lag1) | 3.010.667,41% | 1,648 | -33,73% |
+| vecchia (hedge 65/150, cd=0,05/5, ah_lag1 spento) | 2.966.016,75% | 1,760 | -35,80% |
+| nuova (hedge 50/120, cd=0,03/3, ah_lag1 spento) | 1.994.209,59% | 1,770 | -27,83% |
+
+Con tutto spento il rendimento assoluto e' il piu' alto dei tre (nessun
+carry pagato sull'hedge SQQQ), ma lo Sharpe e' il piu' basso (1,648) e
+il maxDD e' quasi uguale alla vecchia (-33,73% vs -35,80%) — l'hedge,
+quando attivo, non aumenta il rendimento ma migliora il rapporto
+rischio/rendimento. La configurazione **nuova** resta il miglior
+compromesso delle tre: Sharpe piu' alto e maxDD piu' basso, al prezzo
+di un rendimento assoluto inferiore (gia' noto: il numero assoluto qui
+non e' economicamente leggibile per il compounding su 26 anni, e' lo
+Sharpe/maxDD relativo che conta).
+
 ### File e output (auction fix + isolamento EMA/cooldown)
 
 Codice: `bt-core/strategies/overnight_ah.py` (forzatura `auction=True`
