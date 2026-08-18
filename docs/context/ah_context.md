@@ -3695,3 +3695,92 @@ configurazione `development`. Decisione presa su backtest 2000-2026
 con `sizing_policy='fixed_notional'` (non compounding, vedi sezioni
 precedenti) — resta da verificare l'effetto in paper trading reale nei
 prossimi cicli.
+
+### Fix: `auction=False` in backtest produce PnL=0 per costruzione
+
+Verifica indipendente richiesta dall'utente: confronto diretto vecchi
+vs nuovi parametri **letterali** di `development` (sizing legacy/
+compounding, `max_exposure` reale, `auction=False` come nel file),
+storico pieno 2000-2026. Primo tentativo: **tutti i trade con PnL=0.0**,
+dal primo all'ultimo (19.867 trade, `TimeReturn=0.0`). Causa trovata nel
+codice, non nei dati: con `auction=False` sia l'entry che l'uscita
+appaiata (sottomessa nello stesso giorno) sono ordini Market standard
+senza `coc` — in Backtrader entrambi eseguono sulla stessa barra
+successiva (l'apertura del giorno dopo), quindi allo stesso identico
+prezzo, PnL nullo per costruzione su ogni trade. `auction=False` e'
+significativo solo in live/paper, dove l'uscita reale e' un processo
+esterno (handler `moo-exit` via cron) — nel backtest puro va sempre
+`auction=True`, gia' scritto nel docstring della strategia ma non
+imposto a codice. **Fix**: `OvernightAH.__init__` ora forza
+`auction=True` quando `self._live_mode == 'backtest'`, con un log di
+warning se il valore passato era `False` (`bt-core/strategies/
+overnight_ah.py`, commit `ce1cd55`). Verificato che il fix non altera
+in alcun modo il comportamento live/paper (si applica solo in backtest).
+
+### Due metodologie di Sharpe mescolate senza dirlo (correzione)
+
+Nei run "letterali" sopra e' emerso un secondo problema: lo Sharpe
+riportato dall'analyzer nativo di Backtrader (`bt.analyzers.SharpeRatio`,
+configurato in `btmain.py` con `timeframe=Years, riskfreerate=0.01` —
+calcolato su ~26 punti ANNUALI, non giornalieri) NON coincide con lo
+Sharpe di QuantStats nello stesso `stats.html` (rendimenti giornalieri,
+risk-free 0%, annualizzato ×√252) — nello stesso run: 1,267 (analyzer)
+vs 1,740 (QuantStats/ricalcolo manuale). Sono due metriche legittime ma
+diverse, citate in questa sessione in modo intercambiabile senza
+segnalarlo. Da qui in avanti: usare SEMPRE il metodo giornaliero
+(`r.mean()/r.std()*sqrt(252)`, coincide con QuantStats), mai il valore
+stampato dall'analyzer di `btmain.py` per confronti fra run.
+
+### Isolamento hedge EMA vs cooldown (letterale, ah_lag1 spento, senza leva)
+
+Richiesto dall'utente esplicitamente: ah_lag1 spento in ENTRAMBE le
+gambe (non ai valori -0,1/-0,20 usati altrove), `max_exposure=1`
+(nessuna leva), sizing legacy letterale, storico pieno 2000-2026.
+Sharpe/rendimento/maxDD col metodo giornaliero corretto:
+
+| variante | rendimento | Sharpe | maxDD |
+|---|---:|---:|---:|
+| vecchia, ah_lag1=-0,1 (attivo) | 2.609.754,73% | 1,740 | -33,50% |
+| vecchia, ah_lag1 spento | 2.966.016,75% | 1,760 | -35,80% |
+| nuova, ah_lag1=-0,20 (attivo) | 1.965.775,63% | 1,768 | -27,83% |
+| nuova, ah_lag1 spento | 1.994.209,59% | 1,770 | -27,83% |
+
+Spegnere ah_lag1 migliora leggermente entrambe (rendimento e Sharpe) —
+coerente col plateau gia' noto (a -0,20 si e' gia' vicini al beneficio
+massimo). **Isolamento EMA vs cooldown** (ah_lag1 spento in entrambe,
+cooldown tenuto FISSO a 0,05/5 per isolare l'effetto della sola EMA):
+
+| variante | rendimento | Sharpe | maxDD |
+|---|---:|---:|---:|
+| vecchia (hedge 65/150, cd=0,05/5) | 2.966.016,75% | 1,760 | -35,80% |
+| nuova con cd vecchio (hedge 50/120, cd=0,05/5) | 2.963.967,97% | 1,776 | -35,80% |
+| nuova con cd nuovo (hedge 50/120, cd=0,03/3) | 1.994.209,59% | 1,770 | -27,83% |
+
+**Correzione importante**: a parita' di cooldown, l'EMA 50/120 non fa
+praticamente nulla (maxDD identico, -35,80% in entrambe) — l'intero
+miglioramento di drawdown attribuito prima alla combinazione EMA+cooldown
+viene quasi per intero dal **cooldown** (0,05/5 -> 0,03/3), non dall'EMA.
+Questo non contraddice lo studio `fixed_notional` sul periodo valido
+2016-2026 (dove l'EMA aveva un effetto pulito misurabile) — sono
+metodologie e finestre diverse, entrambe vere nel loro contesto.
+
+**Nuovo trade-off scoperto**: il drawdown piu' profondo si riduce
+(-35,80% -> -27,83%) ma il drawdown piu' LUNGO in giorni di calendario
+aumenta — "Longest DD Days" di QuantStats: 525 -> 568 giorni
+sull'episodio 2022-01-05/2023, 317 -> 377 giorni su quello
+2018-2019. Verificato indipendentemente ricalcolando gli episodi di
+drawdown dai `returns.csv`: stessi numeri. Cooldown piu' stretto rende
+i drawdown meno profondi ma piu' prolungati — non un miglioramento a
+costo zero, un trade-off profondita'/durata da tenere presente.
+
+### File e output (auction fix + isolamento EMA/cooldown)
+
+Codice: `bt-core/strategies/overnight_ah.py` (forzatura `auction=True`
+in backtest, commit `ce1cd55`). Config: `overnight-ah-development.env`
+aggiornato con la nota di attribuzione corretta (cooldown, non EMA) e
+il trade-off profondita'/durata; valori STRATARGS non modificati
+(`hedge_fast/slow_period=50/120` lasciato, neutro non dannoso;
+`post_up_cooldown_threshold/days=0,03/3` confermato). Benchmark:
+`config-common/benchmark/overnight_ah_dev_old_noahlag_unlev.csv`. Run
+id: `fn_dev_old_noahlag_unlev`, `fn_dev_new_noahlag_unlev`,
+`fn_dev_new_noahlag_oldcd_unlev` — 0 errori/warning in tutti.
