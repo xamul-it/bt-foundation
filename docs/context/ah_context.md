@@ -3808,3 +3808,1188 @@ il trade-off profondita'/durata; valori STRATARGS non modificati
 `config-common/benchmark/overnight_ah_dev_old_noahlag_unlev.csv`. Run
 id: `fn_dev_old_noahlag_unlev`, `fn_dev_new_noahlag_unlev`,
 `fn_dev_new_noahlag_oldcd_unlev` — 0 errori/warning in tutti.
+
+## Dimensionamento realistico degli ordini: cap di liquidità `max_adv_participation`
+
+Nuovo filone di studio (brief: `docs/context/ah_order_sizing_liquidity_brief.md`).
+Obiettivo: restare in `sizing_policy='legacy'`, compounding e leva 2x reale
+(il regime operativo vero della strategia), ma verificare che ogni ordine
+resti dimensionabile rispetto al volume scambiato del titolo — usando il
+cap `max_adv_participation`/`_cap_entry_notional` già cablato in
+`multiTickerStrategy.py` (mai acceso in nessuno studio precedente).
+
+### Esperimento 0: baseline con/senza cap
+
+Setup: parametri `development` reali correnti (ah_lag1_threshold=-0,20,
+post_up_cooldown_threshold/days=0,03/3, hedge 50/120/0,15,
+`max_concurrent=3` invariato), **`max_exposure=2` (leva 2x reale, non la
+convenzione unlevered=1.0 usata negli studi precedenti)**, `auction=True`
+esplicito, storico pieno 2000-01-03→2026-08-14 (6.694 giorni), Sharpe
+sempre giornaliero. Comando base (`btmain.py`, invariato salvo
+`max_adv_participation`):
+
+```
+python btmain.py --strat overnight_ah.OvernightAH \
+  --ticker yahoo_adj_research_universe_hedge.json \
+  --mode backtest --timeframe daily --provider yahoo_adj \
+  --fromdate 2000-01-01 --todate 2026-08-14 \
+  --commission none --margin-leverage 2 --cash 200000 \
+  --id <run_id> \
+  --stratargs "max_concurrent=3 size_by_max_concurrent=True max_exposure=2 \
+    min_intraday_vol=0 max_intraday_vol=999 intraday_vol_filter_side='any' \
+    ah_lag1_threshold=-0.20 min_adv=0 auction=True \
+    monthly_universe_mode='weak_theme_switch' monthly_universe_top_n=50 \
+    monthly_universe_base_weight=0.85 monthly_universe_theme_weight=0.15 \
+    monthly_universe_theme_score='corr12' monthly_universe_switch_feature='semis_total_3m' \
+    monthly_universe_switch_threshold=0.0 monthly_universe_spy_dd3m_threshold=-0.10 \
+    hedge_enabled=True hedge_symbol='SQQQ' hedge_trend_symbol='QQQ' hedge_fast_period=50 \
+    hedge_slow_period=120 hedge_weight=0.15 post_up_cooldown_threshold=0.03 \
+    post_up_cooldown_days=3 [max_adv_participation=<PCT>]"
+```
+
+| `max_adv_participation` | moltiplicatore 26y | rendimento cumulativo | Sharpe (giorn.) | maxDD | trade | ordini capped |
+|---|---:|---:|---:|---:|---:|---:|
+| nessuno (nocap) | 90.431.514,33x | 9.043.151.333,34% | 1,765 | -49,53% | 18.280 | 0 |
+| 0,5% | 1.980,52x | 197.951,70% | 1,275 | -48,99% | 18.144 | 14.917 (82%) |
+| 1% | 4.192,78x | 419.177,90% | 1,318 | -50,57% | 18.166 | 14.410 (79%) |
+| 2% | 8.152,43x | 815.142,58% | 1,378 | -49,53% | 18.199 | 14.008 (77%) |
+| 5% | 19.887,74x | 1.988.673,79% | 1,441 | -49,53% | 18.235 | 12.960 (71%) |
+
+0 errori/warning in tutti e 5 i run (`grep -iE "error|exception|traceback"`
+su ogni `runtime.log`, escluso falso positivo PyFolio). Run id:
+`sizing_liq_exp0_nocap`, `sizing_liq_exp0_cap0005`, `sizing_liq_exp0_cap1pct`,
+`sizing_liq_exp0_cap002`, `sizing_liq_exp0_cap005`. Benchmark salvati:
+`config-common/benchmark/overnight_ah_sizing_liq_nocap_lev2.csv`,
+`config-common/benchmark/overnight_ah_sizing_liq_cap1pct_lev2.csv`.
+
+**Riscontri**:
+
+1. **`nocap` con leva 2x reale è coerente col numero stimato nella sessione
+   precedente** (~95-159 milioni x) — 90,4 milioni x, buon controllo di
+   riproducibilità prima di procedere con lo sweep.
+2. **Il cap è il vincolo dominante a ogni livello testato, non un evento
+   raro**: si attiva sul 71-82% di TUTTI gli ingressi, anche al livello più
+   permissivo (5%). La size dell'ordine segue quasi linearmente il valore
+   del cap invece del sizing "legacy" desiderato — raddoppiare
+   `max_adv_participation` raddoppia grosso modo il moltiplicatore finale
+   (0,5%→1%→2%→5%: 1.980x→4.193x→8.152x→19.888x).
+3. **Sharpe monotono crescente col cap** (1,275 a 0,5% → 1,765 senza cap):
+   nessun livello testato migliora il rischio/rendimento rispetto a non
+   avere cap — stringere il cap costa sempre qualcosa in Sharpe. maxDD
+   resta stabile in una banda stretta (-49,0% / -50,6%) indipendentemente
+   dal cap, senza un trend chiaro.
+4. **Trade count quasi invariato** (18.144-18.280 su tutti i livelli): il
+   cap riduce la taglia dell'ordine, non salta ingressi per
+   `min_cash_per_trade` — il segnale non viene svuotato dal cap.
+5. **Nessun capitale liberato dal cap viene redistribuito agli altri
+   candidati dello stesso giorno** — confermato leggendo il codice
+   (`overnight_ah.py` righe ~629-643): `_candidate_allocations()` calcola
+   `cash_per_trade` per ogni candidato PRIMA del cap, poi
+   `_cap_entry_notional()` riduce ogni candidato indipendentemente; il
+   risparmio su un titolo poco liquido non finisce su un altro candidato
+   più liquido dello stesso giorno, resta semplicemente non investito
+   (cash idle). Questo era il sospetto esplicito nel brief — confermato:
+   un cap "puro" spreca capitale invece di redistribuirlo.
+6. Nessun livello testato porta il moltiplicatore assoluto in un range
+   "piccolo" (anche a 0,5% siamo a ~1.980x su 26 anni) — atteso: con
+   compounding + leva 2x su 26 anni qualunque cap fisso lascia comunque
+   crescere il capitale esponenzialmente, il cap garantisce solo che il
+   singolo ordine sia sempre dimensionabile rispetto al volume del
+   giorno, non un tetto al rendimento assoluto finale.
+
+**Prossimo passo aperto**: dato il punto 5, valutare una `sizing_policy`
+che ridistribuisca il capitale liberato dal cap ai candidati non ancora
+saturi (redistribuzione iterativa) prima di decidere se estendere
+`max_concurrent`, come da piano nel brief.
+
+### Perché lo Sharpe crolla col cap invece di avvicinarsi a `fixed_notional`
+
+Osservazione dell'utente che ha innescato l'analisi: lo Sharpe cala
+progressivamente stringendo il cap (1,765 nocap → 1,275 a 0,5%),
+allontanandosi dallo Sharpe più alto di `fixed_notional` (1,46-2,13 nelle
+sessioni precedenti) invece di avvicinarsi — controintuitivo, dato che il
+cap dovrebbe "assomigliare di più" a un regime non-compounding/limitato.
+
+**Decomposizione mean/std** (Sharpe = mean/std\*√252, `returns.csv`
+giornalieri):
+
+| variante | mean_daily | std_daily | Sharpe |
+|---|---:|---:|---:|
+| nocap | 0,3139% | 2,8235% | 1,765 |
+| 0,5% | 0,1257% | 1,5644% | 1,275 |
+| 1% | 0,1385% | 1,6685% | 1,318 |
+| 2% | 0,1494% | 1,7205% | 1,378 |
+| 5% | 0,1643% | 1,8099% | 1,441 |
+
+Sia la media che la deviazione standard giornaliera SCENDONO col cap (non
+è un aumento di volatilità) — ma il rapporto mean/std scende comunque,
+quindi il cap distrugge più rendimento atteso di quanto riduca il rischio.
+Non è semplice scaling proporzionale.
+
+**Causa trovata (verificata sui dati, non ipotizzata)**: il cap ADV
+**rompe la diversificazione tra gli slot concorrenti**, sempre di più con
+gli anni. Misurata la breadth effettiva (1/HHI dei $ allocati tra le
+posizioni aperte lo stesso giorno, `max_concurrent=3`) per anno sul run
+`sizing_liq_exp0_cap1pct`:
+
+| periodo | quota media posizione dominante | breadth effettiva (max=3) |
+|---|---:|---:|
+| 2000-2001 | 48% | ~2,9-3,0 (quasi 3 slot equal-weight) |
+| 2013-2014 | ~60% | ~1,86-1,88 |
+| 2023-2024 | ~70-75% | ~1,53-1,75 |
+
+Meccanismo: `cash_per_trade` (il target PRIMA del cap) cresce
+esponenzialmente col compounding dell'equity, ma il tetto ADV di ogni
+titolo cresce solo secondo la sua liquidità reale di mercato (molto più
+lento). Con gli anni, quasi solo il candidato più liquido dei 3 riesce ad
+assorbire una frazione significativa del target desiderato — gli altri
+1-2 vengono schiacciati a una frazione minuscola. "3 posizioni
+concorrenti" diventa in pratica 1 scommessa dominante + 1-2 residuali,
+aumentando il rischio idiosincratico su un solo titolo invece di
+mantenerlo diversificato su 3. Questo è **strutturalmente diverso** da
+`fixed_notional`, che dà sempre lo stesso importo fisso a ogni trade
+indipendentemente dal titolo — mantiene la diversificazione piena su 3
+slot per tutti i 26 anni, non collassa mai.
+
+Correlazione tra severità del cap per titolo (rapporto mediano
+capped/desired nel log) e rendimento medio per trade nel run nocap:
++0,31 (debole) — la causa NON è principalmente "il cap colpisce i titoli
+con edge migliore", è un effetto di **breadth/diversificazione persa**,
+non di selezione di edge.
+
+**Verifica: `min_adv` (filtro di selezione candidati, rimosso da
+`development` il 2026-08-16, diverso da `max_adv_participation` che
+limita solo la size di chi è già stato selezionato) mitiga il problema?**
+Ripetuto `cap1pct` con `min_adv=100000000` ripristinato:
+
+| variante | moltiplicatore | Sharpe | maxDD | breadth 2000-2012 | breadth 2020-2026 |
+|---|---:|---:|---:|---:|---:|
+| `cap1pct` (senza min_adv) | 4.192,78x | 1,318 | -50,57% | ~2,2-2,9 | ~1,5-2,2 |
+| `cap1pct` + `min_adv=100M` | 4.093,21x | 1,348 | -56,22% | ~2,6-3,0 | ~1,5-2,2 (identica) |
+
+Risposta: **sì, ma solo parzialmente e solo nella prima metà dello
+storico**. `min_adv=100M` migliora la breadth 2000-2012 (candidati sempre
+pescati da un pool già liquido), ma dal 2020 in poi il quadro è
+**praticamente identico** (quota dominante 0,687 vs 0,688) — perché
+`min_adv` è una soglia FISSA, mentre `cash_per_trade` cresce
+esponenzialmente col compounding: prima o poi anche i titoli sopra
+100M di ADV superano comunque il tetto ADV individuale, e il collasso di
+diversificazione si ripresenta identico. Sharpe migliora solo
+marginalmente (1,318→1,348) e il maxDD **peggiora** (-50,57%→-56,22%,
+verosimilmente perché il pool più ristretto concentra il rischio residuo
+su meno nomi). Non è una soluzione strutturale — un palliativo solo
+temporaneo, non generalizzabile a tutto lo storico né presumibilmente al
+regime live futuro (dove l'equity continuerà a compoundare).
+
+0 errori/warning in entrambi i run aggiuntivi. Run id:
+`sizing_liq_exp0_cap1pct_minadv100m`. Benchmark salvato:
+`config-common/benchmark/overnight_ah_sizing_liq_cap1pct_minadv100m_lev2.csv`.
+
+**Implicazione per il prossimo passo**: qualunque `sizing_policy` nuova
+deve affrontare esplicitamente la perdita di breadth, non solo il cap
+notional per titolo — es. normalizzare la size target giornaliera al
+candidato PIÙ vincolato dal suo tetto ADV (invece che a `cash_per_trade`
+uguale per tutti prima del cap), oppure scartare/sostituire un candidato
+se il suo tetto ADV è troppo sotto la size "equa" del giorno invece di
+lasciarlo entrare schiacciato a una frazione minima.
+
+### Nuova `sizing_policy='liquidity_equal'`: preservare la breadth esplicitamente
+
+Implementata in `bt-core/strategies/overnight_ah.py`
+(`_candidate_allocations()`), con nuovo parametro
+`liquidity_min_viable_fraction` (default 0.0). A differenza del
+comportamento attuale (cap ADV applicato indipendentemente a ciascun
+candidato via `_cap_entry_notional`, causa del collasso di breadth
+sopra), `liquidity_equal`:
+
+1. Calcola `equal_target` come in `legacy` (stesso `cash_avail`/divisore —
+   nessun cambiamento alla base di compounding/leva).
+2. Calcola il tetto ADV di OGNI candidato del giorno.
+3. Se `liquidity_min_viable_fraction > 0`, scarta (0 size, nessuna
+   posizione) i candidati il cui tetto è sotto
+   `liquidity_min_viable_fraction * equal_target` — non entrano nel
+   calcolo del tetto condiviso.
+4. Tra i candidati non scartati, usa lo STESSO importo per tutti = minimo
+   tra `equal_target` e il tetto più stretto tra loro — non il proprio
+   tetto individuale. Preserva l'equal-weighting per costruzione. Il
+   capitale non deployato resta cash idle (non redistribuito sui
+   candidati più liquidi, deliberatamente, per non ricreare il collasso).
+
+**Verifica** (stesso setup Esperimento 0, leva 2x, `max_adv_participation=0.01`,
+`max_concurrent=3`, storico pieno 2000-2026, 0 errori/warning in tutti i
+run):
+
+| policy | moltiplicatore | Sharpe | maxDD | trade | breadth 2000-2010 | breadth 2020-2026 |
+|---|---:|---:|---:|---:|---:|---:|
+| `legacy`+cap indipendente (baseline, esperimento sopra) | 4.192,78x | 1,318 | -50,57% | 18.166 | 2,54 | 1,91 |
+| `liquidity_equal` floor=0,0 | 699,75x | 1,083 | -49,53% | 18.212 | 3,00 | 3,04 |
+| `liquidity_equal` floor=0,1 | 1.352,7x | 1,185 | -49,53% | 15.368 | 2,76 | 2,72 |
+| `liquidity_equal` floor=0,3 | 1.948,0x | 1,243 | -48,61% | 9.941 | 2,70 | 2,31 |
+| `liquidity_equal` floor=0,5 | 1.640,7x | 1,187 | -50,03% | 7.820 | 2,64 | 2,14 |
+
+Run id: `sizing_liq_equal_cap1pct` (floor=0,0), `sizing_liq_equal_floor01`,
+`sizing_liq_equal_floor03`, `sizing_liq_equal_floor05`. Benchmark salvati:
+`config-common/benchmark/overnight_ah_liquidity_equal_floor0_lev2.csv`,
+`config-common/benchmark/overnight_ah_liquidity_equal_floor03_lev2.csv`.
+
+**Riscontri**:
+
+1. **Il meccanismo funziona esattamente come progettato**: floor=0,0
+   preserva breadth PERFETTA (3,00 costante su tutti i 26 anni, incluso
+   2020-2026, zero collasso) — conferma diretta che il collasso trovato
+   sopra era causato dal cap indipendente per candidato, non da un
+   effetto inevitabile del cap ADV in sé.
+2. **Ma nessuna variante testata batte lo Sharpe della baseline
+   "difettosa"** (1,318). La migliore delle varianti `liquidity_equal`
+   (floor=0,3, Sharpe 1,243) resta sotto, con quasi la metà dei trade
+   (9.941 vs 18.166) — i candidati scartati per viabilità non vengono
+   sostituiti dal prossimo in classifica (limite noto dell'implementazione
+   attuale: il pool di candidati del giorno è già troncato a
+   `max_concurrent` PRIMA di `_candidate_allocations`), quindi lo scarto
+   riduce anche il numero di occasioni di trading, non solo la
+   concentrazione.
+3. **floor=0,5 è peggiore di floor=0,3 su entrambi gli assi** (Sharpe
+   1,187 vs 1,243, moltiplicatore 1.641x vs 1.948x) — scartare troppo
+   aggressivamente comincia a buttare via candidati validi, non solo gli
+   straggler. floor=0,3 è il miglior compromesso nella griglia testata
+   (non necessariamente il punto ottimo assoluto — griglia grossolana).
+4. **Lettura onesta, non a favore della nuova policy**: il fatto che la
+   baseline (con collasso di breadth misurato) abbia comunque Sharpe
+   migliore suggerisce che la concentrazione sui titoli più liquidi
+   (AMD, NVDA, TSLA — mega-cap growth, vedi tabella correlazione sopra)
+   si è rivelata vincente in QUESTO specifico campione storico 2000-2026,
+   non necessariamente un vantaggio strutturale robusto generalizzabile
+   al futuro. Il meccanismo di rischio concentrato rimane reale e
+   misurato (breadth 1,9/3 nel 2020-2026 con la baseline) — non è chiaro
+   se sia stato "premiato per fortuna" in-sample o se il costo in Sharpe
+   di `liquidity_equal` sia davvero il prezzo di un rischio di coda che
+   qui non si è manifestato ma potrebbe farlo out-of-sample.
+
+**Stato**: nessuna decisione presa su quale policy usare. Prossimo passo
+possibile (non ancora fatto): implementare sostituzione del candidato
+scartato con il prossimo in classifica (invece di ridurre semplicemente
+il numero di trade del giorno) per isolare se il gap di Sharpe è dovuto
+alla perdita di opportunità di trading o alla concentrazione stessa.
+
+### Sostituzione del candidato scartato (`liquidity_candidate_pool_size`)
+
+Implementato subito dopo per rispondere alla domanda aperta sopra. Nuovo
+parametro `liquidity_candidate_pool_size` (int, default 0=disattivato) +
+refactor di `_candidate_allocations()` (ora ritorna
+`(candidati_effettivi, allocazioni)` invece di solo `allocazioni`,
+compatibile all'indietro per tutte le altre policy — verificato con un run
+di regressione a parità di parametri: diff massima 0.0 su tutte le 6.694
+righe di `returns.csv` rispetto al run pre-refactor). Quando
+`sizing_policy='liquidity_equal'` e `liquidity_candidate_pool_size >
+max_concurrent`, `next()` raccoglie un pool di candidati classificati più
+profondo di `max_concurrent` (fino al valore del parametro) PRIMA di
+applicare `liquidity_min_viable_fraction`: un candidato scartato per
+illiquidità viene sostituito dal prossimo in classifica nel pool, invece
+di ridurre semplicemente il numero di posizioni aperte quel giorno.
+
+**Verifica** (stesso setup, leva 2x, `max_adv_participation=0.01`,
+`max_concurrent=3`, storico pieno 2000-2026, 0 errori/warning in tutti i
+run):
+
+| variante | moltiplicatore | Sharpe | maxDD | trade | breadth 2000-2010 | breadth 2020-2026 |
+|---|---:|---:|---:|---:|---:|---:|
+| baseline `legacy`+cap indipendente | 4.192,78x | 1,318 | -50,57% | 18.166 | 2,54 | 1,91 |
+| `liquidity_equal` floor=0,3, NO sostituzione | 1.948,0x | 1,243 | -48,61% | 9.941 | 2,70 | 2,31 |
+| `liquidity_equal` floor=0,1, pool=6 | 1.436,9x | 1,189 | -49,53% | 17.385 | 2,99 | 2,94 |
+| `liquidity_equal` floor=0,3, pool=6 | 2.923,1x | 1,286 | -49,36% | 11.664 | 2,81 | 2,44 |
+| **`liquidity_equal` floor=0,3, pool=10** | **3.330,8x** | **1,317** | **-48,67%** | 12.803 | 2,90 | 2,56 |
+| `liquidity_equal` floor=0,5, pool=10 | 3.498,3x | 1,244 | -51,47% | 10.024 | 2,93 | 2,41 |
+
+Run id: `sizing_liq_replace_floor01_pool6`, `sizing_liq_replace_floor03_pool6`,
+`sizing_liq_replace_floor03_pool10`, `sizing_liq_replace_floor05_pool10`.
+Benchmark salvato:
+`config-common/benchmark/overnight_ah_liquidity_equal_floor03_pool10_lev2.csv`.
+
+**Risultato**: `floor=0,3, pool=10` **quasi pareggia lo Sharpe della
+baseline "difettosa"** (1,317 vs 1,318 — differenza trascurabile) mentre:
+- **migliora il maxDD** (-48,67% vs -50,57%, ~2pp meglio);
+- **preserva molto meglio la breadth** nel periodo recente (2,56 vs 1,90
+  nel 2020-2026 — meno rischio di concentrazione su un singolo titolo,
+  esattamente il problema strutturale trovato in questo studio);
+- costa un moltiplicatore più basso (3.330,8x vs 4.192,78x, -21% — il
+  prezzo per evitare la concentrazione).
+
+Conferma l'ipotesi: il gap di Sharpe osservato nella prima versione di
+`liquidity_equal` (senza sostituzione) era dovuto in gran parte alla
+perdita di opportunità di trading (candidati scartati senza sostituzione,
+9.941 trade vs 18.166 baseline), non a un difetto intrinseco
+dell'equal-weighting. Con un pool sufficientemente profondo (10 contro
+`max_concurrent=3`) il conteggio trade si avvicina alla baseline (12.803
+vs 18.166) recuperando quasi tutto il gap di Sharpe.
+
+**Non testato in questa sessione**: pool ancora più profondi (>10) o
+floor intermedi (0,2/0,4) — griglia grossolana, `floor=0,3/pool=10` è il
+miglior punto trovato ma non necessariamente l'ottimo assoluto. Nessuna
+decisione presa su adozione in `development.env` — resta uno studio,
+in attesa di conferma esplicita dell'utente prima di qualunque cambio
+alla configurazione operativa.
+
+## `sizing_policy='liquidity_waterfall'`: leva → auto-riduzione → espansione breadth
+
+`liquidity_equal` (sezione sopra) è stata rimossa (non mantenuta in
+parallelo) e sostituita da questo meccanismo, dopo che l'utente ha
+chiarito esplicitamente il comportamento economico desiderato: (1) leva
+piena su `min_concurrent` asset quando il cap ADV lo consente, (2) quando
+non basta per la leva piena ma basta per 1x, la leva realizzata si
+auto-riduce (nessuno scartato), (3) solo quando anche 1x non entra nei
+soliti `min_concurrent` slot, si espande aggiungendo altri asset dal
+ranking (fino al tetto `max_concurrent`, mai in sostituzione dei
+precedenti).
+
+### Errore di design iniziale (corretto su segnalazione esplicita dell'utente)
+
+Prima implementazione: riempimento *greedy* in ordine di ranking, ogni
+candidato fino al proprio tetto ADV individuale, **senza vincolo di quota
+equa** — l'utente aveva scelto questa regola (via AskUserQuestion) per la
+sola sotto-domanda "come si distribuisce il capitale quando si espande",
+ma è stata applicata per errore anche al caso base (regime 1/2), dove
+invece la divisione equa per `max_concurrent` è sempre stata la regola di
+`legacy` e doveva restarlo. Risultato: se il candidato #1 in classifica
+aveva un tetto ADV sufficiente ad assorbire l'intero `cash_avail`, lo
+prendeva TUTTO, lasciando $0 agli altri.
+
+**Conseguenza empirica misurata** (leva 2x, `max_adv_participation=0.01`,
+storico 2000-2026): maxDD quasi raddoppiato rispetto alla baseline
+(-83,99%/-86,00% vs -50,57%), Sharpe peggiore su tutta la griglia
+(1,065-1,141 vs 1,318). Causa isolata nei trade: 20-26 giugno 2002, **100%
+del capitale del giorno su NVDA da sola per 5 giorni consecutivi**
+(trades.json: unica posizione aperta ogni giorno, valore ~$124-165k),
+durante il crollo dot-com — un giorno -11,34% sul trade. Verificato che
+NON è specifico del periodo 2000-2005: spostando `trade_start_date` al
+2005-01-01, lo stesso pattern si ripresenta identico ma traslato (2006:
+100% dei giorni concentrati su un solo nome, come il 2001 nella run
+originale) — è un problema strutturale di capitale INIZIALE piccolo
+relativo all'ADV di un mega-cap liquido, non del regime di mercato:
+qualunque conto reale (live/paper) parte piccolo e soffrirebbe la stessa
+cosa a inizio vita, indipendentemente da quando si avvia.
+
+**Correzione**: il capitale `cash_avail` è SEMPRE diviso in parti uguali
+da `min_concurrent` (`equal_share = cash_avail/min_concurrent`, esatta
+stessa regola di `legacy` con `size_by_max_concurrent=True`, solo con
+`min_concurrent` al posto di `max_concurrent` come divisore) — nessun
+candidato può mai ricevere più della propria quota, qualunque sia il suo
+ADV. Ogni candidato riceve indipendentemente `min(equal_share, tetto ADV
+individuale)`, nessuna redistribuzione dello shortfall di uno verso un
+altro. L'espansione (regime 3, oltre `min_concurrent` fino a
+`max_concurrent`) usa lo STESSO `equal_share` fisso per i candidati
+aggiuntivi, mai ricalcolato su un N più grande.
+
+### Parametri finali
+
+- `min_concurrent` (nuovo, default 0 = usa `max_concurrent` come
+  floor==ceiling, nessuna espansione mai). Deve essere <= `max_concurrent`
+  (altrimenti `ValueError` in `__init__`).
+- `max_concurrent`: torna al significato universale invariato (tetto
+  rigido, uguale per tutte le policy) — niente più doppio significato
+  scoped a una sola policy.
+- `max_adv_participation > 0` richiesto esplicitamente per questa policy
+  (`ValueError` altrimenti in `__init__`).
+- `liquidity_waterfall_ceiling` (introdotto nella prima versione)
+  **rimosso**: il tetto è semplicemente `max_concurrent`, come per tutte
+  le altre policy — non serve un parametro dedicato.
+
+### Verifica: equivalenza esatta con la baseline quando `min_concurrent` non è impostato
+
+Con `min_concurrent` non impostato (0, floor==ceiling==max_concurrent,
+espansione mai raggiungibile), `liquidity_waterfall` deve comportarsi
+IDENTICAMENTE a `legacy + size_by_max_concurrent=True` con
+`_cap_entry_notional` indipendente (la baseline `sizing_liq_exp0_cap1pct`
+di questa sessione) — verificato diffando `returns.csv`:
+
+- Primo tentativo: diff massima 0,0812 (8,12pp su un giorno) — causato da
+  una divergenza nel trattamento di `_liquidity_cap_notional() is None`
+  durante il warmup della SMA(20) di `liquidity_lookback` (primi ~20
+  giorni di storico): `_cap_entry_notional` (comportamento consolidato)
+  tratta `None` come "nessun cap, quota piena"; la prima versione di
+  `_liquidity_waterfall_pick` lo trattava come "candidato non eleggibile,
+  scarta" — comportamento diverso, mai armonizzato. Corretto per
+  allinearsi esattamente al trattamento consolidato.
+- Dopo la correzione: **diff massima 0,0 su tutte le 6.694 righe**,
+  0 errori/warning. Run id: `sizing_waterfall_v3_equivalence` vs
+  `sizing_liq_exp0_cap1pct`.
+- Regressione sulle policy esistenti (`legacy` invariato dal refactor di
+  `next()`/`_candidate_allocations`): diff massima 0,0, run id
+  `sizing_waterfall_regression_v2`.
+
+### Risultati con espansione attiva (`min_concurrent=3`, leva 2x, `max_adv_participation=0.01`, storico 2000-2026)
+
+| variante | moltiplicatore | Sharpe | maxDD | trade | breadth 2000-2010 | breadth 2020-2026 |
+|---|---:|---:|---:|---:|---:|---:|
+| nocap | 90.431.514,3x | 1,765 | -49,53% | 18.280 | 3,01 | 3,01 |
+| baseline (`legacy`+cap indipendente, = waterfall senza espansione) | 4.192,78x | 1,318 | -50,57% | 18.166 | 2,54 | 1,85 |
+| **waterfall min=3/max=6** | 6.940,0x | **1,370** | -50,57% | 31.602 | 3,10 | 2,57 |
+| **waterfall min=3/max=10** | 8.633,3x | **1,411** | -50,57% | 45.510 | 3,30 | 3,20 |
+| **waterfall min=3/max=15** | 9.996,3x | **1,435** | -50,57% | 58.713 | 3,26 | 3,71 |
+
+0 errori/warning in tutti i run. Run id: `sizing_waterfall_v3_minc3_maxc6`,
+`sizing_waterfall_v3_minc3_maxc10`, `sizing_waterfall_v3_minc3_maxc15`.
+
+**Risultato**: a differenza di ogni tentativo precedente in questo
+studio, questa configurazione **batte la baseline su ogni asse
+contemporaneamente** — Sharpe migliore (1,370-1,435 vs 1,318),
+moltiplicatore migliore (fino a 10.000x vs 4.193x), **maxDD identico**
+(-50,57%, stesso identico episodio di drawdown 2001-01-17→2001-09-21,
+crollo dot-com, verificato che è lo stesso trough in tutti e 4 i run —
+un drawdown di mercato genuino, non un artefatto della sizing policy),
+breadth nel periodo recente che risale da 1,85 (collasso) fino a 3,71
+(meglio della configurazione senza alcun cap di liquidità). Il tetto
+`max_concurrent` più alto migliora monotonicamente Sharpe e
+moltiplicatore in tutta la griglia testata (6/10/15) — non ancora
+verificato dove satura o se un tetto ancora più alto (20+) migliori
+ulteriormente.
+
+### Non testato in questa sessione
+
+Griglia più fine di `min_concurrent`/`max_concurrent`/`max_adv_participation`
+insieme; tetti oltre 15; effetto su periodi diversi da 2000-2026 intero.
+Nessuna modifica a `overnight-ah-development.env` — resta uno studio, in
+attesa di conferma esplicita dell'utente prima di qualunque adozione in
+produzione/paper.
+
+### Sweep `max_concurrent` fino a saturazione (algoritmo corretto)
+
+Continuazione dello sweep sopra, con `min_concurrent=3` fisso, cercando il
+punto in cui Sharpe/moltiplicatore smettono di migliorare (stesso setup:
+leva 2x, `max_adv_participation=0.01`, storico 2000-2026, 0 errori/warning
+in tutti i run):
+
+| `max_concurrent` | moltiplicatore | Sharpe | maxDD |
+|---:|---:|---:|---:|
+| 20 | 12.047,4x | 1,462 | -50,57% |
+| 25 | 13.734,2x | 1,489 | -50,57% |
+| 35 | 15.039,7x | 1,499 | -50,57% |
+| 50 | 16.312,4x | 1,507 | -50,57% |
+| 65 | 16.312,4x | 1,507 | -50,57% (identico a 50) |
+| 80 | 16.312,4x | 1,507 | -50,57% (identico a 50) |
+
+`max_concurrent` >= 50 satura: risultati bit-identici a 50 (stesso
+moltiplicatore, Sharpe, 121.596 trade). Causa: `monthly_universe_top_n=50`
+tronca il pool mensile a 50 titoli — sopra quella soglia non ci sono più
+candidati da aggiungere, è un vincolo strutturale del parametro
+dell'universo, non una vera saturazione economica. maxDD identico
+(-50,57%, stesso episodio 2001, dot-com) su TUTTA la griglia 6→80 — mai un
+nuovo rischio di coda introdotto dall'espansione.
+
+**Verifica con universo esteso** (`monthly_universe_top_n=100`, universo
+reale 103 titoli in `yahoo_adj_research_universe_hedge.json`): rimosso il
+vincolo strutturale, il plateau si sposta ma stavolta emerge un vero
+punto di flesso:
+
+| `top_n` | `max_concurrent` | moltiplicatore | Sharpe | breadth 2020-2026 |
+|---:|---:|---:|---:|---:|
+| 100 | 50 | 16.312,7x | 1,507 | 6,39 |
+| 100 | 80 | 16.494,3x | 1,507 | 8,06 |
+| 100 | 100 | 16.672,3x | **1,504** | 8,39 |
+
+A `max_concurrent=100` lo Sharpe inizia a calare (1,507→1,504, piccolo ma
+è la prima flessione vera in tutta la sessione) mentre il moltiplicatore
+continua comunque a salire — segnale di diluizione verso segnali via via
+più deboli in classifica: più diversificazione (breadth 8,39) ma qualità
+media del segnale in calo. Punto di flesso non ancora affinato (tra 80 e
+100), grandezza dell'effetto piccola. Run id:
+`sizing_waterfall_v3_minc3_maxc{20,25,35,50,65,80}`,
+`sizing_waterfall_top100_maxc{50,80,100}`.
+
+### Chiarimento: perché il capitale piccolo resta "incollato" al floor `min_concurrent`
+
+Domanda dell'utente dopo aver visto risultati apparentemente
+contraddittori: perché un run a $200k sembrava "single-name" nei primi
+anni? Chiarito che i numeri "100% giorni single-name nel 2001/2006"
+citati in una risposta precedente venivano dal PRIMO design (greedy,
+scartato — vedi sopra), non dall'algoritmo corretto. Verificato sui dati
+del run corretto (`sizing_waterfall_v3_minc3_maxc50`, $200k, leva 2x):
+`avg_n_open` 3,00-3,72 per ogni anno 2000-2004, 0% giorni a 1 sola
+posizione, 100% giorni con almeno 3 — **mai single-name** con l'algoritmo
+corretto. Il fenomeno reale è diverso: il capitale piccolo resta quasi
+sempre esattamente AL floor di 3 (mai sotto, quasi mai sopra), perché il
+meccanismo di espansione non si attiva quasi mai.
+
+Verificato sul log del primo giorno di trading (`runtime.log`,
+`sizing_waterfall_v3_minc3_maxc50`):
+```
+NVDA: cash_per_trade=133.333,33  entry_notional=133.333,33  (identici)
+MU:   cash_per_trade=133.333,33  entry_notional=133.333,33  (identici)
+AMD:  cash_per_trade=133.333,33  entry_notional=133.333,33  (identici)
+```
+`133.333,33 = ($200.000 × leva 2x) / min_concurrent(3)` — `equal_share`
+esatto. `entry_notional` (dopo il cap ADV) coincide ESATTAMENTE con
+`cash_per_trade` (prima del cap): il tetto di liquidità di NVDA/MU/AMD
+quel giorno era comodamente sopra $133k ciascuno, quindi nessuna
+riduzione — `running_total = 3×133k = $400k`, ben sopra
+`equity_sizing=$200k` (1x) → il loop si ferma esattamente a 3, il regime
+3 (espansione) non si attiva mai.
+
+**Confronto diretto $200k vs $3M, entrambi da `--fromdate 2000-01-01`**
+(nessun `trade_start_date`, stessa configurazione altrimenti, leva 2x,
+`max_adv_participation=0.01`, `min_concurrent=3`, `max_concurrent=50`, 0
+errori/warning in entrambi i run):
+
+| | $200k dal 2000 | $3M dal 2000 |
+|---|---:|---:|
+| Sharpe (periodo pieno) | 1,507 | **1,583** |
+| maxDD (periodo pieno) | -50,57% | **-44,40%** |
+| vol giornaliera 2000-2002 | 3,63-4,25% | **2,08-2,30%** |
+| posizioni medie 2000-2002 | 3,0-3,7 | **3,4-6,4** |
+| moltiplicatore | 16.312,40x | 1.169,92x |
+| equity finale in $ | $3,26 miliardi | **$3,51 miliardi** |
+
+Il moltiplicatore del run $3M appare molto più basso, ma è un artefatto
+di base (parte già 15x più grande) — in dollari assoluti finali il run
+$3M produce di più, attraversando la fase iniziale volatile con Sharpe e
+maxDD migliori. Con `equal_share ≈ $2M` per slot (vs $133k per il run
+$200k), è molto più probabile che uno o più dei 3 candidati abbia un
+tetto ADV sotto la propria quota, facendo scattare l'espansione — da qui
+`avg_n_open` 3,4-6,4 (vs 3,0-3,7 per $200k) già nei primi anni.
+
+**Implicazione pratica**: nessun bug nella policy — `min_concurrent`
+garantisce sempre almeno il floor, non forza mai l'espansione quando non
+serve. Un conto reale che parte piccolo resterà semplicemente vicino al
+floor (comportamento sicuro, non degenerato) finché il capitale non
+cresce abbastanza da rendere l'`equal_share` per slot grande relativo
+all'ADV dei candidati tipici — a quel punto l'espansione emerge da sola,
+automaticamente, senza bisogno di ritarare i parametri.
+
+### File e output (algoritmo corretto + verifica capitale iniziale)
+
+Codice: `bt-core/strategies/overnight_ah.py` (`sizing_policy='liquidity_waterfall'`,
+`min_concurrent`, `_liquidity_waterfall_pick()`, `_eligible_ordered_candidates()`).
+Benchmark salvati: `config-common/benchmark/overnight_ah_waterfall_minc3_maxc{6,10,15}_lev2.csv`,
+`config-common/benchmark/overnight_ah_waterfall_cash200k_from2000.csv`. Report
+comparativo QuantStats (curva $3M come strategia, $200k come benchmark,
+stessa configurazione, entrambe da 2000): `out/overnight_ah/OvernightAH/
+sizing_waterfall_cash3M_vs200k_benchmark/stats.html`. Run id aggiuntivi:
+`sizing_waterfall_cash3M_from2000`, `sizing_waterfall_matched_cash_2005`
+(quest'ultimo con `trade_start_date='2005-01-01'` + cash pari all'equity
+compound a quella data — esperimento diverso dal confronto sopra, usato
+solo per isolare l'effetto regime-di-mercato-vs-capitale: confermato che
+riavviando con capitale realistico a fine 2004 il "problema" sparisce da
+subito, coerente col meccanismo spiegato qui).
+
+### Confronto contro produzione vera + sweep `min_concurrent` 3-10
+
+Chiarimento richiesto dall'utente dopo un possibile equivoco sul
+significato di "configurazione attuale": la baseline corretta per
+confrontare l'effetto totale del lavoro di questa sessione è la
+configurazione LETTERALE di `overnight-ah-development.env` (mai
+modificata, `legacy`, nessun `max_adv_participation`), non un'altra
+variante interna di `liquidity_waterfall`. Eseguita run id
+`sizing_prod_baseline_literal` (STRATARGS letterali dal file, `--cash
+200000 --margin-leverage 2`, stesso sizing standard di tutta la sessione),
+0 errori/warning:
+
+| | produzione (legacy, no cap ADV) | waterfall min=3 | waterfall min=5 |
+|---|---:|---:|---:|
+| Sharpe | 1,765 | 1,507 | 1,547 |
+| maxDD | -49,53% | -50,57% | -48,33% |
+| moltiplicatore | 90.431.479,6x | 16.312x | 14.907x |
+| trade | 18.280 | 121.596 | 102.059 |
+| breadth 2020-2026 | 3,01 | 6,39 | 6,18 |
+
+Il moltiplicatore di produzione (90 milioni x) è lo stesso numero non
+eseguibile che ha aperto lo studio — nessun ordine reale potrebbe
+scalare così senza muovere il prezzo. Lo Sharpe più alto di produzione è
+un artefatto dello stesso problema (backtest che finge esecuzione di
+qualunque size al prezzo di chiusura), non un vantaggio reale. Benchmark
+salvato: `config-common/benchmark/overnight_ah_prod_baseline_literal_lev2.csv`.
+Report comparativo QuantStats (waterfall min=5 come strategia, produzione
+come benchmark): `out/overnight_ah/OvernightAH/sizing_waterfall_minc5_vs_prod_benchmark/stats.html`.
+
+**Sweep `min_concurrent` 3→10** (`max_concurrent=50`, $200k, leva 2x,
+`max_adv_participation=0.01`, storico 2000-2026, 0 errori/warning in
+tutti gli 8 run):
+
+| min_concurrent | moltiplicatore | Sharpe | maxDD | trade | breadth 2000-2010 | breadth 2020-2026 |
+|---:|---:|---:|---:|---:|---:|---:|
+| 3 | 16.312,4x | 1,507 | -50,57% | 121.596 | 3,26 | 6,39 |
+| 4 | 16.078,8x | 1,613 | -39,26% | 111.170 | 3,74 | 6,34 |
+| 5 | 14.906,9x | 1,547 | -48,33% | 102.059 | 4,45 | 6,18 |
+| 6 | 14.147,7x | 1,530 | -60,65% | 100.390 | 5,19 | 6,34 |
+| 7 | 13.978,7x | 1,662 | -52,44% | 104.191 | 5,66 | 6,71 |
+| 8 | 13.252,7x | 1,694 | -48,63% | 99.790 | 6,19 | 7,08 |
+| 9 | 12.232,9x | 1,715 | -43,59% | 97.721 | 6,80 | 7,41 |
+| 10 | 11.177,9x | **1,735** | -43,56% | 97.792 | 7,52 | 7,77 |
+
+Sharpe cresce quasi monotonicamente col floor (max nella griglia a
+min=10, non ancora saturo), moltiplicatore scende costantemente,
+maxDD NON monotono (oscilla, minimo a 4, massimo a 6 — sensibile a quale
+episodio storico domina a seconda di quanti nomi entrano in gioco, non
+un trend pulito). Run id: `sizing_waterfall_minc{4,6,7,8,9,10}_maxc50_200k`.
+
+### Quota di cash idle (capitale non deployato per mancanza di liquidità)
+
+Domanda dell'utente: quanto del target di leva 2x resta effettivamente
+non investito quando il cap ADV limita gli slot? Parsing dei log
+`LIQUIDITY_WATERFALL_UNDERLEVERAGED`/`UNDERFILLED` (run
+`sizing_waterfall_v3_minc3_maxc50`, min=3):
+
+| anno | % giorni con cash idle | quota media di target 2x non deployata |
+|---|---:|---:|
+| 2000-2006 | 0-9,5% | 0-9,5% |
+| 2008 | 73,9% | 56,5% |
+| 2019 | 82,1% | 51,2% |
+| 2024 | 87,3% | 56,5% |
+| 2025 | 91,6% | 67,1% |
+
+Media pesata sull'intero periodo 2000-2026: **~27%** del target di leva
+2x resta idle. Ma il quadro cambia radicalmente nel tempo: 2000-2006
+praticamente 0% (leva piena sempre raggiunta con 3 slot), 2024-2026
+56-67% del target medio resta cash idle. Causa: stesso vincolo
+strutturale del pool universo (vedi sotto) — l'equity compound è
+cresciuta talmente tanto che nemmeno l'intero universo disponibile ha
+abbastanza ADV aggregato per assorbire il target di leva 2x.
+
+### Bug strutturale trovato: `monthly_universe_top_n` accoppia due scopi diversi
+
+Segnalazione diretta dell'utente: `monthly_universe_top_n` (pensato per
+limitare la SHORTLIST basata sul segnale, scegliere i migliori N per
+score) tronca il pool PRIMA che `_liquidity_waterfall_pick()` possa
+vederlo — verificato nel codice
+(`_compute_weak_theme_monthly_universe()`, `overnight_ah.py:1359-1360`:
+`rows.sort(...)` calcola il ranking COMPLETO, ma
+`selected = [symbol for _, symbol in rows[:top_n]]` tronca prima del
+return). Le due funzioni — "shortlist per segnale" e "profondità di pool
+per espansione da liquidità" — sono concettualmente indipendenti ma
+accoppiate per caso tramite lo stesso parametro.
+
+**Verifica dell'impatto reale**: universo tradabile totale = 100 titoli
+(103 nel file ticker, esclusi SPY/SQQQ/QQQ). Rieseguiti min=3 e min=10
+con `monthly_universe_top_n=100` (universo pieno, nessun troncamento) vs
+`top_n=50` (come nello sweep sopra), `max_concurrent=50` fisso in
+entrambi i casi:
+
+| | top_n=50 (troncato) | top_n=100 (universo pieno) |
+|---|---:|---:|
+| min=3, moltiplicatore | 16.312,4x | 16.298,1x (differenza trascurabile) |
+| min=3, Sharpe | 1,507 | 1,506 |
+| min=10, moltiplicatore | 11.177,9x | 11.178,0x (identico) |
+| min=10, Sharpe | 1,735 | 1,735 (identico) |
+
+**Nessun impatto misurabile in QUESTO sweep specifico** (`max_concurrent=50`
+= `top_n=50` esattamente, quindi il tetto di posizioni non chiedeva mai
+più di 50 nomi distinti, disponibili anche col troncamento). Il bug si
+manifesta solo quando `max_concurrent` SUPERA `top_n` — esattamente il
+caso già misurato in precedenza (`max_concurrent=80/100` con `top_n=50`
+fermava la crescita di colpo a 50; con `top_n=100` continuava a salire).
+Lo sweep `min_concurrent` 3→10 sopra resta quindi valido così com'è. Run
+id: `sizing_waterfall_minc3_fulluniv`, `sizing_waterfall_minc10_fulluniv`.
+
+**Correzione strutturale non ancora applicata**: per studi futuri con
+`liquidity_waterfall` dove `max_concurrent`/il tetto di espansione può
+superare `monthly_universe_top_n`, impostare `monthly_universe_top_n`
+pari o superiore alla dimensione dell'universo tradabile reale (100 per
+`yahoo_adj_research_universe_hedge.json`) per evitare l'accoppiamento
+accidentale — non richiede modifiche al codice, solo disciplina nella
+scelta dei parametri per i prossimi studi. Una correzione più profonda
+(separare i due scopi con un parametro dedicato, es. non troncare mai il
+pool passato a `_liquidity_waterfall_pick`) non è stata implementata in
+questa sessione — nessuna decisione presa se serva.
+
+### Isolamento filtri (ah_lag1, cooldown, hedge) sopra `liquidity_waterfall`
+
+Richiesto dall'utente dopo un chiarimento: nessuno dei filtri operativi
+di `development` era mai stato spento in questa sessione (cooldown
+`0,03/3` e `ah_lag1_threshold=-0,20` sempre attivi in ogni run
+precedente, incluso lo sweep `min_concurrent`). Isolati uno alla volta
+sopra la configurazione base (`min_concurrent=3`, `max_concurrent=50`,
+`liquidity_waterfall`, `max_adv_participation=0.01`, $200k, leva 2x,
+storico 2000-2026, 0 errori/warning in tutti e tre i run):
+
+| filtro | moltiplicatore | Sharpe | maxDD | trade |
+|---|---:|---:|---:|---:|
+| attivo (configurazione base) | 16.312,4x | 1,507 | -50,57% | 121.596 |
+| `ah_lag1_threshold` → -999 (OFF) | 16.301,0x | 1,506 | -50,57% | 121.045 |
+| cooldown → 0,0/0 (OFF) | 17.179,4x | **1,383** | **-59,82%** | 124.407 |
+| `hedge_enabled` → False (OFF) | 15.965,6x | 1,516 | -50,74% | 123.039 |
+
+Run id: `sizing_waterfall_isol_ahlag1_off`, `sizing_waterfall_isol_cooldown_off`,
+`sizing_waterfall_isol_hedge_off`. Benchmark salvati:
+`config-common/benchmark/overnight_ah_waterfall_isol_{ahlag1,cooldown,hedge}_off.csv`.
+
+**`ah_lag1`**: effetto quasi nullo su tutti gli assi — con la nuova
+sizing policy liquidity-aware questo filtro non pesa più come nelle
+sessioni precedenti (dove isolato sopra `legacy` aveva un effetto molto
+più marcato, vedi sezioni "Griglia 1" sopra).
+
+**`cooldown`**: è il filtro che conta davvero anche con `liquidity_waterfall`
+— spegnerlo peggiora nettamente Sharpe (1,507→1,383) e maxDD
+(-50,57%→-59,82%), pur alzando leggermente il moltiplicatore. Coerente
+con quanto già trovato nelle sessioni precedenti sopra `legacy` (il
+cooldown è il principale responsabile del miglior profilo di rischio, non
+l'EMA hedge).
+
+**`hedge`**: effetto minimo su Sharpe/moltiplicatore (praticamente
+invariati), maxDD quasi identico — con `liquidity_waterfall` l'hedge
+sembra contribuire meno di quanto ci si aspettasse dalle analisi
+precedenti fatte sopra `legacy`. Non ancora capito se sia perché
+`liquidity_waterfall` diversifica già abbastanza da rendere l'hedge
+ridondante, o per un'altra ragione — non approfondito in questa sessione.
+
+### Tempo per raggiungere 1.000.000 di profitto (capitale iniziale 200k vs 100k)
+
+Domanda dell'utente: quanti anni servono, con la configurazione attuale,
+per portare il profitto netto (equity - capitale iniziale) a
+$1.000.000? Calcolato su `returns.csv` (`equity = capitale_iniziale *
+(1+r).cumprod()`), prima data in cui `equity - capitale_iniziale >=
+1.000.000`, storico 2000-2026, `max_concurrent=50`, leva 2x,
+`max_adv_participation=0.01`:
+
+| min_concurrent | $200k iniziali | $100k iniziali | differenza |
+|---:|---|---|---:|
+| 3 | 3,82 anni (2003-10-28) | 4,05 anni (2004-01-20) | +0,23 |
+| 5 | 4,24 anni (2004-03-29) | 5,08 anni (2005-02-02) | +0,84 |
+| 10 | 5,07 anni (2005-01-28) | 5,75 anni (2005-10-05) | +0,68 |
+
+Run id: `sizing_waterfall_minc{3,5,10}_cash100k` (già esistevano gli
+equivalenti a $200k: `sizing_waterfall_v3_minc3_maxc50`,
+`sizing_waterfall_minc5_maxc50_200k`, `sizing_waterfall_minc10_maxc50_200k`).
+
+Dimezzare il capitale iniziale NON raddoppia il tempo per raggiungere lo
+stesso profitto assoluto — aggiunge solo 0,2-0,8 anni, non anni interi.
+Coerente col meccanismo già isolato in questa sessione: nei primi anni
+l'`equal_share` per slot resta comodamente sotto il tetto ADV in
+entrambi gli scenari di capitale (il compounding accelera comunque), la
+differenza pesa relativamente meno quanto più il floor è alto — non
+completamente spiegato perché min=5 mostra il divario più ampio
+(+0,84) invece di min=10, non approfondito ulteriormente in questa
+sessione.
+
+### Indicatori/filtri spostati a t-1: verifica e implementazione
+
+Richiesta esplicita dell'utente: l'ordine di ingresso deve restare
+esattamente com'è (Market, `coc=True`, eseguito alla chiusura REALE di
+oggi) — ma tutti i dati usati per DECIDERE (filtri, indicatori, tetto
+ADV) devono basarsi solo su dati confermati fino a ieri (t-1), mai sulla
+barra di oggi. Non è una questione di lookahead bias (il codice non ha
+mai avuto un vero lookahead — l'unico dato "di oggi" usato era l'apertura/
+range intraday della barra su cui si decide, che è comunque nota prima
+della chiusura effettiva) — è una scelta operativa: la decisione deve
+poter essere presa senza aspettare la sessione RTH di oggi.
+
+**Primo tentativo, sbagliato**: cambiare anche il TIPO di ordine (da
+Market a Limit sulla chiusura di ieri) per "eseguire a ieri". Risultato
+catastrofico e impossibile (maxDD -195,81%, leva reale fino a 14x contro
+il tetto di 2x, `runtime.log` pieno di `... open skipped by margin
+filter`) — causa: l'ordine di uscita (MOO) abbinato viene sottomesso
+comunque anche quando l'entry Limit NON si riempie (capita spesso,
+riempie solo nei giorni in cui la chiusura di oggi ≤ chiusura di ieri),
+creando posizioni corte fantasma che si accumulano. Il meccanismo
+`sibling_ref` esistente copre solo i rifiuti da margine, non il caso
+"ordine Limit non riempito". **Non è un risultato economico reale** —
+identificato e scartato subito, codice ripristinato (nessuna modifica
+residua).
+
+**Implementazione corretta**: solo i DATI usati per decidere spostati a
+t-1, il meccanismo d'ordine (Market/coc, esegue sempre alla chiusura
+reale di oggi) invariato:
+- `overnight_ah.py::_filter_reason()`: filtro vol intraday
+  (`(high-low)/open`, `(close-open)/open`) e `min_price` ora usano
+  `data.open[-1]/high[-1]/low[-1]/close[-1]` (barra di ieri) invece di
+  `[0]` (oggi). `ah_lag1` spostato di una barra intera indietro:
+  `(data.open[-1] - data.close[-2]) / data.close[-2]` invece di
+  `(data.open[0] - data.close[-1]) / data.close[-1]` — guard
+  `len(data) < 3` (prima `< 2`) per il nuovo indice `[-2]`.
+- `overnight_ah.py::_dollar_adv()`: prezzo di conversione $ dell'ADV
+  spostato da `data.close[0]` a `data.close[-1]`.
+- `multiTickerStrategy.py::_liquidity_cap_notional()`: stesso spostamento
+  per il tetto di `max_adv_participation`.
+- `overnight_ah.py::next()`: il prezzo usato per calcolare la SIZE
+  (`size = entry_notional / price`) spostato da `d.close[0]` a
+  `d.close[-1]` — non cambia l'esecuzione (gli ordini Market non hanno un
+  parametro `price=`), cambia solo quante azioni vengono decise usando
+  una stima basata su ieri invece che sulla chiusura reale di oggi
+  (ancora sconosciuta al momento in cui, operativamente, si decide).
+
+**Verifica** (stesso setup, `min_concurrent=3`, `max_concurrent=50`,
+$200k, leva 2x, `max_adv_participation=0.01`, storico 2000-2026, 0
+errori/warning, nessun rifiuto di margine anomalo):
+
+| | indicatori a t (oggi, prima) | indicatori a t-1 (ieri, dopo) |
+|---|---:|---:|
+| moltiplicatore | 16.312,4x | 16.376,1x |
+| Sharpe | 1,507 | **1,525** |
+| maxDD | -50,57% | **-49,62%** |
+| trade | 121.596 | 122.550 |
+
+Nessun degrado — anzi un lieve miglioramento su ogni asse. Run id:
+`sizing_waterfall_indicators_t1`. Benchmark salvato:
+`config-common/benchmark/overnight_ah_waterfall_indicators_t1.csv`.
+
+### Conclusione operativa: timing di invio ordini CLS
+
+Domanda dell'utente: dato che il risultato non peggiora usando solo dati
+di ieri, è corretto dire che gli ordini CLS possono essere inviati appena
+apre il mercato (invece di aspettare vicino alla chiusura)? Confermato
+per ragionamento diretto dal test sopra, senza bisogno di un run
+aggiuntivo: usando **zero** dati della sessione di oggi (nemmeno
+l'apertura) il risultato è uguale o leggermente migliore rispetto a
+usare l'intera sessione RTH — quindi il caso intermedio ("decido usando
+al più l'apertura di oggi") è per costruzione contenuto tra i due estremi
+già testati, non serve testarlo separatamente.
+
+Chiarimento importante emerso nella discussione: "appena apre il
+mercato" è un **momento operativo** (quando mandare l'ordine), non un
+dato che entra nella decisione — la decisione dipende solo dai dati
+confermati fino a ieri sera, quindi l'ordine CLS può essere sottomesso
+in qualsiasi momento della sessione di oggi, incluso subito dopo
+l'apertura, senza bisogno di aspettare o di usare alcun dato aggiuntivo
+di oggi.
+
+### Costi reali Alpaca: nuova commissione `CommInfo_Alpaca` (SEC + FINRA TAF + FINRA CAT)
+
+Richiesta dell'utente: aggiungere i costi reali che Alpaca applica per
+davvero sulle azioni USA (Alpaca non ha commissioni proprie, ma passa
+tre fee regolamentari di pass-through). Numeri confermati leggendo
+direttamente il Brokerage Fee Schedule ufficiale Alpaca (rivisto
+2026-07-20, `files.alpaca.markets/disclosures/library/BrokFeeSched.pdf`):
+
+- **SEC Transaction Fee** — solo sui *sell* — `$0,0000206 × valore
+  scambiato`.
+- **FINRA TAF** — solo sui *sell* — `$0,000195 per azione`, tetto
+  massimo $9,79/trade (raggiunto a 50.205+ azioni).
+- **FINRA CAT fee** — su *buy e sell* — `$0,000003 per azione eseguita`.
+
+Esplicitamente **fuori scope**: l'interesse sul margine Alpaca (6,25%
+standard / 4,75% Elite $100k+, sul saldo giornaliero preso a prestito)
+non è una delle "tre voci, pochi centesimi" richieste — potenzialmente
+un costo molto più grande dato che la strategia gira a `max_exposure=2`
+per tutti i 26 anni di backtest. Esiste già un'infrastruttura generica
+per questo (`--margin-rate`, `broker/broker.py` param `margin_rate`,
+mai legata al tasso reale Alpaca, solo backtest non paper/live) — non
+implementato in questo lavoro, resta una domanda aperta separata per
+l'utente.
+
+**Implementazione**: nuova classe `CommInfo_Alpaca(bt.CommInfoBase)` in
+`bt-core/commission.py`, stessa forma delle classi esistenti
+(`CommInfo_Fineco`/`CommInfo_Fineco_Low`/`CommNone`). Registrata in
+`bt-core/btmain.py` (`comms` dict, `--commission` choices/help,
+docstring) come nuova opzione `--commission alpaca`. Verificato che
+`create_broker()` non referenzia mai `commission_schema` nei rami
+`paper`/`live` (usa `AlpacaBroker` diretto) — nessun rischio di doppio
+conteggio, la nuova classe serve solo per la fedeltà di backtest/shadow.
+Formula verificata a mano: sell 1000 azioni @$50 → fee=$1,228 ($1,03 SEC
++ $0,195 TAF + $0,003 CAT); buy 1000 azioni @$50 → fee=$0,003 (solo
+CAT) — coerente con lo schedule.
+
+**Verifica** (stessa configurazione di riferimento, `min_concurrent=3`,
+`max_concurrent=50`, `liquidity_waterfall`, $200k, leva 2x,
+`max_adv_participation=0.01`, storico 2000-2026, 0 errori/warning,
+Sharpe SEMPRE giornaliero da `returns.csv`, mai l'analyzer nativo — il
+valore stampato in coda al log di questo run, `Sharpe:1,179`, è
+l'analyzer nativo e va scartato, coerente con la regola già stabilita
+in sessioni precedenti):
+
+| | `none` (baseline) | `alpaca` (SEC+TAF+CAT) |
+|---|---:|---:|
+| moltiplicatore | 16.312,4x | 15.931,9x (-2,3%) |
+| Sharpe (giornaliero) | 1,507 | 1,507 (identico) |
+| maxDD | -50,57% | -50,03% (leggermente meglio) |
+| trade | 121.596 | 116.741 |
+| commissioni totali | — | $36.943.838 |
+
+Run id: `sizing_waterfall_commalpaca`. Benchmark salvato:
+`config-common/benchmark/overnight_ah_waterfall_commalpaca.csv`.
+
+**Impatto trascurabile** sul profilo rischio/rendimento (Sharpe
+identico, maxDD leggermente migliore, moltiplicatore -2,3%). Le
+commissioni totali ($36,9M) sembrano enormi in valore assoluto ma sono
+coerenti col fenomeno di scala non eseguibile già discusso in questo
+studio: con equity finale nell'ordine di miliardi di $ dopo 26 anni di
+compounding a leva 2x, anche una fee di pochi centesimi per trade si
+traduce in importi assoluti enormi quando i trade tardivi valgono
+milioni ciascuno — non è un errore nella formula, è lo stesso artefatto
+di scala del compounding letterale su 26 anni.
+
+Nessuna modifica a `overnight-ah-development.env` — l'aggiunta della
+classe di commissione non tocca in alcun modo il comportamento
+paper/live per costruzione.
+
+## Studio: impatto del capitale iniziale sul drag di costi fissi/fee
+
+### Contesto e incidente di esecuzione
+
+Con `CommInfo_Alpaca` (SEC+TAF+CAT) e l'interesse di margine calibrato
+entrambi attivi, si è studiato quanto le componenti di fee "quasi
+fisse" (TAF $0,000195/azione tetto $9,79/trade, CAT $0,000003/azione)
+pesino di più su capitali iniziali piccoli, dato che calcolate per
+AZIONE e non per $ scambiato.
+
+**Incidente**: il primo tentativo ha lanciato tutti e 12 i run in
+parallelo senza controllare RAM disponibile né limitare il
+parallelismo. Confermato via `journalctl -k`: due eventi di
+esaurimento memoria di sistema (01:05 e 08:55, quest'ultimo con
+`tmux: server invoked oom-killer` che ha fatto cadere l'intera sessione
+e con essa tutti i 12 processi in background) hanno ucciso tutti i run
+prima del completamento — nessun `returns.csv` prodotto. Un run solitario
+misurato con `/usr/bin/time -v` costa in realtà solo ~2m50s e ~3,3GB di
+picco RSS: il problema non era il carico di calcolo ma il parallelismo
+incontrollato (12 processi × ~3-4GB, oltre al carico di sistema già
+presente, satura RAM+swap in poche ore). Regola adottata per i run
+successivi: **parallelismo massimo = core disponibili - 2, e RAM libera
+sempre ≥ 2GB**, verificato con `free -h` prima di ogni batch — i 12 run
+sono stati rilanciati in 3 batch da 4/4/4(poi ridotto a 2 per l'ultimo)
+processi concorrenti, ciascuno verificato pulito (`returns.csv` presente,
+zero errori/eccezioni in `runtime.log`) prima del batch successivo.
+
+### Metodo
+
+Stessa configurazione `liquidity_waterfall`/`min_concurrent=3`/
+`max_concurrent=50`/leva 2x/`max_adv_participation=0.01`/storico
+2000-01-03→2026-08-14 di tutte le sezioni precedenti. Per ognuno di 7
+livelli di capitale iniziale, due run: `--commission none` (nessun
+costo) vs `--commission alpaca --margin-rate 0.0475` (costi pieni,
+tier Elite). Il livello 200k riusa i run già completati in sessioni
+precedenti (`sizing_waterfall_v3_minc3_maxc50` / `sizing_waterfall_marginelite`).
+
+Run id nuovi: `sizing_waterfall_cash{25k,50k,100k,500k,1M,3M}_{nocost,cost}`.
+Benchmark salvati in `config-common/benchmark/overnight_ah_waterfall_cash*_costdrag.csv`.
+0 errori/eccezioni in tutti e 12 i `runtime.log` nuovi.
+
+### Risultati
+
+| Cash iniziale | Mult. no-cost | Mult. con costi | **Drag mult. %** | Sharpe no-cost | Sharpe con costi | **Drag Sharpe %** | maxDD no-cost | maxDD con costi |
+|---:|---:|---:|---:|---:|---:|---:|---:|---:|
+| 25k  | 125.733,21x | 113.754,27x | **9,53%** | 1,6658 | 1,5919 | **4,44%** | -48,40% | -49,32% |
+| 50k  |  63.882,45x |  60.298,27x | **5,61%** | 1,6091 | 1,5754 | **2,09%** | -48,40% | -49,05% |
+| 100k |  32.306,52x |  31.630,48x | **2,09%** | 1,5779 | 1,5354 | **2,69%** | -48,40% | -48,93% |
+| 200k |  16.312,40x |  15.961,30x | **2,15%** | 1,5071 | 1,4961 | **0,73%** | -50,57% | -50,93% |
+| 500k |   6.593,52x |   6.448,44x | **2,20%** | 1,4893 | 1,4659 | **1,57%** | -48,34% | -49,61% |
+| 1M   |   3.338,91x |   3.240,46x | **2,95%** | 1,5101 | 1,4832 | **1,78%** | -41,34% | -42,77% |
+| 3M   |   1.177,92x |   1.133,31x | **3,79%** | 1,6052 | 1,5701 | **2,19%** | -44,20% | -44,19% |
+
+**Ipotesi confermata solo agli estremi bassi**: il drag è nettamente
+più alto a 25k (9,53% mult / 4,44% Sharpe) e decade rapidamente fino a
+100k (2,09%), poi resta **piatto tra 100k e 500k** (~2,1-2,2%) con una
+**leggera risalita non monotona verso 1M-3M** (2,95%→3,79%) — non
+un'ipotesi confermata su tutto il range, solo alla fascia bassa.
+
+### Meccanismo: perché il drag è concentrato nei primi anni
+
+L'aggregato sull'intero periodo 2000-2026 è fuorviante: il
+compounding fa sì che i trade tardivi (valore $ enorme dopo 20+ anni)
+dominino la media, mascherando l'effetto regressivo che agisce solo
+quando il capitale è ancora vicino a quello iniziale. Analisi
+anno-per-anno da `trades.json` (run `cash25k_cost` vs `cash3M_cost`),
+**azioni/trade e valore $/trade**, non solo fee%, per mostrare
+concretamente il meccanismo per-azione richiesto:
+
+| Anno | Azioni/trade 25k | Val. $/trade 25k | fee% 25k | Azioni/trade 3M | Val. $/trade 3M | fee% 3M | rapporto fee% 25k/3M |
+|---:|---:|---:|---:|---:|---:|---:|---:|
+| 2000 |    55.360 |     30.953 | 0,0149% | 1.641.451 | 1.666.352 | 0,0039% | **3,84x** |
+| 2001 |    34.030 |     41.851 | 0,0094% | 1.632.757 | 1.872.174 | 0,0034% | **2,76x** |
+| 2002 |    72.367 |     41.653 | 0,0130% | 1.272.666 |   789.232 | 0,0159% | 0,81x |
+| 2003 |   212.135 |    105.604 | 0,0100% | 1.134.954 |   941.817 | 0,0059% | 1,70x |
+| 2004 |   497.806 |    280.562 | 0,0087% |   927.949 | 1.376.250 | 0,0070% | 1,26x |
+| 2005 |   642.690 |    458.186 | 0,0050% | 1.101.603 | 1.974.160 | 0,0039% | 1,28x |
+| 2006 |   639.021 |    875.263 | 0,0035% | 1.168.477 | 2.865.400 | 0,0032% | 1,09x |
+| 2007 |   633.609 |  1.251.619 | 0,0031% | 1.100.035 | 3.443.369 | 0,0029% | 1,06x |
+| 2008 | 1.445.444 |  1.267.178 | 0,0038% |   932.943 | 1.755.294 | 0,0034% | 1,11x |
+| 2009 |   481.167 |    932.020 | 0,0040% |   682.368 | 2.632.146 | 0,0036% | 1,11x |
+| 2010 |   789.940 |  1.921.218 | 0,0036% | 1.024.467 | 4.616.119 | 0,0033% | 1,07x |
+
+Nel 2000 il cohort 25k compra in media **~30x meno azioni per trade**
+(55.360 vs 1.641.451) — meccanismo per-azione atteso, dato che
+`equal_share` è proporzionale al cash iniziale. Il fee pesa
+conseguentemente **~3,8x di più** in proporzione sul cohort 25k
+(0,0149% vs 0,0039%). Il rapporto scende sotto 1x nel solo 2002
+(0,81x, composizione trade quell'anno inverte temporaneamente il
+segno — non monotono, coerente con la volatilità già documentata negli
+altri sweep di questa sessione), poi converge stabilmente a ~1,06-1,11x
+dal 2007 in poi: il compounding porta entrambi i cohort su valori di
+trade dello stesso ordine di grandezza in pochi anni, azzerando quasi
+del tutto il vantaggio/svantaggio per-azione.
+
+Il drag osservato sull'intero periodo (tabella precedente) è quindi
+essenzialmente un effetto dei primi 3-5 anni, diluito ma non azzerato
+dal resto della serie — coerente con la persistenza di un piccolo drag
+(2-4%) anche ai livelli di capitale medio-alti, dove però la causa non
+è più il meccanismo per-azione ma la dinamica di sizing già nota di
+`liquidity_waterfall` (breadth/floor `min_concurrent`) che varia con
+`--cash` indipendentemente dai costi.
+
+Totali sull'intero periodo (contesto, non conclusivi da soli): 25k
+genera 78.840 trade (fee totale $30.423.463,50, $385,89/trade in
+media — gonfiato dai trade tardivi enormi), 3M genera 146.561 trade
+(fee totale $40.903.094,00, $279,09/trade in media) — il cohort 3M fa
+quasi il doppio dei trade (più spesso sopra il floor `min_concurrent`,
+espande più spesso grazie a `equal_share` maggiore, coerente con
+quanto già documentato nel confronto diretto $200k vs $3M).
+
+Nessuna modifica al codice in questo studio — solo run con parametri
+`--cash`/`--commission alpaca`/`--margin-rate 0.0475` già esistenti.
+Nessuna modifica a `overnight-ah-development.env` o config di produzione.
+
+### Confronto contro il benchmark di produzione attuale
+
+Per regola della sessione, ogni run va sempre confrontato contro la
+baseline di produzione reale (`sizing_prod_baseline_literal`, STRATARGS
+letterali di `overnight-ah-development.env`: `max_concurrent=3` legacy,
+`auction=False`, nessun cap ADV, nessun costo/margine — vedi sezione
+"Confronto contro produzione vera"), ricalcolato da `returns.csv`:
+
+| | produzione attuale (legacy) | waterfall 25k+costi | waterfall 200k+costi | waterfall 3M+costi |
+|---|---:|---:|---:|---:|
+| moltiplicatore 26y | 90.431.479,59x | 113.754,27x | 15.961,30x | 1.133,31x |
+| Sharpe (giorn.) | 1,7650 | 1,5919 | 1,4961 | 1,5701 |
+| maxDD | -49,53% | -49,32% | -50,93% | -44,19% |
+
+Il moltiplicatore di produzione resta il numero non eseguibile che ha
+aperto l'intero filone di studio (nessun cap di liquidità, esecuzione
+MOC/MOO fittizia a qualunque size) — non comparabile in valore assoluto
+con nessuna colonna `waterfall`. Il confronto realistico è sullo
+Sharpe/maxDD: **tutti i livelli `waterfall+costi` restano nell'intorno
+dello Sharpe di produzione (1,50-1,60 vs 1,765)**, con drawdown simile
+o leggermente peggiore — il cap di liquidità + i costi reali costano
+relativamente poco in termini di qualità risk-adjusted rispetto al
+backtest non vincolato, a fronte di un moltiplicatore enormemente più
+onesto/eseguibile.
+
+### Attenzione: il moltiplicatore è una metrica fuorviante tra livelli di capitale — asintoto sul tetto ADV
+
+Osservazione dell'utente confermata sui dati: l'**equity finale in $**
+(no-cost) è quasi costante su tutto il range 25k→3M (120x di differenza
+sul capitale iniziale), non lineare col capitale di partenza:
+
+| Cash iniziale | moltiplicatore no-cost | equity finale ($) |
+|---:|---:|---:|
+| 25k  | 125.733,21x | 3.143.330.331 |
+| 50k  |  63.882,45x | 3.194.122.677 |
+| 100k |  32.306,52x | 3.230.652.109 |
+| 200k |  16.312,40x | 3.262.479.602 |
+| 500k |   6.593,52x | 3.296.762.253 |
+| 1M   |   3.338,91x | 3.338.914.604 |
+| 3M   |   1.177,92x | 3.533.760.683 |
+
+L'equity finale varia solo del ~12% mentre il capitale iniziale varia
+di 120x. Causa: `max_adv_participation=0.01` impone un tetto di size
+come % del volume $ giornaliero, indipendente dal capitale disponibile
+— una volta che l'equity compoundata satura quel tetto (qualunque sia
+il punto di partenza), crescere oltre diventa strutturalmente
+impossibile. Tutti i cohort convergono verso lo stesso soffitto
+assoluto (~$3,1-3,5 miliardi in questa configurazione).
+
+**Implicazione per l'analisi drag**: il `drag_%` calcolato sul
+moltiplicatore (sezione precedente) è quindi parzialmente un artefatto
+di questo asintoto (numeratore-equity quasi fisso, denominatore-cash
+variabile), non solo effetto costi puro. Il drag sullo **Sharpe**
+(scale-invariant, non risente del tetto assoluto) resta la metrica
+affidabile per isolare l'effetto dei costi reali dal resto della
+dinamica di sizing.
+
+## Studio: stabilità nel tempo del "tempo di raddoppio" per livello di capitale (Monte Carlo su 23 regimi)
+
+### Design
+
+Domanda dell'utente: quanto è stabile, nel tempo, il tempo impiegato a
+raddoppiare il capitale, per ciascun livello di cash iniziale? Per
+rispondere serve un campionamento Monte Carlo su più regimi di mercato
+diversi, non un singolo punto.
+
+**Vincolo strutturale identificato** (discusso con l'utente prima di
+procedere): all'interno di UNA sola curva di equity in compounding
+continuo, ogni livello di capitale viene attraversato al più una volta,
+nel momento in cui il compounding ci arriva — quindi capitale e data
+calendariale sono confusi tra loro (non si può ottenere "stesso
+capitale, epoche diverse" minando una singola curva già completata).
+Inoltre `max_adv_participation`, il cash disponibile e il range
+min/max concurrent rendono il comportamento a un dato livello di
+capitale dipendente da COME ci si è arrivati, non solo da quanto si ha.
+
+**Soluzione**: 161 backtest indipendenti, uno per ogni combinazione di
+- 7 livelli di cash iniziale: 25k, 50k, 100k, 200k, 500k, 1M, 3M
+- 23 punti di partenza: `trade_start_date` = 1 gennaio di ogni anno
+  2000-2022 (storico completo 2000-2026-08-14 per warmup indicatori/
+  universo in ogni run, trading bloccato prima di `trade_start_date`)
+
+Tutti con sizing tunato di sessione (`liquidity_waterfall`,
+`min_concurrent=3`, `max_concurrent=50`, `max_adv_participation=0.01`),
+costi Alpaca pieni, margine 4,75%/leva 2x — stessa configurazione ora
+attiva in `overnight-ah-development.env`. Nessun run riciclato da studi
+precedenti: ognuno dei 161 è un backtest nuovo con `trade_start_date`
+proprio, per garantire indipendenza tra i campioni allo stesso livello
+di capitale.
+
+**Metrica**: giorni di calendario da `trade_start_date` al primo giorno
+in cui `equity >= 2 × equity_iniziale`. Run che non raggiungono 2x entro
+la fine dello storico disponibile sarebbero marcati **censurati** (non
+trattati come infinito) — nessuno dei 161 run è risultato censurato.
+
+### Incidente in corsa e recovery
+
+Il primo lancio (batch=6, soglia RAM 4000MB tra un batch e l'altro) ha
+mandato il sistema in **DoS totale** (freeze completo, richiesto un
+riavvio hardware manuale dall'utente). Diagnosticato via
+`journalctl -k -b -1` (`"Under memory pressure, flushing caches"`
+subito prima dello spegnimento). Causa: la calibrazione RAM per-processo
+era stata fatta su un `trade_start_date` recente/leggero (~3,3-3,8GB
+RSS); i run con `trade_start_date` più vecchio (2000-2002, ~26 anni di
+trade accumulati in RAM) a `--cash 3000000` hanno raggiunto ~5,5GB di
+RSS per processo — il check RAM tra un batch e l'altro non protegge da
+uno sforamento che avviene DENTRO il batch stesso. 138/161 run erano
+già completati e salvati su disco (sopravvivono al reboot, solo lo
+scratchpad in `/tmp` viene perso); i 6 run parziali del livello 3M
+2000-2005 sono stati eliminati e rieseguiti con batch ridotto (3),
+soglia RAM alzata a 8000MB, e monitoraggio attivo continuo. Lezione
+salvata in memoria persistente ([[feedback_parallel_run_ram_budget]]):
+calibrare sempre sul caso peggiore reale del batch (qui: l'anno di
+partenza più vecchio), non su un campione comodo.
+
+Verifica finale: **161/161 run con `returns.csv`, 0 errori/eccezioni**
+in `runtime.log` su tutti.
+
+### Risultati: tempo di raddoppio per livello di capitale (n=23 per livello)
+
+| Livello | media (gg) | std (gg) | CV | mediana (gg) | min (gg) | max (gg) | media (anni) |
+|---|---:|---:|---:|---:|---:|---:|---:|
+| 25k  | 447,2 | 251,3 | 0,56 | 324 | 160 | 1075 | 1,22 |
+| 50k  | 432,4 | 244,7 | 0,57 | 321 | 159 | 1075 | 1,18 |
+| 100k | 439,3 | 247,6 | 0,56 | 321 | 159 | 1075 | 1,20 |
+| 200k | 443,5 | 251,8 | 0,57 | 321 | 159 | 1075 | 1,21 |
+| 500k | 453,1 | 264,9 | 0,58 | 325 | 176 | 1075 | 1,24 |
+| 1M   | 480,7 | 265,4 | 0,55 | 372 | 189 | 1099 | 1,32 |
+| 3M   | 590,2 | 337,8 | 0,57 | 488 | 176 | 1430 | 1,62 |
+
+**Letture principali**:
+- Il tempo medio di raddoppio è **sostanzialmente piatto tra 25k e
+  500k** (432-453 giorni, ~1,2 anni), poi **cresce chiaramente per 1M
+  (481gg) e soprattutto 3M (590gg, +32% vs 200k)** — coerente con
+  l'asintoto sul tetto ADV documentato sopra: a capitale grande il cap
+  `max_adv_participation=0.01` inizia a mordere prima nel percorso di
+  compounding, rallentando la crescita.
+- Il **coefficiente di variazione (CV) è quasi identico a tutti i
+  livelli, ~0,55-0,58** — la variabilità RELATIVA del tempo di
+  raddoppio rispetto ai vari regimi di mercato non peggiora col
+  capitale; il capitale grande raddoppia più lentamente ma non in modo
+  proporzionalmente più incerto.
+- Massimo comune a tutti i livelli (1075-1430gg) sul campione che parte
+  dal 2022 (bear market 2022 + recovery lenta): la coda destra è
+  dominata dal regime, non dal livello di capitale.
+- Nessun run censurato: tutti i 161 raddoppiano entro lo storico
+  disponibile (fino al 2026-08-14).
+
+### Confronto contro il benchmark di produzione
+
+Benchmark `sizing_prod_baseline_literal` (sizing legacy `max_concurrent=3`,
+niente cap ADV, niente costi/margine, `--cash 200000`, unica curva
+continua dal 2000-01-03): **primo raddoppio in 177 giorni**.
+
+Confronto più corretto, stesso regime (`trade_start_date='2000-01-01'`,
+stesso livello 200k): il run `sizing_waterfall_dbl_200k_2000` di questo
+studio (waterfall + costi pieni + cap ADV) raddoppia in **159 giorni**
+— più veloce del benchmark legacy nonostante costi reali e cap di
+liquidità, grazie al sizing più aggressivo (`min_concurrent=3`/
+`max_concurrent=50` con espansione vs `max_concurrent=3` fisso legacy).
+Attenzione: è un confronto a singolo campione (un solo regime, 2000) per
+entrambi i lati — non sostituisce il confronto Sharpe/maxDD aggregato
+delle sezioni precedenti, ma conferma che la stima media di ~443 giorni
+per il livello 200k non è irrealisticamente lenta rispetto a produzione.
+
+Run id: `sizing_waterfall_dbl_{25k,50k,100k,200k,500k,1M,3M}_{2000..2022}`
+(161 totali). Dati grezzi: `doubling_results.csv` (161 righe, per-run),
+`doubling_summary.csv` (7 righe, aggregato per livello) — generati da
+`compute_doubling.py`/`summarize_doubling.py`, non salvati nel
+repository (file di lavoro in scratchpad di sessione).
