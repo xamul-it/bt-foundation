@@ -4965,9 +4965,14 @@ in `runtime.log` su tutti.
   raddoppio rispetto ai vari regimi di mercato non peggiora col
   capitale; il capitale grande raddoppia più lentamente ma non in modo
   proporzionalmente più incerto.
-- Massimo comune a tutti i livelli (1075-1430gg) sul campione che parte
-  dal 2022 (bear market 2022 + recovery lenta): la coda destra è
-  dominata dal regime, non dal livello di capitale.
+- Il massimo (peggior caso) per **25k-500k è sempre il campione 2022**
+  (1075gg, bear market 2022 + recovery lenta): la coda destra a questi
+  livelli è dominata dal regime, non dal capitale. Per **1M e 3M il
+  peggior caso è invece il campione 2001** (1099gg e 1430gg,
+  scoppio bolla dot-com + recovery 2001-2004): a capitale grande il cap
+  ADV rallenta ulteriormente un regime già lento, superando in durata
+  anche il 2022 — un'interazione capitale×regime che non emerge ai
+  livelli piccoli.
 - Nessun run censurato: tutti i 161 raddoppiano entro lo storico
   disponibile (fino al 2026-08-14).
 
