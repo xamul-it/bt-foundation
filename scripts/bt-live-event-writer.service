@@ -14,5 +14,15 @@ StandardError=append:/home/htpc/backtrader/logs/bt-live-event-writer.log
 Restart=on-failure
 RestartSec=5s
 
+# Memory guard (2026-08-29 host-freeze incident): cap this service's own
+# cgroup so a runaway process here gets throttled/killed cleanly instead of
+# swap-thrashing the whole shared host. Lightweight writer, normal usage low.
+MemoryAccounting=yes
+MemoryHigh=512M
+MemoryMax=1024M
+MemorySwapMax=0
+ManagedOOMMemoryPressure=kill
+ManagedOOMSwap=kill
+
 [Install]
 WantedBy=default.target
