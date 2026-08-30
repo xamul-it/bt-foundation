@@ -461,24 +461,40 @@ def classify(
         sizing_ratio = round(live_filled_qty / bt_qty, 3) if bt_qty else None
         sizing_divergence = sizing_ratio is not None and not (0.85 <= sizing_ratio <= 1.15)
 
-        # Exit leg: filled sell for this symbol on the next session.
+        # Exit leg: the position must be closed on the next session with a
+        # filled sell. A matched entry whose exit is missing / unfilled /
+        # partial is a HARD divergence (the day is red): the position is
+        # still open or was only partly unwound vs. the backtest, which
+        # always exits in full. Exit qty is compared to the LIVE entry's
+        # own filled qty (not bt_qty -- sizing already covers that).
         exit_row = live_exit_orders.get(symbol)
+        exit_status = (exit_row.get("status") or "").lower() if exit_row else None
+        exit_filled_qty = float(exit_row.get("filled_qty") or 0) if exit_row else 0.0
         live_exit_price = exit_row.get("filled_avg_price") if exit_row else None
-        live_exit_qty = float(exit_row.get("filled_qty") or 0) if exit_row else None
         live_pnl_pct = None
         if live_exit_price and live_price:
             live_pnl_pct = round((float(live_exit_price) - float(live_price)) / float(live_price) * 100, 4)
+
+        exit_issue = None
+        if not exit_row:
+            exit_issue = "missing"
+        elif exit_status != "filled" or exit_filled_qty <= 0:
+            exit_issue = f"not_filled:{exit_status or 'unknown'}"
+        elif live_filled_qty > 0 and exit_filled_qty < live_filled_qty * 0.995:
+            exit_issue = "partial_fill"
 
         diffs.append({"symbol": symbol, "direction": "matched", "category": "matched",
                       "bt": bt_row, "live": live_row, "entry_edge_bps": edge_bps,
                       "sizing_ratio_live_over_bt": sizing_ratio, "sizing_divergence": sizing_divergence,
                       "bt_exit_price": bt_row.get("bt_exit_price"), "bt_pnl_pct": bt_row.get("bt_pnl_pct"),
                       "live_exit_price": float(live_exit_price) if live_exit_price else None,
-                      "live_exit_qty": live_exit_qty, "live_exit_status": (exit_row or {}).get("status"),
-                      "live_pnl_pct": live_pnl_pct})
+                      "live_exit_qty": exit_filled_qty or None, "live_exit_status": exit_status,
+                      "live_pnl_pct": live_pnl_pct, "exit_issue": exit_issue})
         bump("matched")
         if sizing_divergence:
             bump("sizing_divergence")
+        if exit_issue:
+            bump(f"exit_{exit_issue.split(':')[0]}")
 
     for symbol, orders in live_by_symbol.items():
         filled = [o for o in orders if (o["status"] or "").lower() == "filled"]
