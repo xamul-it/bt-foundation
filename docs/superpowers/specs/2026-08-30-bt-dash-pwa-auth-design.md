@@ -45,8 +45,11 @@ token CSRF, generazione effettiva dell'APK.
   **sia** `/dash/` **sia** `/api/`. È l'unica protezione esistente.
 - SPA → API: `axios` con `baseURL = constants.API_BASE_URL = /api` →
   **stessa origine**, i cookie viaggiano automaticamente senza `withCredentials`.
-- `bt-api/start.sh` fa `source` di `env/pa2`, `env/bt-live-events`,
-  `env/server`. `env/*` è git-ignored → posto adatto ai segreti.
+- Prod bt-api = `systemctl --user bt-api@prod` → `EnvironmentFile=env/bt-api-prod`
+  → `BT_SRV_ENV_FILE=env/server-prod`, gunicorn su `127.0.0.1:19090` (quello
+  che Apache proxya). `env/*` è git-ignored → i segreti vanno in
+  **`env/server-prod`**. Dev (`bt-api@dev`, `app.py`, porta 9090) è
+  localhost-only e fuori scope.
 
 ---
 
@@ -166,10 +169,10 @@ app.config.update(
 - Avvio: se `BT_DASH_SECRET_KEY` manca → l'app non parte (fail-fast), così
   non si finisce con un default insicuro in prod.
 
-### B4. Segreti — `env/server`
+### B4. Segreti — `env/server-prod`
 
-Aggiungere a `/home/htpc/backtrader/env/server` (git-ignored, già
-sourced da `bt-api/start.sh`):
+Aggiungere a `/home/htpc/backtrader/env/server-prod` (git-ignored, già
+sourced via `BT_SRV_ENV_FILE` in `env/bt-api-prod`):
 
 ```sh
 BT_DASH_SECRET_KEY=<32+ byte random, es. python -c "import secrets;print(secrets.token_hex(32))">
@@ -182,8 +185,9 @@ BT_DASH_PW_HASH=<output di werkzeug.security.generate_password_hash>
 python -m app.auth hash        # legge la password da stdin (getpass), stampa l'hash
 ```
 
-`generate_password_hash` (scrypt di default in werkzeug ≥3, nessuna
-dipendenza nuova). L'output si incolla in `env/server`.
+`generate_password_hash(pw, method='pbkdf2:sha256')` — pbkdf2 esplicito
+(non lo scrypt di default: dipende da OpenSSL della piattaforma).
+Nessuna dipendenza nuova. L'output si incolla in `env/server-prod`.
 
 ### B6. SPA — login view + interceptor
 
@@ -259,7 +263,7 @@ ignorare o rimuovere (fuori scope).
 
 ## 6. Ordine di deploy (evitare finestra con `/api` aperto)
 
-1. **bt-api**: aggiungere `env/server` (SECRET_KEY, PW_HASH); deployare
+1. **bt-api**: aggiungere `env/server-prod` (SECRET_KEY, PW_HASH); deployare
    `auth.py` + guard + config sessione; riavviare gunicorn.
 2. **Verifica**: `curl -s https://ilz.duckdns.org:1443/api/dyn/sc/index`
    con Basic Auth ancora attiva ma **senza** cookie di sessione → deve dare
@@ -296,7 +300,7 @@ autofill password manager mobile.
 
 | Rischio | Mitigazione |
 |---|---|
-| `SECRET_KEY` assente/instabile → logout a catena | Fail-fast all'avvio se manca; documentato in `env/server`. |
+| `SECRET_KEY` assente/instabile → logout a catena | Fail-fast all'avvio se manca; documentato in `env/server-prod`. |
 | Finestra con `/api` non protetto durante il deploy | Ordine §6: guard prima, rimozione Basic Auth per ultima. |
 | Brute-force sul login (no lockout) | Accettato dall'utente. Difesa = password forte + hash scrypt lento. Endpoint su HTTPS, porta non standard. |
 | CSRF | `SameSite=Lax` + API JSON (form cross-site non può settare `Content-Type: application/json`); tool monoutente. Nessun token. |
@@ -319,7 +323,7 @@ autofill password manager mobile.
 - `bt-dash/src/boot/axios.js` — interceptor 401 → `/login`
 - `bt-dash/src/router/routes.js` — route `/login` top-level
 - `bt-dash/src/layouts/MainLayout.vue` — monta `<InstallPwaButton>`
-- `env/server` — `BT_DASH_SECRET_KEY`, `BT_DASH_PW_HASH` (non in git)
+- `env/server-prod` — `BT_DASH_SECRET_KEY`, `BT_DASH_PW_HASH` (non in git)
 - `/etc/apache2/sites-available/bt-dash.conf` — via sudo (§5)
 
 **Documentare come morto:** `/etc/apache2/backtrader.htpasswd`, `bt-api/.htaccess`
