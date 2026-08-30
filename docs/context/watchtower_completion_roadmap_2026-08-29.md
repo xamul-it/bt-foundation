@@ -102,6 +102,30 @@ ogni run per il download ticker). Il fix del self-heal cache calendario non è
 stato promosso lì — stesso pattern di promozione già usato per
 `submit_moo.py` (Fase 3) e la riga in `scheduled-job.sh` (Fase 1).
 
+### Nota — `watchtower_runtime.py` committato nel branch `feat/baseline-manager`
+
+Il commit `f5437b5` di quel branch ha inglobato l'intero blocco di lavoro
+watchtower pregresso della working tree (guardia `_MAX_OPEN_WINDOW_AGE`,
+requisiti A/B/C/D, `insert_reconstructed_version`, `profile_cockpit`, …),
+non solo il CRUD `profile_baselines`. `load_tickers.py`,
+`reconciliation_watchdog.py`, `strategies/multiTickerStrategy.py`,
+`bt-api/gunicorn.conf.py` restano invece non committati.
+
+### Data repair — buchi in `profile_param_versions` (2026-08-30)
+
+Le righe `reconstructed` di `mirror` (id 17), `challenger` (id 11) e
+`development` (id 15) avevano `effective_to_date` collassato a un solo
+giorno, lasciando scoperti ~6-7 settimane fino alla riga `observed_run`
+del 28/08. `resolve_params_as_of` falliva per ogni giorno nel buco →
+riconciliazione non ri-eseguibile lì. Fix: `UPDATE` di `effective_to_date`
+(+`last_confirmed_date`) a `2026-08-27` su quelle 3 righe — il
+`params_hash` coincide con quello che le righe di
+`execution_reconciliation_results` di quei giorni già referenziavano.
+Backfill riconciliazione completato: ultimi 30 giorni 100% arricchiti con
+`bt_day_return_pct` / `live_day_return_pct` + spaccato entry/exit. Restano
+non arricchite solo 16 righe `development`/`mirror` del 14–24/07 (fuori
+dalla finestra di backfill).
+
 ## Aperto dal brief originale — requisito E, mai affrontato
 
 Il brief lasciava esplicitamente da verificare: *"il monitoraggio esistente
