@@ -7,3 +7,10 @@ ALLOWED_ORIGINS=https://ilz.duckdns.org
 # GITHUB_WEBHOOK_SECRET=
 # GITHUB_REPO_PATH=/home/htpc/backtrader
 # GITHUB_RESTART_SERVICE=zmq-proxy
+
+# bt-dash session auth (required once init_auth is wired into server.py).
+# bt-api fails to start if BT_DASH_SECRET_KEY or BT_DASH_PW_HASH is unset.
+#   BT_DASH_SECRET_KEY:  python -c "import secrets; print(secrets.token_hex(32))"   (keep stable)
+#   BT_DASH_PW_HASH:     bt-api/.venv/bin/python -m app.auth hash                   (pbkdf2:sha256)
+# BT_DASH_SECRET_KEY=
+# BT_DASH_PW_HASH=
