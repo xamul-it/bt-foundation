@@ -334,7 +334,14 @@ def load_backtest_entries(trades_path: Path, trading_date: date) -> dict[str, di
     entries: dict[str, dict[str, Any]] = {}
     for item in raw:
         symbol = str(item.get("asset") or item.get("symbol") or "").upper()
-        entry_dt = item.get("entry_signal_dt") or item.get("open_datetime") or item.get("entry_datetime")
+        # A reconciliation window belongs to the actual opening/fill date,
+        # never to the prior signal date.  In these Backtrader MOC/MOO
+        # exports ``open_datetime`` is the decision bar (one session early)
+        # whereas ``close_datetime`` is the MOC fill bar; use the latter.
+        # Keep the other fields only as compatibility fallbacks for older
+        # trade-export formats.
+        entry_dt = (item.get("close_datetime") or item.get("entry_datetime")
+                    or item.get("open_datetime") or item.get("entry_signal_dt"))
         if not symbol or not entry_dt:
             continue
         entry_date = str(entry_dt)[:10]
@@ -369,8 +376,12 @@ def fetch_live_exit_orders(repo: "wr.WatchtowerRepository", profile: str, tradin
     exits Monday), and those sells are cached under that session's
     window_open. Resolve the next session from the cache itself -- the
     earliest sell window_open strictly after trading_date within a week --
-    then take that batch. Keyed by symbol; a filled row wins over an
-    expired/duplicate MOO leg for the same symbol."""
+    then take that batch. Keyed by symbol.
+
+    A fallback can complete an order that was partially filled before its
+    original leg expired.  Therefore the exit is the *sum of fills* of all
+    sell orders for the symbol in that next-session batch, not simply the
+    single order whose final status is ``filled``."""
     with repo.connect() as conn:
         with conn.cursor() as cur:
             cur.execute(
@@ -399,10 +410,37 @@ def fetch_live_exit_orders(repo: "wr.WatchtowerRepository", profile: str, tradin
     by_symbol: dict[str, dict[str, Any]] = {}
     for order in rows:
         sym = order["symbol"]
-        current = by_symbol.get(sym)
-        is_filled = (order.get("status") or "").lower() == "filled"
-        if current is None or (is_filled and (current.get("status") or "").lower() != "filled"):
-            by_symbol[sym] = order
+        filled_qty = float(order.get("filled_qty") or 0)
+        filled_price = order.get("filled_avg_price")
+        current = by_symbol.setdefault(sym, {
+            "symbol": sym,
+            "status": None,
+            "qty": 0.0,
+            "filled_qty": 0.0,
+            "filled_notional": 0.0,
+            "has_filled_order": False,
+            "statuses": [],
+        })
+        current["qty"] = max(current["qty"], float(order.get("qty") or 0))
+        current["filled_qty"] += filled_qty
+        if filled_qty and filled_price is not None:
+            current["filled_notional"] += filled_qty * float(filled_price)
+        status = (order.get("status") or "unknown").lower()
+        current["statuses"].append(status)
+        current["has_filled_order"] = current["has_filled_order"] or status == "filled"
+
+    for current in by_symbol.values():
+        if current["filled_qty"] and current["filled_notional"]:
+            current["filled_avg_price"] = current["filled_notional"] / current["filled_qty"]
+        else:
+            current["filled_avg_price"] = None
+        # A partial fill on an expired leg is still a real execution.  Mark
+        # the aggregate as filled so classify() evaluates its quantity; an
+        # insufficient aggregate then becomes exit_partial_fill.
+        current["status"] = "filled" if current["filled_qty"] else current["statuses"][0]
+        current.pop("filled_notional")
+        current.pop("has_filled_order")
+        current.pop("statuses")
     return by_symbol
 
 
@@ -500,9 +538,39 @@ def classify(
         filled = [o for o in orders if (o["status"] or "").lower() == "filled"]
         if not filled:
             continue  # a live order that never filled and has no backtest counterpart is not a divergence worth flagging
-        diffs.append({"symbol": symbol, "direction": "more_in_live", "category": "extra_live_order",
-                      "live": filled[0]})
+        # An extra live entry is already a hard divergence.  Still reconcile
+        # its exit leg: otherwise an Alpaca position left open is rendered as
+        # the generic "ordine extra" and hides the operationally important
+        # fact that inventory remains on the account.
+        live_row = filled[0]
+        live_filled_qty = float(live_row.get("filled_qty") or 0)
+        exit_row = live_exit_orders.get(symbol)
+        exit_status = (exit_row.get("status") or "").lower() if exit_row else None
+        exit_filled_qty = float(exit_row.get("filled_qty") or 0) if exit_row else 0.0
+        live_exit_price = exit_row.get("filled_avg_price") if exit_row else None
+        exit_issue = None
+        if not exit_row:
+            exit_issue = "missing"
+        elif exit_status != "filled" or exit_filled_qty <= 0:
+            exit_issue = f"not_filled:{exit_status or 'unknown'}"
+        elif live_filled_qty > 0 and exit_filled_qty < live_filled_qty * 0.995:
+            exit_issue = "partial_fill"
+        live_entry_price = live_row.get("filled_avg_price")
+        live_pnl_pct = None
+        if live_entry_price and live_exit_price:
+            live_pnl_pct = round(
+                (float(live_exit_price) - float(live_entry_price)) / float(live_entry_price) * 100,
+                4,
+            )
+        diffs.append({
+            "symbol": symbol, "direction": "more_in_live", "category": "extra_live_order",
+            "live": live_row, "live_exit_price": float(live_exit_price) if live_exit_price else None,
+            "live_exit_qty": exit_filled_qty or None, "live_exit_status": exit_status,
+            "live_pnl_pct": live_pnl_pct, "exit_issue": exit_issue,
+        })
         bump("extra_live_order")
+        if exit_issue:
+            bump(f"exit_{exit_issue.split(':')[0]}")
 
     # "clean" = no hard-execution divergence (missing/rejected/pending/partial
     # orders, or unexplained extra live orders). sizing_divergence is a soft,
@@ -518,7 +586,7 @@ def classify(
     live_pnl_sum = 0.0
     live_cost_sum = 0.0
     for d in diffs:
-        if d.get("category") != "matched":
+        if d.get("category") not in {"matched", "extra_live_order"}:
             continue
         entry_px = (d.get("live") or {}).get("filled_avg_price")
         qty = float((d.get("live") or {}).get("filled_qty") or 0)
@@ -689,11 +757,14 @@ if __name__ == "__main__":
     raise SystemExit(main())
 
 # ---------------------------------------------------------------------
-# Proposed daily schedule (NOT installed -- see finalization report):
+# Daily schedule (Europe/Rome; install in the user's crontab):
 #
-#   0 12 * * 1-6  /home/htpc/backtrader/bt-core/.venv/bin/python \
+#   # Run after the 15:52 Europe/Rome MOO fallback, otherwise the cache only
+#   # contains the expired OPG leg and the reconciliation permanently misses
+#   # the later market exit.
+#   5 16 * * 1-6  /home/htpc/backtrader/bt-core/.venv/bin/python \
 #       /home/htpc/backtrader/bin/watchtower_poll_alpaca_orders.py --days 10
-#   30 12 * * 1-6 /home/htpc/backtrader/bt-core/.venv/bin/python \
+#   20 16 * * 1-6 /home/htpc/backtrader/bt-core/.venv/bin/python \
 #       /home/htpc/backtrader/bin/watchtower_replay_reconcile.py --catch-up
 #
 # Runs once a day, well after the US market has opened and the previous

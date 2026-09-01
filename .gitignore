@@ -18,6 +18,11 @@ out/
 *.log
 data/
 
+# Scratch git worktrees for the execution-reconciliation replay job
+# (bin/watchtower_replay_reconcile.py) -- created and removed per run,
+# never meant to be tracked.
+bin/watchtower_scratch/
+
 # Local secrets / machine-specific env files
 .PA1
 .PA2

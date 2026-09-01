@@ -13,9 +13,9 @@ RestartSec=5
 # cgroup so a runaway process here gets throttled/killed cleanly instead of
 # swap-thrashing the whole shared host. Normal usage is ~350-650MB.
 MemoryAccounting=yes
-MemoryHigh=1536M
-MemoryMax=3072M
-MemorySwapMax=0
+MemoryHigh=19G
+MemoryMax=19G
+MemorySwapMax=infinity
 ManagedOOMMemoryPressure=kill
 ManagedOOMSwap=kill
 

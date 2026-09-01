@@ -15,10 +15,12 @@ Uso:
 
 import argparse
 from datetime import datetime, timedelta, timezone
+import hashlib
 import logging
 import os
 import sys
 import time
+from uuid import uuid4
 from zoneinfo import ZoneInfo
 
 logging.basicConfig(
@@ -101,6 +103,45 @@ def _entry_tif_matches(order, entry_tif: str) -> bool:
     if not allowed or "any" in allowed:
         return True
     return tif in allowed
+
+
+def _short_hash(value: str, length: int = 6) -> str:
+    """Same algorithm as MultiTickerStrategy._cid_short_hash in
+    strategies/multiTickerStrategy.py: a short deterministic hash tag, not a
+    plain prefix truncation -- two profile/run names sharing a long common
+    prefix (all four overnight_ah* RUN_IDs start with "overnight_ah_") must
+    not collapse onto the same tag. Using the identical algorithm here means
+    an exit (SELL) order's run_tag matches the entry (BUY) order's run_tag
+    for the same profile, which the account<->strategy guardrail can use to
+    correlate them -- not required, but a natural benefit of reusing the
+    same scheme instead of inventing a second one.
+    """
+    return hashlib.sha1(str(value or "").lower().encode("utf-8")).hexdigest()[:length]
+
+
+def _exit_run_tag() -> str:
+    """Best-effort profile identifier for tagging exit orders: RUN_ID is
+    what scheduled-job.sh exports (via `set -a; source PROFILE_FILE`) and is
+    exactly what the strategy hashes into its own run_tag on the entry side
+    (see multiTickerStrategy.py). Falls back to PROFILE/ROLE (also exported
+    by scheduled-job.sh) for robustness if RUN_ID is ever absent from a
+    profile's env -- never hardcoded to a specific profile name."""
+    identifier = os.environ.get("RUN_ID") or os.environ.get("PROFILE") or os.environ.get("ROLE") or "unknown"
+    return _short_hash(identifier)
+
+
+def build_exit_client_order_id(symbol: str) -> str:
+    """client_order_id for a MOO/fallback exit SELL order. Exit orders
+    submitted via client.submit_order() previously carried NO
+    client_order_id at all (Alpaca auto-generates one), meaning they could
+    never be attributed to a profile/strategy by content -- only by account.
+    Format mirrors _build_client_order_id's budget (well under Alpaca's
+    48-char client_order_id limit): 'bt_exit_' + run_tag(6) + '_' + symbol
+    (<=6) + '_' + nonce(8).
+    """
+    symbol_tag = "".join(ch for ch in str(symbol or "SYM").upper() if ch.isalnum())[:6] or "SYM"
+    nonce = uuid4().hex[:8]
+    return f"bt_exit_{_exit_run_tag()}_{symbol_tag}_{nonce}"[:48]
 
 
 def _is_overnight_entry_buy(order, strategy_prefix: str, entry_tif: str) -> bool:
@@ -193,7 +234,17 @@ def submit_moo(
     close_all_longs: bool = False,
     cancel_pending_sells: bool = False,
     lookback_hours: int = 36,
-    strategy_prefix: str = "bt_overnigh_",
+    # "bt_overnigh_" matched the OLD 8-char-prefix-truncation scheme in
+    # multiTickerStrategy._build_client_order_id (readable but collision-prone
+    # -- see the fix there). That scheme now hashes the strategy tag, so
+    # there is no longer a stable readable "overnigh" substring to match
+    # across all overnight_ah* variants; "bt_" (the one literal fixed prefix
+    # every _build_client_order_id output still shares) is what's actually
+    # matchable now. Note: in the real scheduled crons this filter is moot
+    # anyway -- moo-exit.sh/moo-exit-fallback.sh always pass --all-longs,
+    # which closes every long position on the account and never calls
+    # _is_overnight_entry_buy()/this prefix filter at all.
+    strategy_prefix: str = "bt_",
     entry_tif: str = "cls",
     wait_window: bool = False,
     max_wait_minutes: int | None = None,
@@ -289,6 +340,7 @@ def submit_moo(
                 qty=qty,
                 side=OrderSide.SELL,
                 time_in_force=TimeInForce.DAY if fallback_market else TimeInForce.OPG,
+                client_order_id=build_exit_client_order_id(symbol),
             )
             order = client.submit_order(req)
             logger.info(
@@ -332,8 +384,8 @@ def main():
         help='Ore indietro in cui cercare ordini MOC OvernightAH filled',
     )
     parser.add_argument(
-        '--strategy-prefix', default='bt_overnigh_',
-        help='Prefisso client_order_id della strategia OvernightAH',
+        '--strategy-prefix', default='bt_',
+        help='Prefisso client_order_id per identificare gli ordini di entry di questo motore (vedi commento su strategy_prefix in submit_moo())',
     )
     parser.add_argument(
         '--entry-tif', default='cls',
