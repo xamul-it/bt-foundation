@@ -254,6 +254,53 @@ def backtest_stratargs(stratargs: dict[str, Any]) -> tuple[dict[str, Any], bool]
     return stratargs, forced
 
 
+def replay_data_key(profile_env: dict[str, str], version: dict[str, Any]) -> tuple[str, str, str]:
+    """The market-data cache is shared by a profile checkout, so refresh it
+    at most once for each ticker/provider/feed combination in a catch-up."""
+    extra = version.get("metadata") or {}
+    ticker = str(extra.get("TICKER") or profile_env.get("TICKER") or "").strip()
+    provider = str(extra.get("DATA_PROVIDER") or profile_env.get("DATA_PROVIDER") or "yahoo").strip()
+    alpaca_feed = str(extra.get("ALPACA_FEED") or DEFAULT_ALPACA_FEED).strip()
+    if not ticker:
+        raise ValueError("profile/version has no TICKER; cannot refresh replay market data")
+    return ticker, provider, alpaca_feed
+
+
+def refresh_replay_market_data(worktree_bt_core: Path, profile_env: dict[str, str], version: dict[str, Any]) -> tuple[str, str, str]:
+    """Bring the profile's local feed through today before a reconciliation
+    replay.  A trade opened on the prior session is absent from trades.json
+    until the following-session bar exists to close the round trip.
+
+    This deliberately runs the historical worktree's ``load_tickers.py`` but
+    points it at the profile's shared config/data directory, exactly as the
+    scheduled entry handler does.  It never changes the strategy checkout.
+    """
+    ticker, provider, alpaca_feed = replay_data_key(profile_env, version)
+    code_root = Path(profile_env["CODE_ROOT"]).resolve()
+    env = os.environ.copy()
+    env["BT_SHARED_CONFIG"] = str(code_root / "config-common")
+    account_env = profile_env.get("ACCOUNT_ENV")
+    if account_env:
+        account_path = Path(account_env)
+        if not account_path.is_absolute():
+            account_path = ACCOUNTS_DIR / account_path
+        env.update(_read_env_file(account_path))
+    python = code_root / "bt-core" / ".venv" / "bin" / "python"
+    if not python.is_file():
+        python = BT_CORE / ".venv" / "bin" / "python"
+    cmd = [
+        str(python), "load_tickers.py",
+        "--ticker", ticker,
+        "--provider", provider,
+        "--alpaca-feed", alpaca_feed,
+        "--timeframe", "d",
+        "--incremental",
+    ]
+    print("Refreshing replay market data:", " ".join(cmd), file=sys.stderr)
+    subprocess.run(cmd, cwd=str(worktree_bt_core), env=env, check=True, timeout=900)
+    return ticker, provider, alpaca_feed
+
+
 def run_replay(worktree_bt_core: Path, profile_env: dict[str, str], version: dict[str, Any],
                 trading_date: date, run_id: str, cash: float | None) -> tuple[Path, bool]:
     extra = version.get("metadata") or {}
@@ -334,14 +381,14 @@ def load_backtest_entries(trades_path: Path, trading_date: date) -> dict[str, di
     entries: dict[str, dict[str, Any]] = {}
     for item in raw:
         symbol = str(item.get("asset") or item.get("symbol") or "").upper()
-        # A reconciliation window belongs to the actual opening/fill date,
-        # never to the prior signal date.  In these Backtrader MOC/MOO
-        # exports ``open_datetime`` is the decision bar (one session early)
-        # whereas ``close_datetime`` is the MOC fill bar; use the latter.
-        # Keep the other fields only as compatibility fallbacks for older
-        # trade-export formats.
-        entry_dt = (item.get("close_datetime") or item.get("entry_datetime")
-                    or item.get("open_datetime") or item.get("entry_signal_dt"))
+        # A reconciliation window belongs to the actual opening/fill date.
+        # ``close_datetime`` is the exit leg and must never select the
+        # window: using it shifts every overnight trade to the following
+        # session.  This exporter records the opening execution in
+        # ``open_datetime``; keep the other entry fields only for older
+        # export formats.
+        entry_dt = (item.get("open_datetime") or item.get("entry_datetime")
+                    or item.get("entry_signal_dt"))
         if not symbol or not entry_dt:
             continue
         entry_date = str(entry_dt)[:10]
@@ -399,10 +446,12 @@ def fetch_live_exit_orders(repo: "wr.WatchtowerRepository", profile: str, tradin
                 return {}
             cur.execute(
                 """
-                SELECT symbol, status, qty, filled_qty, filled_avg_price
+                SELECT symbol, status, qty, filled_qty, filled_avg_price,
+                       client_order_id, order_type,
+                       LOWER(COALESCE(raw_payload->>'time_in_force', '')) AS time_in_force
                 FROM alpaca_order_cache
                 WHERE source_account = %s AND window_open = %s AND side = 'sell'
-                ORDER BY symbol
+                ORDER BY symbol, submitted_at, created_at, alpaca_order_id
                 """,
                 (profile, next_session),
             )
@@ -420,6 +469,9 @@ def fetch_live_exit_orders(repo: "wr.WatchtowerRepository", profile: str, tradin
             "filled_notional": 0.0,
             "has_filled_order": False,
             "statuses": [],
+            "auction_code": None,
+            "auction_filled_qty": 0.0,
+            "has_market_leg": False,
         })
         current["qty"] = max(current["qty"], float(order.get("qty") or 0))
         current["filled_qty"] += filled_qty
@@ -428,6 +480,14 @@ def fetch_live_exit_orders(repo: "wr.WatchtowerRepository", profile: str, tradin
         status = (order.get("status") or "unknown").lower()
         current["statuses"].append(status)
         current["has_filled_order"] = current["has_filled_order"] or status == "filled"
+        tif = str(order.get("time_in_force") or "").lower()
+        if tif in {"cls", "opg"}:
+            current["auction_code"] = "c" if tif == "cls" else "o"
+            current["auction_filled_qty"] += filled_qty
+        else:
+            current["has_market_leg"] = True
+        if tif in {"cls", "opg"} and status in {"expired", "canceled", "cancelled", "rejected"}:
+            current["auction_unfilled"] = True
 
     for current in by_symbol.values():
         if current["filled_qty"] and current["filled_notional"]:
@@ -438,6 +498,20 @@ def fetch_live_exit_orders(repo: "wr.WatchtowerRepository", profile: str, tradin
         # the aggregate as filled so classify() evaluates its quantity; an
         # insufficient aggregate then becomes exit_partial_fill.
         current["status"] = "filled" if current["filled_qty"] else current["statuses"][0]
+        auction_code = current.pop("auction_code")
+        auction_filled_qty = current.pop("auction_filled_qty")
+        market_leg = current.pop("has_market_leg")
+        unfilled_auction = current.pop("auction_unfilled", False)
+        # f already means the residual was closed at market.  Show o only
+        # for an actual OPG fill; a zero-fill OPG followed by fallback is f.
+        if unfilled_auction and market_leg:
+            current["execution_codes"] = ([auction_code] if auction_filled_qty > 0 and auction_code else []) + ["f"]
+        elif auction_code:
+            current["execution_codes"] = [auction_code]
+        elif market_leg:
+            current["execution_codes"] = ["m"]
+        else:
+            current["execution_codes"] = []
         current.pop("filled_notional")
         current.pop("has_filled_order")
         current.pop("statuses")
@@ -460,6 +534,9 @@ def classify(
     def bump(cat: str) -> None:
         counts[cat] = counts.get(cat, 0) + 1
 
+    def live_modes(rows: list[dict[str, Any]]) -> list[str]:
+        return list(dict.fromkeys(code for row in rows for code in (row.get("execution_codes") or [])))
+
     for symbol, bt_row in bt_entries.items():
         orders = live_by_symbol.pop(symbol, [])
         if not orders:
@@ -471,7 +548,9 @@ def classify(
         if not filled:
             status = (orders[0]["status"] or "unknown").lower()
             diffs.append({"symbol": symbol, "direction": "more_in_backtest",
-                          "category": f"live_order_not_filled:{status}", "bt": bt_row, "live": orders})
+                          "category": f"live_order_not_filled:{status}", "bt": bt_row, "live": orders,
+                          "live_entry_execution_codes": live_modes(orders),
+                          "live_exit_execution_codes": []})
             bump(f"live_order_not_filled:{status}")
             continue
         live_row = filled[0]
@@ -487,7 +566,9 @@ def classify(
         live_filled_qty = float(live_row.get("filled_qty") or 0)
         if live_submitted_qty > 0 and live_filled_qty < live_submitted_qty * 0.995:
             diffs.append({"symbol": symbol, "direction": "more_in_backtest", "category": "partial_fill",
-                          "bt": bt_row, "live": live_row})
+                          "bt": bt_row, "live": live_row,
+                          "live_entry_execution_codes": live_row.get("execution_codes") or [],
+                          "live_exit_execution_codes": []})
             bump("partial_fill")
             continue
         edge_bps = None
@@ -527,6 +608,8 @@ def classify(
                       "bt_exit_price": bt_row.get("bt_exit_price"), "bt_pnl_pct": bt_row.get("bt_pnl_pct"),
                       "live_exit_price": float(live_exit_price) if live_exit_price else None,
                       "live_exit_qty": exit_filled_qty or None, "live_exit_status": exit_status,
+                      "live_entry_execution_codes": live_row.get("execution_codes") or [],
+                      "live_exit_execution_codes": exit_row.get("execution_codes") if exit_row else [],
                       "live_pnl_pct": live_pnl_pct, "exit_issue": exit_issue})
         bump("matched")
         if sizing_divergence:
@@ -566,6 +649,8 @@ def classify(
             "symbol": symbol, "direction": "more_in_live", "category": "extra_live_order",
             "live": live_row, "live_exit_price": float(live_exit_price) if live_exit_price else None,
             "live_exit_qty": exit_filled_qty or None, "live_exit_status": exit_status,
+            "live_entry_execution_codes": live_row.get("execution_codes") or [],
+            "live_exit_execution_codes": exit_row.get("execution_codes") if exit_row else [],
             "live_pnl_pct": live_pnl_pct, "exit_issue": exit_issue,
         })
         bump("extra_live_order")
@@ -611,14 +696,20 @@ def fetch_live_entry_orders(repo: "wr.WatchtowerRepository", profile: str, tradi
         with conn.cursor() as cur:
             cur.execute(
                 """
-                SELECT symbol, status, qty, filled_qty, filled_avg_price
+                SELECT symbol, status, qty, filled_qty, filled_avg_price,
+                       client_order_id, order_type,
+                       LOWER(COALESCE(raw_payload->>'time_in_force', '')) AS time_in_force
                 FROM alpaca_order_cache
                 WHERE source_account = %s AND window_open = %s AND side = 'buy'
                 ORDER BY symbol
                 """,
                 (profile, trading_date),
             )
-            return wr._cursor_rows(cur)
+            rows = wr._cursor_rows(cur)
+    for row in rows:
+        tif = str(row.get("time_in_force") or "").lower()
+        row["execution_codes"] = ["c" if tif == "cls" else ("o" if tif == "opg" else "m")]
+    return rows
 
 
 # ---------------------------------------------------------------------
@@ -626,7 +717,8 @@ def fetch_live_entry_orders(repo: "wr.WatchtowerRepository", profile: str, tradi
 # ---------------------------------------------------------------------
 
 def reconcile_one_day(repo: "wr.WatchtowerRepository", profile: str, profile_env: dict[str, str],
-                       trading_date: date, keep_worktree: bool = False) -> dict[str, Any]:
+                       trading_date: date, keep_worktree: bool = False,
+                       refreshed_data_keys: set[tuple[str, str, str]] | None = None) -> dict[str, Any]:
     version = repo.resolve_params_as_of(profile, trading_date)  # raises if unknown -- never fall back
     code_root = Path(profile_env["CODE_ROOT"]).resolve()
     bt_core_repo = code_root / "bt-core"
@@ -635,6 +727,11 @@ def reconcile_one_day(repo: "wr.WatchtowerRepository", profile: str, profile_env
     run_tag = f"{profile}_{trading_date:%Y%m%d}"
     worktree_bt_core = create_worktree(bt_core_repo, core_commit, run_tag, code_root / "config-common")
     try:
+        data_key = replay_data_key(profile_env, version)
+        if refreshed_data_keys is None or data_key not in refreshed_data_keys:
+            refresh_replay_market_data(worktree_bt_core, profile_env, version)
+            if refreshed_data_keys is not None:
+                refreshed_data_keys.add(data_key)
         cash = resolve_historical_cash(profile_env, trading_date)
         run_id = f"reconcile_{profile}_{trading_date:%Y%m%d}_{uuid.uuid4().hex[:6]}"
         trades_path, auction_forced = run_replay(worktree_bt_core, profile_env, version, trading_date, run_id, cash)
@@ -645,6 +742,7 @@ def reconcile_one_day(repo: "wr.WatchtowerRepository", profile: str, profile_env
         summary["cash_used"] = cash
         summary["core_commit_resolution"] = resolution
         summary["auction_forced_by_harness"] = auction_forced
+        summary["market_data_refreshed_for_replay"] = True
 
         result = repo.upsert_reconciliation_result(
             profile=profile, trading_date=trading_date,
@@ -676,6 +774,7 @@ def run_catchup(repo: "wr.WatchtowerRepository", profiles: dict[str, dict[str, s
         if only_profile and profile != only_profile:
             continue
         _seed_queue(repo, profile)
+        refreshed_data_keys: set[tuple[str, str, str]] = set()
         for entry in repo.list_pending_reconciliation(profile):
             trading_date = date.fromisoformat(entry["trading_date"])
             closure = is_day_closed(repo, profile, trading_date)
@@ -684,7 +783,10 @@ def run_catchup(repo: "wr.WatchtowerRepository", profiles: dict[str, dict[str, s
                                 "reason": closure["reason"]})
                 continue
             try:
-                outcome = reconcile_one_day(repo, profile, profile_env, trading_date)
+                outcome = reconcile_one_day(
+                    repo, profile, profile_env, trading_date,
+                    refreshed_data_keys=refreshed_data_keys,
+                )
                 repo.mark_reconciliation_status(profile, trading_date, "done", detail={"result_id": outcome["id"]})
                 results.append({"profile": profile, "trading_date": entry["trading_date"], "action": "reconciled",
                                 "summary": outcome["summary"]})
@@ -699,6 +801,33 @@ def run_catchup(repo: "wr.WatchtowerRepository", profiles: dict[str, dict[str, s
                 # already has a status='error' row for it (see reconcile_one_day).
                 print(f"[{profile}] {trading_date}: replay failed, left pending: {exc}", file=sys.stderr)
                 results.append({"profile": profile, "trading_date": entry["trading_date"], "action": "replay_failed",
+                                "error": str(exc)})
+    return results
+
+
+def run_refresh_existing(repo: "wr.WatchtowerRepository", profiles: dict[str, dict[str, str]],
+                         only_profile: str | None) -> list[dict[str, Any]]:
+    """One-off backfill of reconciliation payloads after their schema gains
+    a new display fact. Unlike daily catch-up, this deliberately replays
+    existing closed rows; it never submits broker orders."""
+    results = []
+    for profile, profile_env in profiles.items():
+        if only_profile and profile != only_profile:
+            continue
+        existing = repo.list_reconciliation_results(profile, limit=2000)
+        refreshed_data_keys: set[tuple[str, str, str]] = set()
+        for row in reversed(existing):
+            trading_date = date.fromisoformat(row["trading_date"])
+            try:
+                outcome = reconcile_one_day(
+                    repo, profile, profile_env, trading_date,
+                    refreshed_data_keys=refreshed_data_keys,
+                )
+                results.append({"profile": profile, "trading_date": row["trading_date"], "action": "refreshed",
+                                "summary": outcome["summary"]})
+            except Exception as exc:  # noqa: BLE001
+                print(f"[{profile}] {trading_date}: refresh failed: {exc}", file=sys.stderr)
+                results.append({"profile": profile, "trading_date": row["trading_date"], "action": "refresh_failed",
                                 "error": str(exc)})
     return results
 
@@ -728,6 +857,8 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--profile", default=None)
     parser.add_argument("--trading-date", default=None, help="Reconcile exactly this day, bypassing the queue")
     parser.add_argument("--catch-up", action="store_true", help="Process the reconciliation_queue (daily job mode)")
+    parser.add_argument("--refresh-existing", action="store_true",
+                        help="One-off: replay existing reconciliation rows to backfill a new payload field")
     parser.add_argument("--keep-worktree", action="store_true", help="Debug: don't remove the scratch worktree")
     parser.add_argument("--db-dsn", default=None)
     args = parser.parse_args(argv)
@@ -741,6 +872,11 @@ def main(argv: list[str] | None = None) -> int:
 
     if args.catch_up:
         out = run_catchup(repo, profiles, args.profile)
+        print(json.dumps(out, indent=2, default=str))
+        return 0
+
+    if args.refresh_existing:
+        out = run_refresh_existing(repo, profiles, args.profile)
         print(json.dumps(out, indent=2, default=str))
         return 0
 
