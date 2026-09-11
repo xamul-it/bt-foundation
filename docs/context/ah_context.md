@@ -4998,3 +4998,68 @@ Run id: `sizing_waterfall_dbl_{25k,50k,100k,200k,500k,1M,3M}_{2000..2022}`
 `doubling_summary.csv` (7 righe, aggregato per livello) — generati da
 `compute_doubling.py`/`summarize_doubling.py`, non salvati nel
 repository (file di lavoro in scratchpad di sessione).
+
+## Aggiornamento 2026-09-11: waterfall 1x e cap nozionale assoluto
+
+### Configurazione operativa scelta
+
+Development e challenger usano `sizing_policy='liquidity_waterfall'`,
+`min_concurrent=3`, `max_adv_participation=0.01`, esposizione massima 1x,
+broker a leva 1x e hedge disabilitato. Development può espandere fino a 50
+nomi; challenger fino a 60 e usa `monthly_universe_top_n=60` nel regime
+dinamico. Nel regime statico entrambi restano limitati alla lista configurata
+di 10 nomi.
+
+Il waterfall percorre i candidati nell'ordine prodotto dalla strategia. I
+primi tre ricevono ciascuno al massimo `equity / 3`, ulteriormente limitato
+dal cap ADV. Se la somma resta sotto l'equity, aggiunge i candidati successivi
+nello stesso ordine fino a raggiungere 1x o il massimo configurato. È stato
+corretto un overshoot sul candidato finale: l'ultima allocazione è ora
+limitata al capitale residuo e non può portare il totale oltre 1x.
+
+Backtest Backtrader su Yahoo adjusted, commissioni Alpaca, cash iniziale
+$100.000, 2000-01-03..2026-09-10 (barra parziale 2026-09-11 esclusa):
+
+| Profilo | CAGR | Sharpe giornaliero | MaxDD | trade | media nomi/giorno | mediana | max |
+|---|---:|---:|---:|---:|---:|---:|---:|
+| development | 42,74% | 1,88 | -31,10% | 43.046 | 7,95 | 6 | 44 |
+| challenger | 35,37% | 1,68 | -32,79% | 26.648 | 5,47 | 5 | 20 |
+
+Il 76,24% dei giorni development e il 77,53% dei giorni challenger richiede
+più dei tre nomi iniziali: il cap ADV attiva realmente l'espansione. Non sono
+stati osservati errori di margine. I capitali finali compoundati sono
+teorici e non rappresentano una stima affidabile della capacità live.
+
+Run id: `development_waterfall_1x_cash100k_2000_20260910` e
+`challenger_waterfall_1x_cash100k_2000_20260910`.
+
+### Nuovo `max_notional_per_trade`
+
+È stato aggiunto a `MultiTickerStrategy` il parametro opzionale
+`max_notional_per_trade`. `None` o un valore <=0 lo disabilita. È componibile
+con il cap ADV e con tutte le policy; nel waterfall la size richiesta è:
+
+`min(quota waterfall, max_adv_participation * ADV$, max_notional_per_trade, residuo per 1x)`.
+
+Il limite è calcolato sul prezzo disponibile al sizing. Un market-on-close
+può essere eseguito a un prezzo diverso, quindi il controvalore del fill non
+è garantito rigorosamente sotto la soglia. Nel test con cap $10.000 la mediana
+del fill è circa $9.964, il percentile 95 circa $10.300 e i massimi osservati
+sono $15.226 per development e $15.554 per challenger.
+
+Risultati con `max_notional_per_trade=10000`, tutti gli altri parametri
+invariati:
+
+| Profilo | CAGR | Sharpe giornaliero | MaxDD | trade | media nomi/giorno | mediana | max |
+|---|---:|---:|---:|---:|---:|---:|---:|
+| development | 11,12% | 1,53 | -16,12% | 183.130 | 33,83 | 49 | 50 |
+| challenger | 11,09% | 1,63 | -11,67% | 196.314 | 40,28 | 59 | 60 |
+
+Il cap assoluto riduce nettamente drawdown e concentrazione, ma limita la
+capacità totale: al massimo $500.000 per development e $600.000 per
+challenger. Oltre tali equity l'esposizione 1x non è più raggiungibile anche
+quando tutti gli slot sono disponibili. Il parametro non è stato aggiunto
+alle schedulazioni: questi due run restano uno studio comparativo.
+
+Run id: `development_waterfall_cap10k_1x_cash100k_2000_20260910` e
+`challenger_waterfall_cap10k_1x_cash100k_2000_20260910`.
