@@ -30,17 +30,57 @@ disabled.
    least one complete entry/exit cycle before moving to the next role.
 8. Keep the old cron file and legacy scripts for one full release as rollback.
 
-The target cron interface is:
+The installed cron interface is:
 
 ```cron
-# Preserve the existing times; only the command changes.
-40 21 * * 1-5 /home/htpc/bin/bt-scheduled development entry
-30 01 * * 1-5 /home/htpc/bin/bt-scheduled development exit
+40 15 * * 1-5 /home/htpc/bin/bt-scheduled development entry
+43 15 * * 1-5 /home/htpc/bin/bt-scheduled mirror entry
+45 15 * * 1-5 /home/htpc/bin/bt-scheduled challenger entry
+01 01 * * 1-5 /home/htpc/bin/bt-scheduled development exit
+01 01 * * 1-5 /home/htpc/bin/bt-scheduled mirror exit
+01 01 * * 1-5 /home/htpc/bin/bt-scheduled challenger exit
 52 15 * * 1-5 /home/htpc/bin/bt-scheduled development exit-fallback
+52 15 * * 1-5 /home/htpc/bin/bt-scheduled mirror exit-fallback
+52 15 * * 1-5 /home/htpc/bin/bt-scheduled challenger exit-fallback
+30 23 * * 1-5 /home/htpc/backtrader/scripts/refresh-scheduled-daily-data.sh
 ```
 
-Use analogous commands for `mirror` and finally `live`. Redirecting cron output
-is optional because the runner writes daily per-profile logs itself.
+The live entry remains deliberately disabled; its exit and fallback can remain
+installed as defensive cleanup. Redirecting cron output is optional because the
+runner writes daily per-profile logs itself.
+
+## Market-data contract
+
+All OvernightAH scheduled profiles evaluate signals with `yahoo_adj`. Adjusted
+OHLCV is required on both sides of a live/replay comparison: dividends and
+splits must not introduce artificial gaps in indicators. Alpaca remains the
+execution venue, so actual fills and position sizes are not expected to equal a
+Backtrader simulation; the selected symbol set is expected to equal it.
+
+Entry jobs do not download data. They use a fixed cutoff equal to the previous
+calendar day (`DATA_CUTOFF`, default `yesterday`) and pass it to `btmain`. With
+`live_use_last_completed_bar=True`, the live run evaluates that last available
+completed bar directly. The historical replay reaches the same information set
+with the normal one-bar signal lag. Consequently, runs at 09:10 and 16:00 on the
+same execution date must produce the same candidates.
+
+The independent 23:30 job refreshes the adjusted daily dataset after the US
+session. Set `REFRESH_MARKET_DATA=1` only for an explicit diagnostic run; it is
+disabled in every scheduled profile. Before entry, the runner creates a
+point-in-time snapshot below
+`~/.local/state/backtrader/market-data-snapshots/<profile>/<execution-date>/`.
+Parquet files are hard-linked when possible (copied otherwise), while ticker
+definitions and indicator panels are copied.
+
+Watchtower reconciliation uses that snapshot and does not access the network by
+default. It preserves the frozen history and appends only rows strictly newer
+than the snapshot when later bars are needed to complete the replay. The legacy
+escape hatch `REPLAY_REFRESH_MARKET_DATA=1` is for diagnostics only. Dates before
+snapshot collection was introduced cannot always be reconstructed exactly.
+
+The scheduler lock is shared by jobs for the same profile. Fallback waits up to
+15 minutes for the main phase instead of reporting a successful but empty run
+while another phase still owns the lock.
 
 ## Production promotion
 

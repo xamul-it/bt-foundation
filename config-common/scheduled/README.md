@@ -20,3 +20,22 @@ scripts/scheduled-job.sh --dry-run development entry
 
 The public interface is always `PROFILE PHASE`; strategy names do not appear in
 cron. Supported phases are `entry`, `exit`, and `exit-fallback`.
+
+## OvernightAH data lifecycle
+
+Scheduled entries consume already consolidated previous-day data. They use
+`yahoo_adj` for signal generation and set `REFRESH_MARKET_DATA=0`; a separate
+post-close job runs `scripts/refresh-scheduled-daily-data.sh` once per weekday.
+The entry handler applies `DATA_CUTOFF` (default: yesterday) to both any optional
+loader and `btmain`, so intraday execution time cannot change the input bars.
+
+Immediately before a run, `scripts/snapshot-scheduled-data.sh` freezes its
+point-in-time inputs under
+`~/.local/state/backtrader/market-data-snapshots/<profile>/<date>/`. Watchtower
+replay starts from this snapshot and does not refresh market data. The optional
+`REPLAY_REFRESH_MARKET_DATA=1` and `REFRESH_MARKET_DATA=1` switches exist only
+for explicit diagnostics, not normal scheduling.
+
+Adjusted prices are intentional: live signal evaluation and replay must see the
+same dividend/split-continuous series. Alpaca prices are used for execution and
+fills, not as a second signal dataset.

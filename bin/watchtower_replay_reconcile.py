@@ -103,6 +103,77 @@ def resolve_account_credentials(profile_env: dict[str, str]) -> dict[str, str]:
 # D-bis: "is this trading day closed" (never compare an open day)
 # ---------------------------------------------------------------------
 
+SCHEDULED_STATE_DIR = Path(
+    os.environ.get("BT_SCHEDULED_STATE_DIR", str(Path.home() / ".local" / "state" / "backtrader"))
+)
+
+
+def market_data_snapshot(profile: str, trading_date: date) -> Path | None:
+    root = SCHEDULED_STATE_DIR / "market-data-snapshots" / profile / trading_date.isoformat() / "config-common"
+    return root if (root / ".complete").is_file() else None
+
+
+def prepare_snapshot_replay_config(snapshot: Path, current_config: Path, worktree_bt_core: Path) -> Path:
+    """Overlay post-entry bars onto the frozen decision-time feed.
+
+    Rows already present in the snapshot are never recalculated/replaced;
+    only strictly later rows are appended from the current adjusted cache so
+    Backtrader can observe the following-session exit.
+    """
+    import pandas as pd
+
+    target = worktree_bt_core.parent / "replay-config"
+    shutil.copytree(snapshot, target)
+    frozen_dir = target / "data" / "d" / "yahoo_adj"
+    current_dir = current_config / "data" / "d" / "yahoo_adj"
+    for frozen_path in frozen_dir.glob("*.parquet"):
+        current_path = current_dir / frozen_path.name
+        if not current_path.is_file():
+            continue
+        frozen = pd.read_parquet(frozen_path)
+        current = pd.read_parquet(current_path)
+        if frozen.empty or current.empty:
+            continue
+        date_col = next((name for name in ("Date", "timestamp", "datetime", "date") if name in frozen.columns), None)
+        if not date_col or date_col not in current.columns:
+            continue
+        frozen_dates = pd.to_datetime(frozen[date_col], utc=True, errors="coerce")
+        current_dates = pd.to_datetime(current[date_col], utc=True, errors="coerce")
+        last_frozen = frozen_dates.max()
+        later = current.loc[current_dates > last_frozen]
+        if later.empty:
+            continue
+        merged = pd.concat([frozen, later], ignore_index=True)
+        merged_dates = pd.to_datetime(merged[date_col], utc=True, errors="coerce")
+        merged = merged.assign(_snapshot_date=merged_dates).dropna(subset=["_snapshot_date"])
+        merged = merged.sort_values("_snapshot_date").drop_duplicates("_snapshot_date", keep="last")
+        merged = merged.drop(columns=["_snapshot_date"])
+        merged.to_parquet(frozen_path, index=False, compression="zstd")
+    return target
+
+
+def entry_run_evidence(profile: str, trading_date: date) -> dict[str, Any] | None:
+    """Return durable evidence that the daily entry job completed."""
+    path = SCHEDULED_STATE_DIR / "logs" / profile / f"{trading_date.isoformat()}.log"
+    try:
+        lines = path.read_text(encoding="utf-8", errors="replace").splitlines()
+    except OSError:
+        return None
+    start = f"START profile={profile} phase=entry"
+    end = f"END profile={profile} phase=entry"
+    if not any(start in line for line in lines) or not any(end in line for line in lines):
+        return None
+    decisions = [
+        line.split(" - INFO - ", 1)[-1]
+        for line in lines
+        if "ENTRY_NO_CANDIDATES" in line
+        or "ENTRY_BLOCKED" in line
+        or "POST_UP_COOLDOWN" in line
+        or "RISK_OVERLAY" in line
+    ]
+    dated = [line for line in decisions if f"date={trading_date.isoformat()}" in line]
+    return {"log_path": str(path), "no_trade_reasons": dated or decisions[-1:]}
+
 def is_day_closed(repo: "wr.WatchtowerRepository", profile: str, trading_date: date) -> dict[str, Any]:
     with repo.connect() as conn:
         with conn.cursor() as cur:
@@ -126,6 +197,10 @@ def is_day_closed(repo: "wr.WatchtowerRepository", profile: str, trading_date: d
             exit_symbols = {r["symbol"] for r in wr._cursor_rows(cur)}
 
     if not entry_rows:
+        evidence = entry_run_evidence(profile, trading_date)
+        if evidence and trading_date < date.today():
+            return {"closed": True, "entry_symbols": [], "exit_evidence_symbols": [],
+                    "no_trade": True, **evidence}
         return {"closed": False, "reason": "no_entry_orders_cached"}
     non_terminal = [r for r in entry_rows if (r["status"] or "").lower() not in TERMINAL_ORDER_STATUSES]
     if non_terminal:
@@ -266,6 +341,15 @@ def replay_data_key(profile_env: dict[str, str], version: dict[str, Any]) -> tup
     return ticker, provider, alpaca_feed
 
 
+def should_refresh_replay_market_data(profile_env: dict[str, str], version: dict[str, Any]) -> bool:
+    """Network refresh is opt-in: reconciliation must normally consume the
+    same shared, already-consolidated adjusted feed used by scheduled entry,
+    not rewrite history immediately before comparing the decision."""
+    extra = version.get("metadata") or {}
+    raw = extra.get("REPLAY_REFRESH_MARKET_DATA", profile_env.get("REPLAY_REFRESH_MARKET_DATA", "0"))
+    return str(raw).strip().lower() in {"1", "true", "yes", "on"}
+
+
 def refresh_replay_market_data(worktree_bt_core: Path, profile_env: dict[str, str], version: dict[str, Any]) -> tuple[str, str, str]:
     """Bring the profile's local feed through today before a reconciliation
     replay.  A trade opened on the prior session is absent from trades.json
@@ -302,7 +386,8 @@ def refresh_replay_market_data(worktree_bt_core: Path, profile_env: dict[str, st
 
 
 def run_replay(worktree_bt_core: Path, profile_env: dict[str, str], version: dict[str, Any],
-                trading_date: date, run_id: str, cash: float | None) -> tuple[Path, bool]:
+                trading_date: date, run_id: str, cash: float | None,
+                replay_config: Path | None = None) -> tuple[Path, bool]:
     extra = version.get("metadata") or {}
     ticker = extra.get("TICKER") or profile_env.get("TICKER")
     provider = extra.get("DATA_PROVIDER") or profile_env.get("DATA_PROVIDER") or "yahoo"
@@ -329,7 +414,7 @@ def run_replay(worktree_bt_core: Path, profile_env: dict[str, str], version: dic
     todate = min(trading_date + timedelta(days=10), date.today())
 
     code_root = Path(profile_env["CODE_ROOT"]).resolve()
-    shared_config = code_root / "config-common"
+    shared_config = replay_config or (code_root / "config-common")
 
     replay_stratargs, auction_forced = backtest_stratargs(version["stratargs"])
 
@@ -727,14 +812,26 @@ def reconcile_one_day(repo: "wr.WatchtowerRepository", profile: str, profile_env
     run_tag = f"{profile}_{trading_date:%Y%m%d}"
     worktree_bt_core = create_worktree(bt_core_repo, core_commit, run_tag, code_root / "config-common")
     try:
+        snapshot = market_data_snapshot(profile, trading_date)
+        replay_config = None
+        if snapshot:
+            replay_config = prepare_snapshot_replay_config(snapshot, code_root / "config-common", worktree_bt_core)
+            config_link = worktree_bt_core / "config-common"
+            if config_link.is_symlink():
+                config_link.unlink()
+            config_link.symlink_to(replay_config, target_is_directory=True)
         data_key = replay_data_key(profile_env, version)
-        if refreshed_data_keys is None or data_key not in refreshed_data_keys:
+        refreshed = should_refresh_replay_market_data(profile_env, version)
+        if refreshed and (refreshed_data_keys is None or data_key not in refreshed_data_keys):
             refresh_replay_market_data(worktree_bt_core, profile_env, version)
             if refreshed_data_keys is not None:
                 refreshed_data_keys.add(data_key)
         cash = resolve_historical_cash(profile_env, trading_date)
         run_id = f"reconcile_{profile}_{trading_date:%Y%m%d}_{uuid.uuid4().hex[:6]}"
-        trades_path, auction_forced = run_replay(worktree_bt_core, profile_env, version, trading_date, run_id, cash)
+        trades_path, auction_forced = run_replay(
+            worktree_bt_core, profile_env, version, trading_date, run_id, cash,
+            replay_config=replay_config,
+        )
         bt_entries = load_backtest_entries(trades_path, trading_date)
         live_orders = fetch_live_entry_orders(repo, profile, trading_date)
         live_exit_orders = fetch_live_exit_orders(repo, profile, trading_date)
@@ -742,7 +839,13 @@ def reconcile_one_day(repo: "wr.WatchtowerRepository", profile: str, profile_env
         summary["cash_used"] = cash
         summary["core_commit_resolution"] = resolution
         summary["auction_forced_by_harness"] = auction_forced
-        summary["market_data_refreshed_for_replay"] = True
+        summary["market_data_refreshed_for_replay"] = refreshed
+        summary["market_data_snapshot"] = str(snapshot) if snapshot else None
+        evidence = entry_run_evidence(profile, trading_date)
+        if not live_orders and evidence:
+            summary["live_no_trade"] = True
+            summary["live_no_trade_reasons"] = evidence.get("no_trade_reasons", [])
+            summary["scheduled_log_path"] = evidence.get("log_path")
 
         result = repo.upsert_reconciliation_result(
             profile=profile, trading_date=trading_date,
@@ -845,7 +948,17 @@ def _seed_queue(repo: "wr.WatchtowerRepository", profile: str) -> None:
                 (profile,),
             )
             candidate_dates = [r["window_open"] for r in wr._cursor_rows(cur)]
-    for trading_date in candidate_dates:
+    log_dir = SCHEDULED_STATE_DIR / "logs" / profile
+    log_cutoff = date.today() - timedelta(days=45)
+    if log_dir.is_dir():
+        for path in log_dir.glob("????-??-??.log"):
+            try:
+                log_date = date.fromisoformat(path.stem)
+            except ValueError:
+                continue
+            if log_cutoff <= log_date < date.today() and entry_run_evidence(profile, log_date):
+                candidate_dates.append(log_date)
+    for trading_date in sorted(set(candidate_dates)):
         existing = repo.get_reconciliation_result(profile, trading_date)
         if existing:
             continue

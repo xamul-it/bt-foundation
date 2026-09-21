@@ -5063,3 +5063,36 @@ alle schedulazioni: questi due run restano uno studio comparativo.
 
 Run id: `development_waterfall_cap10k_1x_cash100k_2000_20260910` e
 `challenger_waterfall_cap10k_1x_cash100k_2000_20260910`.
+
+## Aggiornamento 2026-09-21: dati consolidati t-1 e replay point-in-time
+
+Le schedulazioni OvernightAH di development, mirror e challenger valutano ora
+i segnali esclusivamente su `yahoo_adj`, con cutoff fisso al giorno precedente.
+L'adjustment deve essere identico nel run operativo e nel replay: uno stacco di
+dividendo o uno split a t-2 non può creare su uno dei due lati un gap artificiale
+capace di alterare indicatori, ranking e simboli selezionati. Alpaca resta il
+broker di esecuzione; differenze di size e fill sono quindi fisiologiche, mentre
+una differenza nell'insieme dei simboli è un'anomalia da investigare.
+
+L'entry non scarica più dati (`REFRESH_MARKET_DATA=0`). Il refresh giornaliero è
+separato e avviene alle 23:30 nei feriali, dopo la sessione USA. Il runner passa
+lo stesso `DATA_CUTOFF` a tutta la pipeline e crea prima dell'esecuzione uno
+snapshot in
+`~/.local/state/backtrader/market-data-snapshots/<profilo>/<data>/config-common`.
+I Parquet sono hard-linkati quando possibile, con fallback a copia; ticker list
+e indicator panel sono copiati per congelare anche universo e feature esterne.
+
+In live, `live_use_last_completed_bar=True` valuta direttamente l'ultima barra
+consolidata disponibile; nel replay storico resta il lag di una barra sulla data
+di esecuzione. I due percorsi vedono così lo stesso information set. Due entry
+dello stesso giorno, per esempio alle 09:10 e alle 16:00, devono generare gli
+stessi candidati.
+
+La riconciliazione Watchtower usa per default lo snapshot point-in-time, senza
+download. Quando servono barre posteriori per completare il replay, mantiene lo
+storico congelato e aggiunge soltanto righe con data strettamente successiva.
+`REPLAY_REFRESH_MARKET_DATA=1` rimane un'opzione diagnostica esplicita. Le date
+precedenti all'introduzione degli snapshot non sono sempre ricostruibili in modo
+perfetto, in particolare per simboli il cui storico è stato successivamente
+riscritto. Infine il fallback attende fino a 15 minuti il lock del job principale,
+evitando esiti vuoti mentre un'altra fase del profilo è ancora in corso.

@@ -21,6 +21,10 @@ for phase in entry exit exit-fallback; do
     output=$("$ROOT/scripts/scheduled-job.sh" --dry-run development "$phase")
     [[ "$output" == *"profile=development phase=$phase mode=paper"* ]]
     [[ "$output" == *"run:"* ]]
+    if [[ "$phase" == entry ]]; then
+        [[ "$output" == *"load: skipped"* ]]
+        [[ "$output" == *"--todate"* ]]
+    fi
 done
 
 # The production updater must not initialize every foundation submodule. Some
