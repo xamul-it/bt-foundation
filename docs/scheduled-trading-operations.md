@@ -64,6 +64,15 @@ completed bar directly. The historical replay reaches the same information set
 with the normal one-bar signal lag. Consequently, runs at 09:10 and 16:00 on the
 same execution date must produce the same candidates.
 
+The scheduled profiles also set
+`live_reenter_positions_pending_fallback=True`. A residual Alpaca position from
+the preceding overnight does not consume an entry slot and does not exclude its
+symbol from the new selection: the entry run still submits the full new `CLS`
+quantity. The 15:52 `exit-fallback` independently cancels pending sells and
+closes every residual long at market before the close auction. The strategy
+emits `ENTRY_EXISTING_POSITION_IGNORED` as a warning whenever this path is used;
+an order already submitted by the current strategy run is never duplicated.
+
 The independent 23:30 job refreshes the adjusted daily dataset after the US
 session. Set `REFRESH_MARKET_DATA=1` only for an explicit diagnostic run; it is
 disabled in every scheduled profile. Before entry, the runner creates a
