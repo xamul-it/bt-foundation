@@ -1,5 +1,11 @@
 # Scheduled trading profiles
 
+> **Riferimento operativo importante:** parametri, cron, contratto dati e
+> benchmark ufficiali di `development` e `challenger` sono descritti in
+> [Scheduled trading operations — Canonical scheduled benchmarks](../../docs/scheduled-trading-operations.md#canonical-scheduled-benchmarks).
+> Consultare e rigenerare quei benchmark ogni volta che cambia un file di
+> configurazione in questa directory.
+
 The repository contains versioned strategy parameters and profile templates.
 Machine-specific profiles and account credentials are installed outside Git:
 

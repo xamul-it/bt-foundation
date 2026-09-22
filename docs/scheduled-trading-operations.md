@@ -1,5 +1,10 @@
 # Scheduled trading operations
 
+Documento operativo canonico per schedulazioni, dati e benchmark OvernightAH.
+In particolare, la sezione [Canonical scheduled benchmarks](#canonical-scheduled-benchmarks)
+definisce i risultati ufficiali di `development` e `challenger` da rigenerare
+quando cambiano i parametri dei profili.
+
 ## Roles
 
 | Profile | Checkout | Mode | Purpose |
