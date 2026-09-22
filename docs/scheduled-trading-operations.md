@@ -91,6 +91,22 @@ The scheduler lock is shared by jobs for the same profile. Fallback waits up to
 15 minutes for the main phase instead of reporting a successful but empty run
 while another phase still owns the lock.
 
+## Canonical scheduled benchmarks
+
+Every change to the `development` or `challenger` strategy parameters must be
+followed by a full-history backtest using the profile's exact `STRATARGS`, data
+provider, margin leverage and commission model. The canonical run ID is always
+`scheduled_benchmark`, which gives each strategy one stable benchmark directory:
+
+- development: `bt-core/out/overnight_ah/OvernightAH/scheduled_benchmark/`
+- challenger: `bt-core/out/overnight_ah_flat_composite/OvernightAHFlatComposite/scheduled_benchmark/`
+
+The benchmark starts on `2000-01-01` and ends on the latest consolidated
+session. Development and challenger currently use `commission=alpaca`. Keep
+dated `results-*.json` files as audit history; the unqualified `results.json`,
+`returns.csv`, `trades.json` and related files represent the latest canonical
+benchmark.
+
 ## Production promotion
 
 `main` is the effective development branch. Promote reviewed changes to `prod`
