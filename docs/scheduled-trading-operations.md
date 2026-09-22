@@ -93,6 +93,11 @@ while another phase still owns the lock.
 
 ## Canonical scheduled benchmarks
 
+> **Memoria futura:** questi non sono output sperimentali usa-e-getta. Sono il
+> riferimento ufficiale con cui confrontare ogni modifica successiva alle due
+> schedulazioni. Non creare ogni volta un ID diverso e non confrontare risultati
+> ottenuti con vecchi parametri senza dichiararlo esplicitamente.
+
 Every change to the `development` or `challenger` strategy parameters must be
 followed by a full-history backtest using the profile's exact `STRATARGS`, data
 provider, margin leverage and commission model. The canonical run ID is always
@@ -106,6 +111,14 @@ session. Development and challenger currently use `commission=alpaca`. Keep
 dated `results-*.json` files as audit history; the unqualified `results.json`,
 `returns.csv`, `trades.json` and related files represent the latest canonical
 benchmark.
+
+In pratica, nello stesso commit che cambia una schedulazione bisogna:
+
+1. rieseguire entrambi i benchmark dal 2000 all'ultima sessione consolidata;
+2. usare i parametri effettivi dei file `.env`, senza ricostruirli a mano;
+3. aggiornare gli output `scheduled_benchmark` sopra indicati;
+4. riportare sempre periodo, esposizione, margine, commissioni, numero di trade,
+   ritorno medio per trade, CAGR, Sharpe e massimo drawdown.
 
 ## Production promotion
 
