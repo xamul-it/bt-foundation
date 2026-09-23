@@ -160,7 +160,6 @@ _NO_TRADE_MARKERS = (
     "POST_UP_COOLDOWN",
     "RISK_OVERLAY",
     "insufficient buying power",
-    "ENTRY_EXISTING_POSITION_IGNORED",
 )
 
 
@@ -181,8 +180,6 @@ def _no_trade_reason(line: str) -> dict[str, str]:
         code, label = "cooldown", "Cooldown strategia"
     elif "insufficient buying power" in lowered:
         code, label = "insufficient_buying_power", "Buying power Alpaca insufficiente"
-    elif "pending_exit_fallback" in lowered:
-        code, label = "pending_exit_fallback", "Chiusura fallback ancora pendente"
     elif "no_liquidity" in lowered or "adv" in lowered or "liquidity" in lowered:
         code, label = "no_liquidity", "Liquidità insufficiente"
     elif "no_free_slots" in lowered:
@@ -243,6 +240,16 @@ def entry_run_evidence(profile: str, trading_date: date) -> dict[str, Any] | Non
             reasons.append(_no_trade_reason(line))
     unique = {reason["code"]: reason for reason in reasons}
     submitted = sum("MOC submitted" in line for line in run_lines)
+    if submitted:
+        # Once at least one order was attempted, later next() calls naturally
+        # report that the same candidates were already submitted.  That is a
+        # consequence of the run, never the cause of an Alpaca no-order day.
+        no_candidates = unique.get("no_candidates")
+        if no_candidates and (
+            "strategy_order_already_submitted" in no_candidates["detail"]
+            or "entry_already_attempted_today" in no_candidates["detail"]
+        ):
+            unique.pop("no_candidates")
     if not unique and submitted:
         unique["alpaca_cache_missing"] = {
             "code": "alpaca_cache_missing",
