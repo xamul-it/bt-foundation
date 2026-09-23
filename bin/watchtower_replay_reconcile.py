@@ -152,6 +152,79 @@ def prepare_snapshot_replay_config(snapshot: Path, current_config: Path, worktre
     return target
 
 
+_NO_TRADE_MARKERS = (
+    "ENTRY_NO_CANDIDATES",
+    "ENTRY_NO_ORDERS",
+    "ENTRY_BLOCKED",
+    "ENTRY_COOLDOWN",
+    "POST_UP_COOLDOWN",
+    "RISK_OVERLAY",
+    "insufficient buying power",
+    "ENTRY_EXISTING_POSITION_IGNORED",
+)
+
+
+def _is_no_trade_line(line: str) -> bool:
+    # Event names are deliberately case-sensitive: profile dumps contain
+    # lower-case parameter names such as ``post_up_cooldown_days`` which are
+    # configuration, not a decision taken by the strategy.
+    return (
+        any(marker in line for marker in _NO_TRADE_MARKERS if marker != "insufficient buying power")
+        or "insufficient buying power" in line.lower()
+    )
+
+
+def _no_trade_reason(line: str) -> dict[str, str]:
+    detail = line.split(" - INFO - ", 1)[-1]
+    lowered = detail.lower()
+    if "entry_cooldown" in lowered or "post_up_cooldown" in lowered:
+        code, label = "cooldown", "Cooldown strategia"
+    elif "insufficient buying power" in lowered:
+        code, label = "insufficient_buying_power", "Buying power Alpaca insufficiente"
+    elif "pending_exit_fallback" in lowered:
+        code, label = "pending_exit_fallback", "Chiusura fallback ancora pendente"
+    elif "no_liquidity" in lowered or "adv" in lowered or "liquidity" in lowered:
+        code, label = "no_liquidity", "Liquidità insufficiente"
+    elif "no_free_slots" in lowered:
+        code, label = "no_free_slots", "Nessuno slot disponibile"
+    elif "risk_overlay" in lowered:
+        code, label = "risk_overlay", "Blocco del controllo rischio"
+    elif "entry_no_candidates" in lowered:
+        code, label = "no_candidates", "Nessun candidato eleggibile"
+    elif "broker_submit_failed" in lowered or "entry_no_orders" in lowered:
+        code, label = "no_orders", "Nessun ordine inviabile"
+    else:
+        code, label = "unknown", "Causale non classificata"
+    return {"code": code, "label": label, "detail": detail}
+
+
+def no_trade_reasons_from_log(path: Path, trading_date: date) -> list[dict[str, str]]:
+    try:
+        lines = path.read_text(encoding="utf-8", errors="replace").splitlines()
+    except OSError:
+        return []
+    decisions = [line for line in lines if _is_no_trade_line(line)]
+    dated = [line for line in decisions if f"date={trading_date.isoformat()}" in line]
+    reasons = [_no_trade_reason(line) for line in (dated or decisions)]
+    # Logs live can repeat the same decision on every incoming bar.  The FE
+    # needs the causes, not hundreds of duplicate lines.
+    unique: dict[str, dict[str, str]] = {}
+    for reason in reasons:
+        unique[reason["code"]] = reason
+    return list(unique.values())
+
+
+def _last_completed_entry_run(lines: list[str], profile: str) -> list[str]:
+    start = f"START profile={profile} phase=entry"
+    end = f"END profile={profile} phase=entry"
+    start_indexes = [i for i, line in enumerate(lines) if start in line]
+    for start_idx in reversed(start_indexes):
+        end_idx = next((i for i in range(start_idx + 1, len(lines)) if end in lines[i]), None)
+        if end_idx is not None:
+            return lines[start_idx:end_idx + 1]
+    return []
+
+
 def entry_run_evidence(profile: str, trading_date: date) -> dict[str, Any] | None:
     """Return durable evidence that the daily entry job completed."""
     path = SCHEDULED_STATE_DIR / "logs" / profile / f"{trading_date.isoformat()}.log"
@@ -161,18 +234,28 @@ def entry_run_evidence(profile: str, trading_date: date) -> dict[str, Any] | Non
         return None
     start = f"START profile={profile} phase=entry"
     end = f"END profile={profile} phase=entry"
-    if not any(start in line for line in lines) or not any(end in line for line in lines):
+    run_lines = _last_completed_entry_run(lines, profile)
+    if not run_lines:
         return None
-    decisions = [
-        line.split(" - INFO - ", 1)[-1]
-        for line in lines
-        if "ENTRY_NO_CANDIDATES" in line
-        or "ENTRY_BLOCKED" in line
-        or "POST_UP_COOLDOWN" in line
-        or "RISK_OVERLAY" in line
-    ]
-    dated = [line for line in decisions if f"date={trading_date.isoformat()}" in line]
-    return {"log_path": str(path), "no_trade_reasons": dated or decisions[-1:]}
+    reasons = []
+    for line in run_lines:
+        if _is_no_trade_line(line):
+            reasons.append(_no_trade_reason(line))
+    unique = {reason["code"]: reason for reason in reasons}
+    submitted = sum("MOC submitted" in line for line in run_lines)
+    if not unique and submitted:
+        unique["alpaca_cache_missing"] = {
+            "code": "alpaca_cache_missing",
+            "label": "Ordini emessi ma assenti dalla cache Alpaca",
+            "detail": f"La strategia ha registrato {submitted} invii MOC; il monitor non trova ordini Alpaca.",
+        }
+    if not unique:
+        unique["no_strategy_decision"] = {
+            "code": "no_strategy_decision",
+            "label": "Decisione di ingresso non raggiunta",
+            "detail": "Il job è terminato senza ordini e senza una causale strategica strutturata.",
+        }
+    return {"log_path": str(path), "no_trade_reasons": list(unique.values())}
 
 def is_day_closed(repo: "wr.WatchtowerRepository", profile: str, trading_date: date) -> dict[str, Any]:
     with repo.connect() as conn:
@@ -770,6 +853,7 @@ def classify(
         "counts": counts,
         "clean": not hard_categories,
         "bt_entry_count": len(bt_entries),
+        "live_entry_count": len(live_orders),
         "bt_day_return_pct": bt_day_return_pct,
         "live_day_return_pct": live_day_return_pct,
     }
@@ -842,10 +926,26 @@ def reconcile_one_day(repo: "wr.WatchtowerRepository", profile: str, profile_env
         summary["market_data_refreshed_for_replay"] = refreshed
         summary["market_data_snapshot"] = str(snapshot) if snapshot else None
         evidence = entry_run_evidence(profile, trading_date)
-        if not live_orders and evidence:
+        if not bt_entries:
+            summary["bt_no_trade"] = True
+            summary["bt_no_trade_reasons"] = no_trade_reasons_from_log(
+                trades_path.parent / "runtime.log", trading_date,
+            ) or [{
+                "code": "reason_unavailable",
+                "label": "Causale Backtrader non disponibile",
+                "detail": "Il replay non ha prodotto ingressi né una causale strutturata.",
+            }]
+        if not live_orders:
             summary["live_no_trade"] = True
-            summary["live_no_trade_reasons"] = evidence.get("no_trade_reasons", [])
-            summary["scheduled_log_path"] = evidence.get("log_path")
+            summary["live_no_trade_reasons"] = (
+                evidence.get("no_trade_reasons", []) if evidence else []
+            ) or [{
+                "code": "reason_unavailable",
+                "label": "Causale Alpaca non disponibile",
+                "detail": "Nessun ordine Alpaca e nessuna causale trovata nel log schedulato.",
+            }]
+            if evidence:
+                summary["scheduled_log_path"] = evidence.get("log_path")
 
         result = repo.upsert_reconciliation_result(
             profile=profile, trading_date=trading_date,
