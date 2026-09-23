@@ -202,13 +202,65 @@ def no_trade_reasons_from_log(path: Path, trading_date: date) -> list[dict[str, 
         return []
     decisions = [line for line in lines if _is_no_trade_line(line)]
     dated = [line for line in decisions if f"date={trading_date.isoformat()}" in line]
-    reasons = [_no_trade_reason(line) for line in (dated or decisions)]
+    # A replay runtime contains the whole warm-up interval.  A decision from
+    # July must never become the explanation for an empty September row.
+    reasons = [_no_trade_reason(line) for line in dated]
     # Logs live can repeat the same decision on every incoming bar.  The FE
     # needs the causes, not hundreds of duplicate lines.
     unique: dict[str, dict[str, str]] = {}
     for reason in reasons:
         unique[reason["code"]] = reason
     return list(unique.values())
+
+
+def pending_backtest_entries_from_log(path: Path, trading_date: date) -> dict[str, dict[str, Any]]:
+    """Recover final-bar entry decisions not yet exported to trades.json.
+
+    The trade exporter only writes closed round trips.  On the latest feed
+    bar an MOC decision can therefore exist in runtime.log while trades.json
+    is empty.  The signals following the fill notification for trading_date
+    belong to that day's next() decision and are safe to expose as pending
+    backtest entries (price is the strategy's sizing reference, not a fill).
+    """
+    try:
+        lines = path.read_text(encoding="utf-8", errors="replace").splitlines()
+    except OSError:
+        return {}
+    anchor = None
+    signal_date = None
+    import re
+    fill_date_pattern = re.compile(r"MOC FILLED .*\((\d{4}-\d{2}-\d{2})\)")
+    for idx, line in enumerate(lines):
+        match = fill_date_pattern.search(line)
+        if match:
+            candidate = date.fromisoformat(match.group(1))
+            if candidate < trading_date and (signal_date is None or candidate >= signal_date):
+                anchor = idx
+                signal_date = candidate
+    if anchor is None:
+        return {}
+    entries: dict[str, dict[str, Any]] = {}
+    pattern = re.compile(r"ENTRY_SIGNAL\s+(\S+):.*?size=(\d+).*?price=([0-9.]+)")
+    for line in lines[anchor + 1:]:
+        if "MOC FILLED " in line:
+            break
+        match = pattern.search(line)
+        if not match:
+            continue
+        symbol, qty, price = match.groups()
+        entries[symbol.upper()] = {
+            "symbol": symbol.upper(),
+            "bt_entry_price": float(price),
+            "bt_qty": float(qty),
+            "bt_exit_price": None,
+            "bt_exit_qty": None,
+            "bt_pnl": None,
+            "bt_value": None,
+            "bt_pnl_pct": None,
+            "bt_pending_execution": True,
+            "bt_signal_date": signal_date.isoformat(),
+        }
+    return entries
 
 
 def _last_completed_entry_run(lines: list[str], profile: str) -> list[str]:
@@ -553,22 +605,30 @@ def load_backtest_entries(trades_path: Path, trading_date: date) -> dict[str, di
     is notional-based (`pnl / value`) -- the same definition used for the
     per-day return in classify()."""
     raw = json.loads(trades_path.read_text(encoding="utf-8"))
-    entries: dict[str, dict[str, Any]] = {}
+    dated_items: list[tuple[date, dict[str, Any]]] = []
     for item in raw:
         symbol = str(item.get("asset") or item.get("symbol") or "").upper()
-        # A reconciliation window belongs to the actual opening/fill date.
-        # ``close_datetime`` is the exit leg and must never select the
-        # window: using it shifts every overnight trade to the following
-        # session.  This exporter records the opening execution in
-        # ``open_datetime``; keep the other entry fields only for older
-        # export formats.
+        # In this daily replay, open_datetime identifies the consolidated
+        # signal bar.  The scheduled live job consumes that bar on the next
+        # trading session (Friday's bar -> Monday's CLS order).  Therefore a
+        # live trading window must compare with the latest replay signal date
+        # strictly before it, not with an equal calendar date.
         entry_dt = (item.get("open_datetime") or item.get("entry_datetime")
                     or item.get("entry_signal_dt"))
         if not symbol or not entry_dt:
             continue
-        entry_date = str(entry_dt)[:10]
-        if entry_date != trading_date.isoformat():
+        entry_date = date.fromisoformat(str(entry_dt)[:10])
+        if entry_date >= trading_date:
             continue
+        dated_items.append((entry_date, item))
+    if not dated_items:
+        return {}
+    signal_date = max(item_date for item_date, _ in dated_items)
+    entries: dict[str, dict[str, Any]] = {}
+    for entry_date, item in dated_items:
+        if entry_date != signal_date:
+            continue
+        symbol = str(item.get("asset") or item.get("symbol") or "").upper()
         entry_price = item.get("price") or item.get("entry_price")
         size = abs(float(item.get("size") or item.get("qty") or 0))
         pnl = item.get("pnl")
@@ -588,6 +648,7 @@ def load_backtest_entries(trades_path: Path, trading_date: date) -> dict[str, di
             "bt_pnl": float(pnl) if pnl is not None else None,
             "bt_value": float(value) if value is not None else None,
             "bt_pnl_pct": pnl_pct,
+            "bt_signal_date": signal_date.isoformat(),
         }
     return entries
 
@@ -924,6 +985,12 @@ def reconcile_one_day(repo: "wr.WatchtowerRepository", profile: str, profile_env
             replay_config=replay_config,
         )
         bt_entries = load_backtest_entries(trades_path, trading_date)
+        pending_bt_entries = False
+        if not bt_entries:
+            bt_entries = pending_backtest_entries_from_log(
+                trades_path.parent / "runtime.log", trading_date,
+            )
+            pending_bt_entries = bool(bt_entries)
         live_orders = fetch_live_entry_orders(repo, profile, trading_date)
         live_exit_orders = fetch_live_exit_orders(repo, profile, trading_date)
         diffs, summary = classify(bt_entries, live_orders, live_exit_orders)
@@ -932,6 +999,8 @@ def reconcile_one_day(repo: "wr.WatchtowerRepository", profile: str, profile_env
         summary["auction_forced_by_harness"] = auction_forced
         summary["market_data_refreshed_for_replay"] = refreshed
         summary["market_data_snapshot"] = str(snapshot) if snapshot else None
+        if pending_bt_entries:
+            summary["bt_entries_pending_execution"] = True
         evidence = entry_run_evidence(profile, trading_date)
         if not bt_entries:
             summary["bt_no_trade"] = True
