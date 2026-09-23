@@ -40,7 +40,7 @@ The installed cron interface is:
 ```cron
 40 15 * * 1-5 /home/htpc/bin/bt-scheduled development entry
 43 15 * * 1-5 /home/htpc/bin/bt-scheduled mirror entry
-45 15 * * 1-5 /home/htpc/bin/bt-scheduled challenger entry
+38 15 * * 1-5 /home/htpc/bin/bt-scheduled challenger entry
 01 01 * * 1-5 /home/htpc/bin/bt-scheduled development exit
 01 01 * * 1-5 /home/htpc/bin/bt-scheduled mirror exit
 01 01 * * 1-5 /home/htpc/bin/bt-scheduled challenger exit
@@ -65,9 +65,15 @@ Backtrader simulation; the selected symbol set is expected to equal it.
 Entry jobs do not download data. They use a fixed cutoff equal to the previous
 calendar day (`DATA_CUTOFF`, default `yesterday`) and pass it to `btmain`. With
 `live_use_last_completed_bar=True`, the live run evaluates that last available
-completed bar directly. The historical replay reaches the same information set
-with the normal one-bar signal lag. Consequently, runs at 09:10 and 16:00 on the
-same execution date must produce the same candidates.
+completed bar directly. The target is resolved as `t-N` from the shared Alpaca
+trading calendar (`config-common/cache/alpaca_calendar_cache.json`), never from
+SPY or another ticker in the universe. The entry decision runs once only when
+the master and every feed that contains the target session are positioned on
+that date. A symbol without that bar is excluded as `stale_feed`, with both its
+feed date and the target date logged. Every log line that reports an entry price
+also reports `feed_date`. The historical replay reaches the same information
+set with the normal one-bar signal lag. Consequently, runs at 09:10 and 16:00
+on the same execution date must produce the same candidates.
 
 The scheduled profiles also set
 `live_reenter_positions_pending_fallback=True`. A residual Alpaca position from
@@ -92,9 +98,10 @@ than the snapshot when later bars are needed to complete the replay. The legacy
 escape hatch `REPLAY_REFRESH_MARKET_DATA=1` is for diagnostics only. Dates before
 snapshot collection was introduced cannot always be reconstructed exactly.
 
-The scheduler lock is shared by jobs for the same profile. Fallback waits up to
-15 minutes for the main phase instead of reporting a successful but empty run
-while another phase still owns the lock.
+The scheduler lock is shared by the `entry` and `exit` jobs for the same
+profile. `exit-fallback` deliberately bypasses that lock: it must immediately
+cancel pending sell orders and submit market exits even if `entry` is still
+calculating or submitting its BUY CLS orders.
 
 ## Canonical scheduled benchmarks
 

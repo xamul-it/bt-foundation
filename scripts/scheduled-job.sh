@@ -124,15 +124,14 @@ STATE_DIR=${BT_SCHEDULED_STATE_DIR:-$HOME/.local/state/backtrader}
 LOCK_DIR=$STATE_DIR/locks
 LOG_DIR=${LOG_DIR:-$STATE_DIR/logs/$PROFILE}
 mkdir -p "$LOCK_DIR" "$LOG_DIR"
-exec 9>"$LOCK_DIR/$PROFILE.lock"
-LOCK_WAIT_SEC=${PROFILE_LOCK_WAIT_SEC:-0}
-if [[ "$PHASE" == exit-fallback ]]; then
-    LOCK_WAIT_SEC=${FALLBACK_LOCK_WAIT_SEC:-900}
+if [[ "$PHASE" != exit-fallback ]]; then
+    exec 9>"$LOCK_DIR/$PROFILE.lock"
+    LOCK_WAIT_SEC=${PROFILE_LOCK_WAIT_SEC:-0}
+    flock -w "$LOCK_WAIT_SEC" 9 || {
+        echo "Another scheduled job is active for profile $PROFILE after waiting ${LOCK_WAIT_SEC}s" >&2
+        exit 75
+    }
 fi
-flock -w "$LOCK_WAIT_SEC" 9 || {
-    echo "Another scheduled job is active for profile $PROFILE after waiting ${LOCK_WAIT_SEC}s" >&2
-    exit 75
-}
 
 LOG_FILE=$LOG_DIR/$(date +%F).log
 exec > >(tee -a "$LOG_FILE") 2>&1
