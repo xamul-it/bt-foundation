@@ -36,7 +36,6 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--label", required=True)
     ap.add_argument("--from", dest="frm", required=True, type=_d)
     ap.add_argument("--to", dest="to", required=True, type=_d)
-    ap.add_argument("--as-of", dest="as_of", default=None, type=_d)
     ap.add_argument("--db-dsn", default=None)
     ap.add_argument("--print-cmd", action="store_true", help="resolve and print the backtest command, do not run")
     args = ap.parse_args(argv)
@@ -48,7 +47,7 @@ def main(argv: list[str] | None = None) -> int:
 
     env = pbl.load_profile_env(args.profile)
     if args.print_cmd:
-        ctx = pbl.resolve_baseline_context(repo, args.profile, env, args.as_of or args.to)
+        ctx = pbl.resolve_baseline_context(repo, args.profile, env, date.today())
         code_root = Path(env.get("CODE_ROOT") or BT_CORE.parent)
         cmd = pbl.build_baseline_backtest_cmd(
             bt_core_python=str(code_root / "bt-core" / ".venv" / "bin" / "python"),
@@ -62,7 +61,7 @@ def main(argv: list[str] | None = None) -> int:
 
     row = pbl.compute_profile_baseline(
         repo, profile=args.profile, label=args.label,
-        window_start=args.frm, window_end=args.to, as_of_date=args.as_of, profile_env=env,
+        window_start=args.frm, window_end=args.to, profile_env=env,
     )
     print(json.dumps({"id": row["id"], "label": row["label"], "sample_size": row["sample_size"]}, indent=2))
     return 0
