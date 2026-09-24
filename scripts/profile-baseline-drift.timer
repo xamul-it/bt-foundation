@@ -1,0 +1,10 @@
+[Unit]
+Description=Daily Backtrader profile baseline drift check
+
+[Timer]
+OnCalendar=Mon..Fri *-*-* 16:30:00 Europe/Rome
+Persistent=true
+Unit=profile-baseline-drift.service
+
+[Install]
+WantedBy=timers.target

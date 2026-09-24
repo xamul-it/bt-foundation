@@ -1,0 +1,8 @@
+[Unit]
+Description=Backtrader scheduled profile baseline drift check
+After=network.target
+
+[Service]
+Type=oneshot
+WorkingDirectory=/home/htpc/backtrader
+ExecStart=/bin/bash -lc 'set -a; source /home/htpc/backtrader/env/bt-live-events; set +a; exec /home/htpc/backtrader/bt-core/.venv/bin/python /home/htpc/backtrader/bin/watchtower_check_profile_baselines.py'
