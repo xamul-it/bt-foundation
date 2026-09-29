@@ -47,6 +47,7 @@ The installed cron interface is:
 52 15 * * 1-5 /home/htpc/bin/bt-scheduled development exit-fallback
 52 15 * * 1-5 /home/htpc/bin/bt-scheduled mirror exit-fallback
 52 15 * * 1-5 /home/htpc/bin/bt-scheduled challenger exit-fallback
+15 00 1 * * /home/htpc/backtrader/scripts/refresh-alpaca-calendar-cache.sh
 30 23 * * 1-5 /home/htpc/backtrader/scripts/refresh-scheduled-daily-data.sh
 ```
 
@@ -74,6 +75,12 @@ feed date and the target date logged. Every log line that reports an entry price
 also reports `feed_date`. The historical replay reaches the same information
 set with the normal one-bar signal lag. Consequently, runs at 09:10 and 16:00
 on the same execution date must produce the same candidates.
+
+The Alpaca calendar is maintained independently of Yahoo data by
+`scripts/refresh-alpaca-calendar-cache.sh`. The monthly job runs on the first
+day at 00:15 Europe/Rome and incrementally appends sessions newly published by
+Alpaca. An entry only reads this local cache; it never refreshes the calendar
+or downloads symbols.
 
 The scheduled profiles also set
 `live_reenter_positions_pending_fallback=True`. A residual Alpaca position from
