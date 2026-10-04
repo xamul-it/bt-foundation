@@ -14,11 +14,14 @@ Uso:
 """
 
 import argparse
+import json
 from datetime import datetime, timedelta, timezone
+import hashlib
 import logging
 import os
 import sys
 import time
+from uuid import uuid4
 from zoneinfo import ZoneInfo
 
 logging.basicConfig(
@@ -49,6 +52,32 @@ PENDING_ORDER_STATUSES = {
     "pending_cancel",
     "accepted_for_bidding",
 }
+
+
+def load_opg_failed_position_policy(path: str | None) -> set[str] | None:
+    """Read the frozen same-day policy emitted by ``OvernightAH``.
+
+    ``None`` preserves the historical fallback behaviour.  An empty set is a
+    valid enabled policy: no failed-OPG position was selected again at CLS.
+    The fallback process must not recompute a ranking on its own.
+    """
+    if not path:
+        return None
+    try:
+        with open(path, encoding="utf-8") as handle:
+            payload = json.load(handle)
+    except FileNotFoundError:
+        logger.warning("OPG_FAILED_POLICY_MISSING path=%s; legacy fallback behaviour", path)
+        return None
+    except (OSError, ValueError, TypeError) as exc:
+        raise RuntimeError(f"OPG_FAILED_POLICY_INVALID path={path}: {exc}") from exc
+    policy = payload.get("opg_failed_position_policy") if isinstance(payload, dict) else None
+    if not isinstance(policy, dict) or not policy.get("enabled"):
+        return None
+    retained = policy.get("retain_symbols", [])
+    if not isinstance(retained, list) or not all(isinstance(symbol, str) for symbol in retained):
+        raise RuntimeError(f"OPG_FAILED_POLICY_INVALID retained symbols path={path}")
+    return {symbol.strip().upper() for symbol in retained if symbol.strip()}
 
 
 def _seconds_until_opg_window(now: datetime | None = None) -> float:
@@ -101,6 +130,45 @@ def _entry_tif_matches(order, entry_tif: str) -> bool:
     if not allowed or "any" in allowed:
         return True
     return tif in allowed
+
+
+def _short_hash(value: str, length: int = 6) -> str:
+    """Same algorithm as MultiTickerStrategy._cid_short_hash in
+    strategies/multiTickerStrategy.py: a short deterministic hash tag, not a
+    plain prefix truncation -- two profile/run names sharing a long common
+    prefix (all four overnight_ah* RUN_IDs start with "overnight_ah_") must
+    not collapse onto the same tag. Using the identical algorithm here means
+    an exit (SELL) order's run_tag matches the entry (BUY) order's run_tag
+    for the same profile, which the account<->strategy guardrail can use to
+    correlate them -- not required, but a natural benefit of reusing the
+    same scheme instead of inventing a second one.
+    """
+    return hashlib.sha1(str(value or "").lower().encode("utf-8")).hexdigest()[:length]
+
+
+def _exit_run_tag() -> str:
+    """Best-effort profile identifier for tagging exit orders: RUN_ID is
+    what scheduled-job.sh exports (via `set -a; source PROFILE_FILE`) and is
+    exactly what the strategy hashes into its own run_tag on the entry side
+    (see multiTickerStrategy.py). Falls back to PROFILE/ROLE (also exported
+    by scheduled-job.sh) for robustness if RUN_ID is ever absent from a
+    profile's env -- never hardcoded to a specific profile name."""
+    identifier = os.environ.get("RUN_ID") or os.environ.get("PROFILE") or os.environ.get("ROLE") or "unknown"
+    return _short_hash(identifier)
+
+
+def build_exit_client_order_id(symbol: str) -> str:
+    """client_order_id for a MOO/fallback exit SELL order. Exit orders
+    submitted via client.submit_order() previously carried NO
+    client_order_id at all (Alpaca auto-generates one), meaning they could
+    never be attributed to a profile/strategy by content -- only by account.
+    Format mirrors _build_client_order_id's budget (well under Alpaca's
+    48-char client_order_id limit): 'bt_exit_' + run_tag(6) + '_' + symbol
+    (<=6) + '_' + nonce(8).
+    """
+    symbol_tag = "".join(ch for ch in str(symbol or "SYM").upper() if ch.isalnum())[:6] or "SYM"
+    nonce = uuid4().hex[:8]
+    return f"bt_exit_{_exit_run_tag()}_{symbol_tag}_{nonce}"[:48]
 
 
 def _is_overnight_entry_buy(order, strategy_prefix: str, entry_tif: str) -> bool:
@@ -166,6 +234,20 @@ def _pending_sell_symbols(client) -> set[str]:
     return {str(order.symbol) for order in _pending_sell_orders(client)}
 
 
+def _pending_buy_symbols(client) -> set[str]:
+    from alpaca.trading.enums import OrderSide, QueryOrderStatus
+    from alpaca.trading.requests import GetOrdersRequest
+
+    req = GetOrdersRequest(status=QueryOrderStatus.ALL, limit=500, nested=False)
+    symbols = set()
+    for order in client.get_orders(filter=req):
+        if order.side == OrderSide.BUY and _status_value(order.status) in PENDING_ORDER_STATUSES:
+            symbol = str(getattr(order, "symbol", "") or "").upper()
+            if symbol:
+                symbols.add(symbol)
+    return symbols
+
+
 def _cancel_pending_sell_orders(client) -> tuple[int, int]:
     pending_orders = _pending_sell_orders(client)
     cancelled = failed = 0
@@ -193,16 +275,33 @@ def submit_moo(
     close_all_longs: bool = False,
     cancel_pending_sells: bool = False,
     lookback_hours: int = 36,
-    strategy_prefix: str = "bt_overnigh_",
+    # "bt_overnigh_" matched the OLD 8-char-prefix-truncation scheme in
+    # multiTickerStrategy._build_client_order_id (readable but collision-prone
+    # -- see the fix there). That scheme now hashes the strategy tag, so
+    # there is no longer a stable readable "overnigh" substring to match
+    # across all overnight_ah* variants; "bt_" (the one literal fixed prefix
+    # every _build_client_order_id output still shares) is what's actually
+    # matchable now. Note: in the real scheduled crons this filter is moot
+    # anyway -- moo-exit.sh/moo-exit-fallback.sh always pass --all-longs,
+    # which closes every long position on the account and never calls
+    # _is_overnight_entry_buy()/this prefix filter at all.
+    strategy_prefix: str = "bt_",
     entry_tif: str = "cls",
     wait_window: bool = False,
     max_wait_minutes: int | None = None,
+    opg_failed_policy_file: str | None = None,
 ):
     if wait_window and not fallback_market:
         wait_for_opg_window(max_wait_minutes=max_wait_minutes)
 
     client, paper = get_client()
     mode = 'PAPER' if paper else 'LIVE'
+    retained_symbols = load_opg_failed_position_policy(opg_failed_policy_file) if fallback_market else None
+    if retained_symbols is not None:
+        logger.info(
+            "OPG_FAILED_POLICY enabled retain_symbols=%s",
+            ", ".join(sorted(retained_symbols)) or "none",
+        )
 
     if fallback_market and cancel_pending_sells and not dry_run:
         cancelled, cancel_failed = _cancel_pending_sell_orders(client)
@@ -265,11 +364,34 @@ def submit_moo(
     if pending_sells:
         logger.info("Sell order pendenti presenti: %s", ", ".join(sorted(pending_sells)))
 
+    pending_buys = _pending_buy_symbols(client) if retained_symbols is not None else set()
+    if pending_buys:
+        logger.info("Buy order pendenti presenti: %s", ", ".join(sorted(pending_buys)))
+
     submitted, failed, skipped = 0, 0, 0
     for pos, qty in targets:
         symbol = pos.symbol
         if qty <= 0:
             continue
+        if retained_symbols is not None and symbol.upper() in retained_symbols:
+            logger.info(
+                "OPG_FAILED_HOLD %s: retained by frozen CLS target; no fallback SELL",
+                symbol,
+            )
+            skipped += 1
+            continue
+
+        # This check must precede the generic pending-SELL skip: an opposite
+        # BUY is an explicit policy error even if another SELL also exists.
+        if retained_symbols is not None and symbol.upper() in pending_buys:
+            logger.error(
+                "OPG_FAILED_POLICY_ERROR %s: residual is not CLS-eligible but has pending BUY; "
+                "no action taken to avoid opposite-side wash trade",
+                symbol,
+            )
+            skipped += 1
+            continue
+
         if symbol in pending_sells:
             logger.info("SKIP %s: sell order già pendente", symbol)
             skipped += 1
@@ -289,6 +411,7 @@ def submit_moo(
                 qty=qty,
                 side=OrderSide.SELL,
                 time_in_force=TimeInForce.DAY if fallback_market else TimeInForce.OPG,
+                client_order_id=build_exit_client_order_id(symbol),
             )
             order = client.submit_order(req)
             logger.info(
@@ -332,8 +455,8 @@ def main():
         help='Ore indietro in cui cercare ordini MOC OvernightAH filled',
     )
     parser.add_argument(
-        '--strategy-prefix', default='bt_overnigh_',
-        help='Prefisso client_order_id della strategia OvernightAH',
+        '--strategy-prefix', default='bt_',
+        help='Prefisso client_order_id per identificare gli ordini di entry di questo motore (vedi commento su strategy_prefix in submit_moo())',
     )
     parser.add_argument(
         '--entry-tif', default='cls',
@@ -347,6 +470,10 @@ def main():
         '--max-wait-minutes', type=int, default=None,
         help='Limite massimo di attesa per --wait-window; se superato esce con errore',
     )
+    parser.add_argument(
+        '--opg-failed-policy-file', default=None,
+        help='Receipt today.json emesso dalla strategia per il fallback OPG opt-in',
+    )
     args = parser.parse_args()
     submit_moo(
         dry_run=args.dry_run,
@@ -358,6 +485,7 @@ def main():
         entry_tif=args.entry_tif,
         wait_window=args.wait_window,
         max_wait_minutes=args.max_wait_minutes,
+        opg_failed_policy_file=args.opg_failed_policy_file,
     )
 
 
