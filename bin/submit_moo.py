@@ -14,6 +14,7 @@ Uso:
 """
 
 import argparse
+import json
 from datetime import datetime, timedelta, timezone
 import hashlib
 import logging
@@ -51,6 +52,32 @@ PENDING_ORDER_STATUSES = {
     "pending_cancel",
     "accepted_for_bidding",
 }
+
+
+def load_opg_failed_position_policy(path: str | None) -> set[str] | None:
+    """Read the frozen same-day policy emitted by ``OvernightAH``.
+
+    ``None`` preserves the historical fallback behaviour.  An empty set is a
+    valid enabled policy: no failed-OPG position was selected again at CLS.
+    The fallback process must not recompute a ranking on its own.
+    """
+    if not path:
+        return None
+    try:
+        with open(path, encoding="utf-8") as handle:
+            payload = json.load(handle)
+    except FileNotFoundError:
+        logger.warning("OPG_FAILED_POLICY_MISSING path=%s; legacy fallback behaviour", path)
+        return None
+    except (OSError, ValueError, TypeError) as exc:
+        raise RuntimeError(f"OPG_FAILED_POLICY_INVALID path={path}: {exc}") from exc
+    policy = payload.get("opg_failed_position_policy") if isinstance(payload, dict) else None
+    if not isinstance(policy, dict) or not policy.get("enabled"):
+        return None
+    retained = policy.get("retain_symbols", [])
+    if not isinstance(retained, list) or not all(isinstance(symbol, str) for symbol in retained):
+        raise RuntimeError(f"OPG_FAILED_POLICY_INVALID retained symbols path={path}")
+    return {symbol.strip().upper() for symbol in retained if symbol.strip()}
 
 
 def _seconds_until_opg_window(now: datetime | None = None) -> float:
@@ -207,6 +234,20 @@ def _pending_sell_symbols(client) -> set[str]:
     return {str(order.symbol) for order in _pending_sell_orders(client)}
 
 
+def _pending_buy_symbols(client) -> set[str]:
+    from alpaca.trading.enums import OrderSide, QueryOrderStatus
+    from alpaca.trading.requests import GetOrdersRequest
+
+    req = GetOrdersRequest(status=QueryOrderStatus.ALL, limit=500, nested=False)
+    symbols = set()
+    for order in client.get_orders(filter=req):
+        if order.side == OrderSide.BUY and _status_value(order.status) in PENDING_ORDER_STATUSES:
+            symbol = str(getattr(order, "symbol", "") or "").upper()
+            if symbol:
+                symbols.add(symbol)
+    return symbols
+
+
 def _cancel_pending_sell_orders(client) -> tuple[int, int]:
     pending_orders = _pending_sell_orders(client)
     cancelled = failed = 0
@@ -248,12 +289,19 @@ def submit_moo(
     entry_tif: str = "cls",
     wait_window: bool = False,
     max_wait_minutes: int | None = None,
+    opg_failed_policy_file: str | None = None,
 ):
     if wait_window and not fallback_market:
         wait_for_opg_window(max_wait_minutes=max_wait_minutes)
 
     client, paper = get_client()
     mode = 'PAPER' if paper else 'LIVE'
+    retained_symbols = load_opg_failed_position_policy(opg_failed_policy_file) if fallback_market else None
+    if retained_symbols is not None:
+        logger.info(
+            "OPG_FAILED_POLICY enabled retain_symbols=%s",
+            ", ".join(sorted(retained_symbols)) or "none",
+        )
 
     if fallback_market and cancel_pending_sells and not dry_run:
         cancelled, cancel_failed = _cancel_pending_sell_orders(client)
@@ -316,11 +364,34 @@ def submit_moo(
     if pending_sells:
         logger.info("Sell order pendenti presenti: %s", ", ".join(sorted(pending_sells)))
 
+    pending_buys = _pending_buy_symbols(client) if retained_symbols is not None else set()
+    if pending_buys:
+        logger.info("Buy order pendenti presenti: %s", ", ".join(sorted(pending_buys)))
+
     submitted, failed, skipped = 0, 0, 0
     for pos, qty in targets:
         symbol = pos.symbol
         if qty <= 0:
             continue
+        if retained_symbols is not None and symbol.upper() in retained_symbols:
+            logger.info(
+                "OPG_FAILED_HOLD %s: retained by frozen CLS target; no fallback SELL",
+                symbol,
+            )
+            skipped += 1
+            continue
+
+        # This check must precede the generic pending-SELL skip: an opposite
+        # BUY is an explicit policy error even if another SELL also exists.
+        if retained_symbols is not None and symbol.upper() in pending_buys:
+            logger.error(
+                "OPG_FAILED_POLICY_ERROR %s: residual is not CLS-eligible but has pending BUY; "
+                "no action taken to avoid opposite-side wash trade",
+                symbol,
+            )
+            skipped += 1
+            continue
+
         if symbol in pending_sells:
             logger.info("SKIP %s: sell order già pendente", symbol)
             skipped += 1
@@ -399,6 +470,10 @@ def main():
         '--max-wait-minutes', type=int, default=None,
         help='Limite massimo di attesa per --wait-window; se superato esce con errore',
     )
+    parser.add_argument(
+        '--opg-failed-policy-file', default=None,
+        help='Receipt today.json emesso dalla strategia per il fallback OPG opt-in',
+    )
     args = parser.parse_args()
     submit_moo(
         dry_run=args.dry_run,
@@ -410,6 +485,7 @@ def main():
         entry_tif=args.entry_tif,
         wait_window=args.wait_window,
         max_wait_minutes=args.max_wait_minutes,
+        opg_failed_policy_file=args.opg_failed_policy_file,
     )
 
 
