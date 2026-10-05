@@ -559,6 +559,19 @@ def run_replay(worktree_bt_core: Path, profile_env: dict[str, str], version: dic
     shared_config = replay_config or (code_root / "config-common")
 
     replay_stratargs, auction_forced = backtest_stratargs(version["stratargs"])
+    # ``opg_failed_hold_if_eligible`` was recorded by a later operational
+    # handler even for runs whose pinned strategy commit predates that
+    # parameter.  On those commits it has no possible effect; passing it to
+    # Backtrader merely aborts the historical replay before it can produce
+    # the entry/exit settlement.
+    strategy_source = worktree_bt_core / "strategies" / f"{version['strategy'].split('.')[0]}.py"
+    if (
+        "opg_failed_hold_if_eligible" in replay_stratargs
+        and strategy_source.is_file()
+        and "opg_failed_hold_if_eligible" not in strategy_source.read_text(encoding="utf-8")
+    ):
+        replay_stratargs = {k: v for k, v in replay_stratargs.items() if k != "opg_failed_hold_if_eligible"}
+        print("Replay compatibility: ignored opg_failed_hold_if_eligible; unavailable in pinned strategy commit", file=sys.stderr)
 
     dev_python = BT_CORE / ".venv" / "bin" / "python"
     cmd = [
@@ -991,6 +1004,11 @@ def reconcile_one_day(repo: "wr.WatchtowerRepository", profile: str, profile_env
                 trades_path.parent / "runtime.log", trading_date,
             )
             pending_bt_entries = bool(bt_entries)
+        else:
+            # The replay has both legs available now. Persist that completed
+            # simulated position on its original scheduled-entry day so the
+            # cockpit can show entry, exit and P&L together.
+            repo.settle_scheduled_backtest_entries_from_replay(profile, trading_date, bt_entries)
         live_orders = fetch_live_entry_orders(repo, profile, trading_date)
         live_exit_orders = fetch_live_exit_orders(repo, profile, trading_date)
         diffs, summary = classify(bt_entries, live_orders, live_exit_orders)

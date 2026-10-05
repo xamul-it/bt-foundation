@@ -117,11 +117,21 @@ def poll_profile(repo: "wr.WatchtowerRepository", profile: str, profile_env: dic
 
     positions = client.get_all_positions()
     positions_upserted = _upsert_positions(repo, positions, portfolio_key_id, profile)
+    # The poll is the authoritative Alpaca state read.  Enrich the existing
+    # entry receipt from this cache only; do not submit/cancel anything here.
+    entry_decisions_enriched = repo.enrich_scheduled_alpaca_decisions_from_cache(
+        profile, datetime.now(timezone.utc).date(),
+    )
+    alpaca_settlements_refreshed = repo.refresh_scheduled_alpaca_settlements_from_cache(
+        profile, datetime.now(timezone.utc).date(),
+    )
 
     return {
         "profile": profile, "portfolio_key_id": portfolio_key_id, "paper": paper,
         "orders_seen": len(all_orders), "orders_upserted": orders_upserted,
         "positions_upserted": positions_upserted,
+        "entry_decisions_enriched": entry_decisions_enriched,
+        "alpaca_settlements_refreshed": alpaca_settlements_refreshed,
     }
 
 
@@ -133,7 +143,7 @@ _ORDER_UPSERT_SQL = """
         canceled_at, failed_at, expired_at, source_account, raw_payload, last_synced_at,
         portfolio_key_id, chain_run_id
     ) VALUES (
-        %(id)s, %(window_open)s, %(client_order_id)s, %(symbol)s, %(side)s, NULL,
+        %(id)s, %(window_open)s, %(client_order_id)s, %(symbol)s, %(side)s, %(signal_intent)s,
         %(order_type)s, %(status)s, %(position_intent)s, %(qty)s, %(filled_qty)s, %(filled_avg_price)s,
         %(limit_price)s, %(stop_price)s, %(submitted_at)s, %(created_at)s, %(updated_at)s, %(filled_at)s,
         %(canceled_at)s, %(failed_at)s, %(expired_at)s, %(source_account)s, %(raw_payload)s::jsonb, NOW(),
@@ -144,6 +154,7 @@ _ORDER_UPSERT_SQL = """
         client_order_id = EXCLUDED.client_order_id,
         symbol = EXCLUDED.symbol,
         side = EXCLUDED.side,
+        signal_intent = EXCLUDED.signal_intent,
         order_type = EXCLUDED.order_type,
         status = EXCLUDED.status,
         position_intent = EXCLUDED.position_intent,
@@ -179,6 +190,21 @@ def _local_trading_date(value: datetime | None) -> date | None:
     return value.astimezone(timezone.utc).date()
 
 
+def _signal_intent_from_position_intent(position_intent: Any) -> str | None:
+    """Map Alpaca's execution intent to Watchtower's OPEN/CLOSE taxonomy.
+
+    ``side`` alone is not sufficient: a sell can open a short or close a
+    long.  Alpaca supplies the unambiguous ``*_to_open`` / ``*_to_close``
+    field, including for OPG orders created by the scheduled strategy.
+    """
+    value = str(position_intent or "").strip().lower()
+    if value.endswith("_to_open"):
+        return "OPEN"
+    if value.endswith("_to_close"):
+        return "CLOSE"
+    return None
+
+
 def _upsert_orders(repo: "wr.WatchtowerRepository", orders: list[Any], portfolio_key_id: str, profile: str) -> int:
     import watchtower_runtime as _wr
 
@@ -204,6 +230,7 @@ def _upsert_orders(repo: "wr.WatchtowerRepository", orders: list[Any], portfolio
                     "client_order_id": payload.get("client_order_id"),
                     "symbol": payload.get("symbol"),
                     "side": str(payload.get("side") or "").lower() or None,
+                    "signal_intent": _signal_intent_from_position_intent(payload.get("position_intent")),
                     "order_type": payload.get("order_type") or payload.get("type"),
                     "status": str(payload.get("status") or "").lower() or None,
                     "position_intent": payload.get("position_intent"),
@@ -244,7 +271,7 @@ def _upsert_positions(repo: "wr.WatchtowerRepository", positions: list[Any], por
                         window_open, symbol, side, qty, market_value, avg_entry_price,
                         current_price, unrealized_pl, source_account, raw_payload, portfolio_key_id
                     ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s::jsonb, %s)
-                    ON CONFLICT (window_open, symbol) DO UPDATE SET
+                    ON CONFLICT (window_open, source_account, symbol) DO UPDATE SET
                         side = EXCLUDED.side, qty = EXCLUDED.qty, market_value = EXCLUDED.market_value,
                         avg_entry_price = EXCLUDED.avg_entry_price, current_price = EXCLUDED.current_price,
                         unrealized_pl = EXCLUDED.unrealized_pl, source_account = EXCLUDED.source_account,
@@ -277,18 +304,20 @@ def main(argv: list[str] | None = None) -> int:
 
     repo = wr.WatchtowerRepository(dsn=args.db_dsn)
     results = []
+    failed = False
     for profile, profile_env in profiles.items():
         if args.profile and profile != args.profile:
             continue
         try:
             results.append(poll_profile(repo, profile, profile_env, args.days))
         except Exception as exc:  # noqa: BLE001 -- one profile's failure must not stop the others
+            failed = True
             print(f"[{profile}] poll failed: {exc}", file=sys.stderr)
             results.append({"profile": profile, "error": str(exc)})
 
     import json
     print(json.dumps(results, indent=2, default=str))
-    return 0
+    return 1 if failed else 0
 
 
 if __name__ == "__main__":
