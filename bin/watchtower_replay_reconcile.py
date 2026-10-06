@@ -598,11 +598,10 @@ def run_replay(worktree_bt_core: Path, profile_env: dict[str, str], version: dic
     subprocess.run(cmd, cwd=str(worktree_bt_core), env=env, check=True)
 
     run_outpath = outpath_for(worktree_bt_core, version["strategy"], run_id)
+    # trades.json contains completed round trips only.  A successful replay
+    # with no closed trade is normal and must not be rendered as an error.
     trades_path = run_outpath / "trades.json"
-    if not trades_path.exists():
-        existing = ", ".join(sorted(p.name for p in run_outpath.glob("*"))) if run_outpath.exists() else "outpath missing"
-        raise FileNotFoundError(f"replay produced no trades.json ({run_outpath}); found: {existing}")
-    return trades_path, auction_forced
+    return (trades_path if trades_path.exists() else None), auction_forced, run_outpath
 
 
 # ---------------------------------------------------------------------
@@ -993,15 +992,15 @@ def reconcile_one_day(repo: "wr.WatchtowerRepository", profile: str, profile_env
                 refreshed_data_keys.add(data_key)
         cash = resolve_historical_cash(profile_env, trading_date)
         run_id = f"reconcile_{profile}_{trading_date:%Y%m%d}_{uuid.uuid4().hex[:6]}"
-        trades_path, auction_forced = run_replay(
+        trades_path, auction_forced, replay_outpath = run_replay(
             worktree_bt_core, profile_env, version, trading_date, run_id, cash,
             replay_config=replay_config,
         )
-        bt_entries = load_backtest_entries(trades_path, trading_date)
+        bt_entries = load_backtest_entries(trades_path, trading_date) if trades_path else {}
         pending_bt_entries = False
         if not bt_entries:
             bt_entries = pending_backtest_entries_from_log(
-                trades_path.parent / "runtime.log", trading_date,
+                replay_outpath / "runtime.log", trading_date,
             )
             pending_bt_entries = bool(bt_entries)
         else:
@@ -1023,7 +1022,7 @@ def reconcile_one_day(repo: "wr.WatchtowerRepository", profile: str, profile_env
         if not bt_entries:
             summary["bt_no_trade"] = True
             summary["bt_no_trade_reasons"] = no_trade_reasons_from_log(
-                trades_path.parent / "runtime.log", trading_date,
+                replay_outpath / "runtime.log", trading_date,
             ) or [{
                 "code": "reason_unavailable",
                 "label": "Causale Backtrader non disponibile",
