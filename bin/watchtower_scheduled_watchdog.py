@@ -41,11 +41,8 @@ def main(argv=None) -> int:
     repo = wr.WatchtowerRepository()
     cutoff = datetime.now(timezone.utc) - timedelta(minutes=args.running_timeout_minutes)
     today = date.today()
-    # A startup catch-up can happen before the day's scheduled Backtest.  Only
-    # an explicit manual date may inspect today; routine watchdog runs inspect
-    # completed prior sessions exclusively.
     dates = [date.fromisoformat(args.trading_date)] if args.trading_date else [
-        today - timedelta(days=offset) for offset in range(1, args.lookback_days + 1)
+        today - timedelta(days=offset) for offset in range(args.lookback_days + 1)
     ]
     changes = []
     checked = []
@@ -53,7 +50,10 @@ def main(argv=None) -> int:
         if not is_trading_session(trading_date, Path(args.calendar)):
             continue
         checked.append(trading_date.isoformat())
-        changes.extend(repo.watchdog_scheduled_entry_decisions(profiles, trading_date, cutoff))
+        changes.extend(repo.watchdog_scheduled_entry_decisions(
+            profiles, trading_date, cutoff,
+            materialize_missing=(trading_date < today or args.trading_date is not None),
+        ))
     print(json.dumps({"trading_dates": checked, "changes": changes}, default=str))
     # A detected missed run is a data fact, not a failure of this watchdog.
     return 0
