@@ -29,8 +29,8 @@ def main(argv=None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("profiles", nargs="*", help="Optional profile filter (default: discover all local profiles)")
     parser.add_argument("--trading-date", default=None, help="Check exactly one date (legacy/manual mode)")
-    parser.add_argument("--lookback-days", type=int, default=0,
-                        help="Also check prior calendar days; used for Scheduler startup catch-up")
+    parser.add_argument("--lookback-days", type=int, default=1,
+                        help="Check this many prior calendar days; never infer a miss for today")
     parser.add_argument("--running-timeout-minutes", type=int, default=120)
     parser.add_argument("--calendar", default=str(Path(__file__).resolve().parent.parent / "config-common/cache/alpaca_calendar_cache.json"))
     args = parser.parse_args(argv)
@@ -41,8 +41,11 @@ def main(argv=None) -> int:
     repo = wr.WatchtowerRepository()
     cutoff = datetime.now(timezone.utc) - timedelta(minutes=args.running_timeout_minutes)
     today = date.today()
+    # A startup catch-up can happen before the day's scheduled Backtest.  Only
+    # an explicit manual date may inspect today; routine watchdog runs inspect
+    # completed prior sessions exclusively.
     dates = [date.fromisoformat(args.trading_date)] if args.trading_date else [
-        today - timedelta(days=offset) for offset in range(args.lookback_days + 1)
+        today - timedelta(days=offset) for offset in range(1, args.lookback_days + 1)
     ]
     changes = []
     checked = []
