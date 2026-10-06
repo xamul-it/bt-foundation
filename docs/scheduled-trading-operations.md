@@ -5,6 +5,22 @@ In particolare, la sezione [Canonical scheduled benchmarks](#canonical-scheduled
 definisce i risultati ufficiali di `development` e `challenger` da rigenerare
 quando cambiano i parametri dei profili.
 
+## Ownership delle schedulazioni
+
+Questa separazione è vincolante anche per nuovi agenti e modifiche future:
+
+- **cron** è l'unica sede delle esecuzioni che possono inviare, cancellare o
+  modificare ordini della strategia (`entry`, `exit`, `exit-fallback`);
+- **Scheduler / Watchtower** possiede soltanto attività osservabili e
+  idempotenti: polling dei fatti Alpaca, watchdog dei run mancati, replay di
+  riconciliazione e drift delle baseline;
+- nessun job Watchtower può inviare ordini; nessuna strategia può essere
+  programmata dalla UI/API Scheduler.
+
+I worker Watchtower recuperano i trigger mancati al riavvio: poll rilegge lo
+storico recente, watchdog analizza le sessioni recenti e replay processa la
+coda delle giornate chiuse. L'ordine è sempre `poll → watchdog → replay`.
+
 ## Roles
 
 | Profile | Checkout | Mode | Purpose |
