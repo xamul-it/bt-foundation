@@ -33,6 +33,7 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import re
 import shutil
 import subprocess
 import sys
@@ -201,7 +202,13 @@ def no_trade_reasons_from_log(path: Path, trading_date: date) -> list[dict[str, 
     except OSError:
         return []
     decisions = [line for line in lines if _is_no_trade_line(line)]
-    dated = [line for line in decisions if f"date={trading_date.isoformat()}" in line]
+    pattern = re.compile(r"(?<![\w_])date=" + re.escape(trading_date.isoformat()) + r"(?![\d-])")
+    dated = [line for line in decisions if pattern.search(line)]
+    # New cooldown logs distinguish the operational decision from state
+    # warmup updates. Prefer that evidence over reference-bar updates.
+    operational = [line for line in dated if "ENTRY_COOLDOWN" in line and "signal_date=" in line]
+    if operational:
+        dated = [line for line in dated if "ENTRY_COOLDOWN" not in line] + operational
     # A replay runtime contains the whole warm-up interval.  A decision from
     # July must never become the explanation for an empty September row.
     reasons = [_no_trade_reason(line) for line in dated]
