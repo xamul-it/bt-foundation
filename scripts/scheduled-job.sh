@@ -103,9 +103,10 @@ HANDLER_PATH=$CODE_ROOT/scripts/scheduled/handlers/$HANDLER.sh
 export PROFILE ROLE PHASE CODE_ROOT ACCOUNT_ENV STRATEGY_CONFIG TRADING_MODE
 export SCHEDULED_DRY_RUN=0
 if [[ "$ACTION" == dry-run ]]; then
-    # Exercise scheduled handlers with the same non-trading mode as backtests.
-    TRADING_MODE=backtest
-    export TRADING_MODE
+    # Render only: handlers must not acquire locks, write telemetry, refresh
+    # data, or invoke either the paper strategy or its companion backtest.
+    SCHEDULED_DRY_RUN=1
+    export SCHEDULED_DRY_RUN
 fi
 
 commit=$(git -C "$CODE_ROOT" rev-parse --short=12 HEAD)
@@ -117,6 +118,11 @@ if [[ "$ACTION" == check ]]; then
     # Use the handler's dry-run rendering so --check exposes the exact command
     # configuration without acquiring a lock, writing logs, or placing orders.
     TRADING_MODE=backtest SCHEDULED_DRY_RUN=1 "$HANDLER_PATH" "$@"
+    exit 0
+fi
+
+if [[ "$ACTION" == dry-run ]]; then
+    "$HANDLER_PATH" "$@"
     exit 0
 fi
 

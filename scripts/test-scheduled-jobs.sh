@@ -23,6 +23,12 @@ for phase in entry exit exit-fallback; do
     [[ "$output" == *"run:"* ]]
 done
 
+benchmark_output=$("$ROOT/scripts/run-scheduled-benchmark.sh" --dry-run development)
+[[ "$benchmark_output" == *"run_id=scheduled_benchmark"* ]]
+[[ "$benchmark_output" == *"results_dir="*"/scheduled_benchmark"* ]]
+[[ "$benchmark_output" == *"--fromdate 2000-01-01"* ]]
+[[ "$benchmark_output" == *"--mode backtest"* ]]
+
 # The production updater must not initialize every foundation submodule. Some
 # are intentionally absent from the scheduled-trading checkout.
 update_script=$ROOT/scripts/update-prod-checkout.sh
