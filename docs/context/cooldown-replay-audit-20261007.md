@@ -56,6 +56,37 @@ esecuzioni Alpaca per risolvere queste condizioni non attive.
 
 Il replay storico usa il commit core registrato nell'artefatto originale: per
 definizione continua a riprodurre il codice originale, non questa correzione.
-La verifica corretta deve rimanere distinta dalla ricostruzione storica. Per
-una release versionata resta da registrare il fix in un commit core e aggiornare
-il riferimento di deployment; i file corretti sono già presenti nel runtime prod.
+La verifica corretta deve rimanere distinta dalla ricostruzione storica.
+
+## Rilascio e bonifica dell'8 ottobre
+
+Fix core committato in `e8f1019`; con le regressioni della riconciliazione,
+il riferimento prod è `0538e6d`. Promossi i commit pertinenti sul branch prod
+del repository principale, senza incorporare le modifiche research estranee.
+I due file core precedentemente non committati sono inclusi nella release;
+le copie precedenti restano in stash. La cache calendario generata è preservata
+fuori dai commit di codice. Nessun push remoto effettuato.
+
+Passano 30 test su cooldown, reentry ed evidenze no-trade; passano anche i
+test shell dello scheduler. Corretta una collisione nella lettura dei log:
+`signal_date=...` non deve essere interpretata come `date=...` operativa.
+
+Backup delle righe DB prima della bonifica:
+`backup/reconciliation-repair/live-baseline-before-20261008.json`.
+Nuove decisioni prod verificate con commissione Alpaca:
+`live_corrected_baseline_validated_20261006` e
+`live_corrected_baseline_validated_20261007`, entrambe no-orders per cooldown.
+Replay continui senza override usano gli snapshot delle decisioni originali
+e il core corretto, con `baseline_kind=corrected_counterfactual` esplicito.
+
+Per il solo profilo live, sostituite le decisioni Backtest del 6 e 7 con quelle
+corrette e rimosse sei righe Backtest pending obsolete (ID 444-446, 468-470).
+Sono recuperabili dal backup. Non sono state modificate righe Alpaca.
+I confronti delle decisioni sono `diverged`: zero ordini Backtest contro tre
+acquisti Alpaca per giornata, AVGO/MU/NVDA. Verificato HTTP 200 sull'endpoint
+effettivamente usato dalla GUI, con gli stessi esiti e causali.
+
+Il 6 è riconciliato anche sulle chiusure Alpaca del 7. La chiusura dei trade
+Alpaca aperti il 7 è ancora attesa all'apertura dell'8: la coda rimane pending,
+con il core del baseline correttivo registrato affinché il catchup successivo
+non torni al vecchio codice. Il Backtest corretto non ha posizioni da chiudere.
