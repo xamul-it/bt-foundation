@@ -980,7 +980,8 @@ def reconcile_one_day(repo: "wr.WatchtowerRepository", profile: str, profile_env
         if receipt["trading_date"] != trading_date.isoformat() or receipt["source"] != "backtest" or not receipt.get("artifact_path"):
             continue
         artifact_dir = Path(receipt["artifact_path"]).parent
-        for artifact in sorted(artifact_dir.glob(f"results-{trading_date:%Y%m%d}-*.json"), reverse=True):
+        artifact_pattern = "results-*.json" if baseline_core_commit else f"results-{trading_date:%Y%m%d}-*.json"
+        for artifact in sorted(artifact_dir.glob(artifact_pattern), reverse=True):
             records = json.loads(artifact.read_text())
             record = next((x for x in records.values() if x.get("input_mode") == "backtest"), None)
             if not record or not record.get("provenance", {}).get("core_commit"):
