@@ -24,6 +24,17 @@ scripts/scheduled-job.sh --check development entry
 scripts/scheduled-job.sh --dry-run development entry
 ```
 
+Run the full-history canonical benchmark with the exact versioned parameters
+of a scheduled profile (it does not require broker credentials):
+
+```bash
+scripts/run-scheduled-benchmark.sh development
+```
+
+Use `--dry-run` first to print the resolved command. The supported canonical
+profiles are `development` and `challenger`; the output ID is always
+`scheduled_benchmark`.
+
 The public interface is always `PROFILE PHASE`; strategy names do not appear in
 cron. Supported phases are `entry`, `exit`, and `exit-fallback`.
 
@@ -32,6 +43,8 @@ cron. Supported phases are `entry`, `exit`, and `exit-fallback`.
 Scheduled entries consume already consolidated previous-day data. They use
 `yahoo_adj` for signal generation and set `REFRESH_MARKET_DATA=0`; a separate
 post-close job runs `scripts/refresh-scheduled-daily-data.sh` once per weekday.
+The Alpaca trading calendar is refreshed separately once per month by
+`scripts/refresh-alpaca-calendar-cache.sh`; it never downloads Yahoo symbols.
 The entry handler applies `DATA_CUTOFF` (default: yesterday) to both any optional
 loader and `btmain`, so intraday execution time cannot change the input bars.
 
