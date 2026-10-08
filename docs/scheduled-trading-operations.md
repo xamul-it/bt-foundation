@@ -71,6 +71,12 @@ The live entry remains deliberately disabled; its exit and fallback can remain
 installed as defensive cleanup. Redirecting cron output is optional because the
 runner writes daily per-profile logs itself.
 
+## TODO: scheduler persistence
+
+The dashboard currently persists schedule overrides in
+`bt-api/config/scheduler-state.json`. Migrate this operational configuration
+to a database-backed store with audit history and atomic updates.
+
 ## Market-data contract
 
 All OvernightAH scheduled profiles evaluate signals with `yahoo_adj`. Adjusted
