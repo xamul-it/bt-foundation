@@ -620,17 +620,17 @@ def load_backtest_entries(trades_path: Path, trading_date: date) -> dict[str, di
     dated_items: list[tuple[date, dict[str, Any]]] = []
     for item in raw:
         symbol = str(item.get("asset") or item.get("symbol") or "").upper()
-        # In this daily replay, open_datetime identifies the consolidated
-        # signal bar.  The scheduled live job consumes that bar on the next
-        # trading session (Friday's bar -> Monday's CLS order).  Therefore a
-        # live trading window must compare with the latest replay signal date
-        # strictly before it, not with an equal calendar date.
-        entry_dt = (item.get("open_datetime") or item.get("entry_datetime")
-                    or item.get("entry_signal_dt"))
+        # Match the actual execution date, never the latest older trade.
+        entry_dt = item.get("open_datetime") or item.get("entry_datetime")
         if not symbol or not entry_dt:
             continue
         entry_date = date.fromisoformat(str(entry_dt)[:10])
-        if entry_date >= trading_date:
+        if entry_date != trading_date:
+            continue
+        close_dt = item.get("close_datetime") or item.get("exit_datetime")
+        if not close_dt:
+            continue
+        if date.fromisoformat(str(close_dt)[:10]) < entry_date:
             continue
         dated_items.append((entry_date, item))
     if not dated_items:
@@ -660,7 +660,9 @@ def load_backtest_entries(trades_path: Path, trading_date: date) -> dict[str, di
             "bt_pnl": float(pnl) if pnl is not None else None,
             "bt_value": float(value) if value is not None else None,
             "bt_pnl_pct": pnl_pct,
-            "bt_signal_date": signal_date.isoformat(),
+            "bt_signal_date": str(item.get("entry_signal_dt") or entry_date.isoformat())[:10],
+            "bt_entry_date": entry_date.isoformat(),
+            "bt_exit_date": str(item.get("close_datetime") or item.get("exit_datetime"))[:10],
         }
     return entries
 
@@ -967,11 +969,51 @@ def fetch_live_entry_orders(repo: "wr.WatchtowerRepository", profile: str, tradi
 
 def reconcile_one_day(repo: "wr.WatchtowerRepository", profile: str, profile_env: dict[str, str],
                        trading_date: date, keep_worktree: bool = False,
-                       refreshed_data_keys: set[tuple[str, str, str]] | None = None) -> dict[str, Any]:
+                       refreshed_data_keys: set[tuple[str, str, str]] | None = None,
+                       baseline_core_commit: str | None = None) -> dict[str, Any]:
     version = repo.resolve_params_as_of(profile, trading_date)  # raises if unknown -- never fall back
     code_root = Path(profile_env["CODE_ROOT"]).resolve()
+    # Daily run receipts preserve the actual CLI and git provenance. Older
+    # timelines can be stale when a production handler missed its recorder.
+    # Prefer evidence from that exact scheduled run, never today's config.
+    for receipt in repo.list_scheduled_entry_decisions(profile, limit=2000):
+        if receipt["trading_date"] != trading_date.isoformat() or receipt["source"] != "backtest" or not receipt.get("artifact_path"):
+            continue
+        artifact_dir = Path(receipt["artifact_path"]).parent
+        for artifact in sorted(artifact_dir.glob(f"results-{trading_date:%Y%m%d}-*.json"), reverse=True):
+            records = json.loads(artifact.read_text())
+            record = next((x for x in records.values() if x.get("input_mode") == "backtest"), None)
+            if not record or not record.get("provenance", {}).get("core_commit"):
+                continue
+            from btmain import parse_strategy_args
+            args = parse_strategy_args(record["input_stratargs"])
+            if str(args.pop("decision_date_override", "")) != trading_date.isoformat():
+                continue
+            version = dict(version)
+            version.update(strategy=record["input_strat"], stratargs=args,
+                           core_commit=record["provenance"]["core_commit"],
+                           code_commit=record["provenance"].get("code_commit"), id=None)
+            version["metadata"] = dict(version.get("metadata") or {},
+                TICKER=record["input_ticker"], DATA_PROVIDER=record["input_provider"],
+                MARGIN_LEVERAGE=record["input_margin_leverage"],
+                FROM_DAYS=(trading_date - date.fromisoformat(record["input_fromdate"])).days,
+                scheduled_run_artifact=str(artifact))
+            version["params_hash"] = wr.profile_param_version_hash(
+                args, version["code_commit"], version["core_commit"], version["metadata"])
+            break
+        break
     bt_core_repo = code_root / "bt-core"
     core_commit, resolution = resolve_core_commit(bt_core_repo, trading_date, version.get("core_commit"))
+    historical_core_commit = core_commit
+    if baseline_core_commit:
+        core_commit = subprocess.check_output(
+            ["git", "-C", str(bt_core_repo), "rev-parse", "--verify", baseline_core_commit + "^{commit}"],
+            text=True,
+        ).strip()
+        resolution = "corrected_baseline"
+        version = dict(version, id=None, core_commit=core_commit)
+        version["params_hash"] = wr.profile_param_version_hash(
+            version["stratargs"], version.get("code_commit"), core_commit, version.get("metadata") or {})
 
     run_tag = f"{profile}_{trading_date:%Y%m%d}"
     worktree_bt_core = create_worktree(bt_core_repo, core_commit, run_tag, code_root / "config-common")
@@ -997,11 +1039,20 @@ def reconcile_one_day(repo: "wr.WatchtowerRepository", profile: str, profile_env
             replay_config=replay_config,
         )
         bt_entries = load_backtest_entries(trades_path, trading_date) if trades_path else {}
+        replay_reasons = no_trade_reasons_from_log(replay_outpath / "runtime.log", trading_date)
         pending_bt_entries = False
-        if not bt_entries:
-            bt_entries = pending_backtest_entries_from_log(
-                replay_outpath / "runtime.log", trading_date,
-            )
+        if not bt_entries and not (baseline_core_commit and replay_reasons):
+            # Only the dated scheduled receipt identifies unexecuted plans.
+            # The replay's last log signals may belong to a later session.
+            for receipt in repo.list_scheduled_entry_decisions(profile, limit=2000):
+                if receipt["trading_date"] == trading_date.isoformat() and receipt["source"] == "backtest":
+                    bt_entries = {
+                        order["symbol"]: {"symbol": order["symbol"],
+                            "bt_qty": order.get("qty"), "bt_entry_price": order.get("reference_price"),
+                            "bt_signal_date": receipt.get("signal_date"), "bt_pending_execution": True}
+                        for order in (receipt.get("orders") or []) if order.get("symbol")
+                    }
+                    break
             pending_bt_entries = bool(bt_entries)
         else:
             # The replay has both legs available now. Persist that completed
@@ -1011,11 +1062,25 @@ def reconcile_one_day(repo: "wr.WatchtowerRepository", profile: str, profile_env
         live_orders = fetch_live_entry_orders(repo, profile, trading_date)
         live_exit_orders = fetch_live_exit_orders(repo, profile, trading_date)
         diffs, summary = classify(bt_entries, live_orders, live_exit_orders)
+        with repo.connect() as conn:
+            with conn.cursor() as cur:
+                cur.execute("SELECT COUNT(*) FROM scheduled_entry_settlements WHERE profile = %s AND trading_date = %s AND source = 'backtest' AND status = 'pending'", (profile, trading_date))
+                missing_closures = cur.fetchone()[0]
+        summary["bt_settlement_pending"] = bool(
+            missing_closures or pending_bt_entries or (live_orders and not bt_entries and not replay_reasons)
+        )
+        if summary["bt_settlement_pending"]:
+            summary["clean"] = False
+            summary["bt_replay_reasons"] = replay_reasons
         summary["cash_used"] = cash
         summary["core_commit_resolution"] = resolution
+        if baseline_core_commit:
+            summary["baseline_kind"] = "corrected_counterfactual"
+            summary["historical_core_commit"] = historical_core_commit
         summary["auction_forced_by_harness"] = auction_forced
         summary["market_data_refreshed_for_replay"] = refreshed
         summary["market_data_snapshot"] = str(snapshot) if snapshot else None
+        summary["scheduled_run_artifact"] = (version.get("metadata") or {}).get("scheduled_run_artifact")
         if pending_bt_entries:
             summary["bt_entries_pending_execution"] = True
         evidence = entry_run_evidence(profile, trading_date)
@@ -1047,7 +1112,9 @@ def reconcile_one_day(repo: "wr.WatchtowerRepository", profile: str, profile_env
             code_commit=version.get("code_commit"), core_commit=core_commit,
             core_commit_resolution=resolution, replay_run_id=run_id,
             replay_outpath=str(outpath_for(worktree_bt_core, version["strategy"], run_id)),
-            status="ok", summary=summary, diffs=diffs,
+            status="error" if summary["bt_settlement_pending"] else "ok",
+            error="Backtest closures not available for the scheduled entries; reconciliation remains pending" if summary["bt_settlement_pending"] else None,
+            summary=summary, diffs=diffs,
         )
         result["summary"] = summary
         result["diffs_count"] = len(diffs)
@@ -1083,8 +1150,9 @@ def run_catchup(repo: "wr.WatchtowerRepository", profiles: dict[str, dict[str, s
                     repo, profile, profile_env, trading_date,
                     refreshed_data_keys=refreshed_data_keys,
                 )
-                repo.mark_reconciliation_status(profile, trading_date, "done", detail={"result_id": outcome["id"]})
-                results.append({"profile": profile, "trading_date": entry["trading_date"], "action": "reconciled",
+                pending = outcome["summary"].get("bt_settlement_pending", False)
+                repo.mark_reconciliation_status(profile, trading_date, "pending" if pending else "done", detail={"result_id": outcome["id"]})
+                results.append({"profile": profile, "trading_date": entry["trading_date"], "action": "left_pending" if pending else "reconciled",
                                 "summary": outcome["summary"]})
             except wr.ProfileParamsUnresolvedError as exc:
                 repo.mark_reconciliation_status(profile, trading_date, "blocked_missing_params", detail={"error": str(exc)})
@@ -1167,7 +1235,10 @@ def main(argv: list[str] | None = None) -> int:
                         help="One-off: replay existing reconciliation rows to backfill a new payload field")
     parser.add_argument("--keep-worktree", action="store_true", help="Debug: don't remove the scratch worktree")
     parser.add_argument("--db-dsn", default=None)
+    parser.add_argument("--baseline-core-commit", help="Explicit corrected counterfactual baseline, not historical code")
     args = parser.parse_args(argv)
+    if args.baseline_core_commit and (args.catch_up or args.refresh_existing):
+        parser.error("--baseline-core-commit requires one explicit profile and trading date")
 
     profiles = discover_profiles()
     if args.profile and args.profile not in profiles:
@@ -1190,7 +1261,8 @@ def main(argv: list[str] | None = None) -> int:
         parser.error("--trading-date requires --profile (or use --catch-up to process the queue)")
 
     trading_date = date.fromisoformat(args.trading_date)
-    result = reconcile_one_day(repo, args.profile, profiles[args.profile], trading_date, args.keep_worktree)
+    result = reconcile_one_day(repo, args.profile, profiles[args.profile], trading_date, args.keep_worktree,
+                               baseline_core_commit=args.baseline_core_commit)
     print(json.dumps(result, indent=2, default=str))
     return 0
 
