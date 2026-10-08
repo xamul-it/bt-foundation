@@ -1084,7 +1084,7 @@ def reconcile_one_day(repo: "wr.WatchtowerRepository", profile: str, profile_env
         summary["core_commit_resolution"] = resolution
         if baseline_core_commit:
             summary["baseline_kind"] = "corrected_counterfactual"
-            summary["historical_core_commit"] = historical_core_commit
+            summary["source_artifact_core_commit"] = historical_core_commit
         summary["auction_forced_by_harness"] = auction_forced
         summary["market_data_refreshed_for_replay"] = refreshed
         summary["market_data_snapshot"] = str(snapshot) if snapshot else None
