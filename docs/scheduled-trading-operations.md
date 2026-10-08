@@ -42,6 +42,12 @@ The target cron interface is:
 Use analogous commands for `mirror` and finally `live`. Redirecting cron output
 is optional because the runner writes daily per-profile logs itself.
 
+## TODO: scheduler persistence
+
+The dashboard currently persists schedule overrides in
+`bt-api/config/scheduler-state.json`. Migrate this operational configuration
+to a database-backed store with audit history and atomic updates.
+
 ## Production promotion
 
 `main` is the effective development branch. Promote reviewed changes to `prod`
