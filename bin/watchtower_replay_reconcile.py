@@ -1085,6 +1085,7 @@ def reconcile_one_day(repo: "wr.WatchtowerRepository", profile: str, profile_env
         if baseline_core_commit:
             summary["baseline_kind"] = "corrected_counterfactual"
             summary["source_artifact_core_commit"] = historical_core_commit
+            summary["live_settlement_pending"] = not is_day_closed(repo, profile, trading_date)["closed"]
         summary["auction_forced_by_harness"] = auction_forced
         summary["market_data_refreshed_for_replay"] = refreshed
         summary["market_data_snapshot"] = str(snapshot) if snapshot else None
@@ -1157,9 +1158,11 @@ def run_catchup(repo: "wr.WatchtowerRepository", profiles: dict[str, dict[str, s
                 outcome = reconcile_one_day(
                     repo, profile, profile_env, trading_date,
                     refreshed_data_keys=refreshed_data_keys,
+                    baseline_core_commit=(entry.get("detail") or {}).get("baseline_core_commit"),
                 )
                 pending = outcome["summary"].get("bt_settlement_pending", False)
-                repo.mark_reconciliation_status(profile, trading_date, "pending" if pending else "done", detail={"result_id": outcome["id"]})
+                detail = dict(entry.get("detail") or {}, result_id=outcome["id"])
+                repo.mark_reconciliation_status(profile, trading_date, "pending" if pending else "done", detail=detail)
                 results.append({"profile": profile, "trading_date": entry["trading_date"], "action": "left_pending" if pending else "reconciled",
                                 "summary": outcome["summary"]})
             except wr.ProfileParamsUnresolvedError as exc:
