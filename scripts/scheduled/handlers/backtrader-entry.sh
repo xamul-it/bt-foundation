@@ -101,6 +101,12 @@ if [[ "$SYNC_BACKTEST_EQUITY" == 1 ]]; then
         echo 'ENTRY_EQUITY_SYNC_FAILED: Alpaca retains legacy sizing; synchronized Backtest will be skipped' >&2
     fi
 fi
+export CODE_ROOT STRAT STRATARGS TICKER DATA_PROVIDER ALPACA_FEED MARGIN_LEVERAGE COMMISSION FROM_DAYS RUN_ID
+if ! python "$CODE_ROOT/bin/watchtower_record_run_params.py" --profile "$PROFILE" \
+    --trading-date "$TRADING_DATE" --outbox "$CODE_ROOT/out/watchtower-param-outbox/$PROFILE"; then
+    TELEMETRY_FAILED=1
+    echo "WATCHTOWER_PARAMS_HISTORY_PENDING profile=$PROFILE (continuing scheduled strategy runs)" >&2
+fi
 record_receipt alpaca --running
 ALPACA_RC=0
 if "${RUN_CMD[@]}"; then

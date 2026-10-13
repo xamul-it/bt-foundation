@@ -53,6 +53,7 @@ def main(argv: list[str] | None = None) -> int:
             bt_core_python=str(code_root / "bt-core" / ".venv" / "bin" / "python"),
             strategy=ctx["strategy"], ticker=ctx["ticker"], provider=ctx["provider"],
             alpaca_feed=ctx["alpaca_feed"], margin_leverage=ctx["margin_leverage"],
+            commission=ctx["commission"],
             fromdate=args.frm, todate=args.to, stratargs_str=ctx["stratargs_str"],
             run_id=f"baseline_{args.profile}_PREVIEW",
         )
