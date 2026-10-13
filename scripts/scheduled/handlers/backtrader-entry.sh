@@ -16,8 +16,8 @@ if [[ "$SYNC_BACKTEST_EQUITY" != 0 && "$SYNC_BACKTEST_EQUITY" != 1 ]]; then
     echo 'SYNC_BACKTEST_EQUITY must be 0 or 1' >&2
     exit 78
 fi
-if [[ "$SYNC_BACKTEST_EQUITY" == 1 && ( "$PROFILE" != development || ( "$TRADING_MODE" != paper && "${SCHEDULED_DRY_RUN:-0}" != 1 ) ) ]]; then
-    echo 'Equity synchronization is restricted to development paper' >&2
+if [[ "$SYNC_BACKTEST_EQUITY" == 1 && "$TRADING_MODE" != paper && "$TRADING_MODE" != live ]]; then
+    echo 'Equity synchronization requires paper or live mode' >&2
     exit 78
 fi
 RUN_ID=${RUN_ID:-scheduled_${PROFILE}}
