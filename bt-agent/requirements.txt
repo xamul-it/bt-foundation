@@ -1,0 +1,8 @@
+# bt-pandas-agent dependencies
+# NON richiede anthropic SDK — usa claude CLI (subscription locale)
+
+pandas>=2.0
+numpy>=1.24
+pyarrow          # parquet cache
+joblib           # parallelismo grid sweep
+backtrader       # solo per bt_bridge/extractor.py (usa venv bt-core)

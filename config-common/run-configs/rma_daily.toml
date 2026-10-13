@@ -1,0 +1,95 @@
+# btmain run config.
+# Usa questo file con: python btmain.py --run-config NOME
+# Genera/aggiorna un file con: python btmain.py [parametri] --write-run-config NOME
+
+# Valori ammessi: "backtest" | "paper" | "shadow" | "live"
+mode = "backtest"
+
+[data]
+# Provider dati. Valori ammessi: "yahoo" | "alpaca".
+provider = "yahoo"
+
+# Modalita feed Alpaca. Valori ammessi: "direct" | "proxy".
+# Serve quando provider="alpaca" e il flusso dati passa diretto o via proxy.
+alpaca_mode = "direct"
+
+# Feed storico Alpaca. Valori ammessi: "sip" | "iex".
+alpaca_feed = "sip"
+
+# Finestra dati globale del run, esterna alle strategie.
+fromdate = "2010-01-01"
+todate = ""
+
+# Cartella dati logica usata da btmain.
+data = "data"
+
+# Benchmark opzionale. Lascia vuoto per fallback automatico.
+benchmark = ""
+bench_feed = false
+
+[broker]
+# Commissioni. Valori ammessi: "none" | "fineco" | "lfineco".
+commission = "none"
+
+# Cash iniziale per backtest/shadow. In paper/live il conto Alpaca e' la sorgente reale.
+cash = 20000
+
+# Importo default per trade, mantenuto per compatibilita con --amount.
+amount = 10000
+
+# Parametri usati in backtest per simulare costo/leva margin.
+# margin_rate: tasso annuo, es. 0.10 = 10%. Vuoto = disabilitato.
+margin_rate = 0.1
+# margin_leverage: leva massima custom. Vuoto = nessun cap custom.
+margin_leverage = 1
+
+# Slippage percentuale opzionale per broker backtest. Vuoto = disabilitato.
+slippage = ""
+
+[capital]
+# Selettore base per i bucket. Valori ammessi:
+# "cash" | "equity" | "buying_power" | "non_marginable_buying_power".
+# In questo step e' documentato ma non ancora applicato dal motore.
+allocation_base = "equity"
+
+# Limite operativo nuovi ordini. Per zero leva usare "cash".
+# Valori ammessi: "cash" | "buying_power" | "non_marginable_buying_power".
+execution_cap = "cash"
+
+# 1.0 = gross exposure totale <= equity, quindi niente leva.
+max_gross_exposure = 1.0
+
+# Riserva globale sul conto.
+global_reserve_pct = 0.05
+
+[capital.buckets.core]
+weight = 0.50
+
+[capital.buckets.tactical]
+weight = 0.50
+
+[[strategies]]
+# Identificativo logico della strategia nel run.
+id = "rmastrategy"
+# Classe strategia nel formato modulo.Classe.
+class = "weekly.RMAStrategy"
+# Bucket capitale. Valori definiti in [capital.buckets.*].
+bucket = "core"
+# Universo ticker. Oggi btmain supporta un ticker globale; multi-ticker per strategia e' step successivo.
+ticker = "NASDAQ_100_US.json"
+# Timeframe. Valori ammessi oggi: "minutes" | "daily" | "weekly" | "monthly".
+timeframe = "daily"
+
+# Parametri specifici strategia. In questo step btmain li applica solo se compatibili
+# con l'attuale --stratargs globale.
+[strategies.params]
+amount = -1
+flatten_on_close = false
+max_adv_participation = 0.0025
+max_volatility = 0.08
+period = 180
+period_fast = 30
+regime_filter = false
+selnum = 2
+trail_stop = 0.001
+use_adj_indicators = false

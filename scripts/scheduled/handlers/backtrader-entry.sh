@@ -11,6 +11,15 @@ MARGIN_LEVERAGE=${MARGIN_LEVERAGE:-1}
 COMMISSION=${COMMISSION:-none}
 STRATARGS=${STRATARGS:?STRATARGS is required}
 REFRESH_MARKET_DATA=${REFRESH_MARKET_DATA:-0}
+SYNC_BACKTEST_EQUITY=${SYNC_BACKTEST_EQUITY:-0}
+if [[ "$SYNC_BACKTEST_EQUITY" != 0 && "$SYNC_BACKTEST_EQUITY" != 1 ]]; then
+    echo 'SYNC_BACKTEST_EQUITY must be 0 or 1' >&2
+    exit 78
+fi
+if [[ "$SYNC_BACKTEST_EQUITY" == 1 && ( "$PROFILE" != development || ( "$TRADING_MODE" != paper && "${SCHEDULED_DRY_RUN:-0}" != 1 ) ) ]]; then
+    echo 'Equity synchronization is restricted to development paper' >&2
+    exit 78
+fi
 RUN_ID=${RUN_ID:-scheduled_${PROFILE}}
 STRAT_MODULE=${STRAT%.*}
 STRAT_CLASS=${STRAT##*.}
@@ -25,6 +34,9 @@ LOAD_CMD=(python load_tickers.py --ticker="$TICKER" --provider "$DATA_PROVIDER" 
 RUN_CMD=(python btmain.py --strat "$STRAT" --ticker "$TICKER" --stratargs "$STRATARGS" --timeframe daily --provider "$DATA_PROVIDER" --alpaca-feed "$ALPACA_FEED" --fromdate "$FROMDATE" --todate "$DATA_CUTOFF" --mode "$TRADING_MODE" --margin-leverage "$MARGIN_LEVERAGE" --commission "$COMMISSION" --id "$RUN_ID")
 
 if [[ "${SCHEDULED_DRY_RUN:-0}" == 1 ]]; then
+    if [[ "$SYNC_BACKTEST_EQUITY" == 1 ]]; then
+        echo 'equity sync: read Alpaca equity before orders; freeze sizing in both runs and pass --cash to Backtest'
+    fi
     printf 'cd %q\n' "$BT_CORE"
     if [[ "$REFRESH_MARKET_DATA" == 1 ]]; then
         printf 'load: '; printf '%q ' "${LOAD_CMD[@]}"; printf '\n'
@@ -77,6 +89,18 @@ record_backtest_settlement() {
 # Watchtower is observability, not a trading precondition.  Every recorder
 # invocation is deliberately best-effort so a DB outage cannot skip either
 # the Alpaca decision or the independent Backtest decision.
+ENTRY_EQUITY=
+if [[ "$SYNC_BACKTEST_EQUITY" == 1 ]]; then
+    EQUITY_SNAPSHOT="$BT_CORE/out/$STRAT_DIR/$STRAT_CLASS/$RUN_ID/entry-equity-${TRADING_DATE}-$(date +%s%N).json"
+    if ENTRY_EQUITY=$(python "$CODE_ROOT/bin/scheduled_entry_equity.py" --mode "$TRADING_MODE" --output "$EQUITY_SNAPSHOT"); then
+        STRATARGS="$STRATARGS scheduled_entry_equity=$ENTRY_EQUITY"
+        RUN_CMD[7]="$STRATARGS"
+        echo "ENTRY_EQUITY_SYNC equity=$ENTRY_EQUITY snapshot=$EQUITY_SNAPSHOT"
+    else
+        ENTRY_EQUITY=
+        echo 'ENTRY_EQUITY_SYNC_FAILED: Alpaca retains legacy sizing; synchronized Backtest will be skipped' >&2
+    fi
+fi
 record_receipt alpaca --running
 ALPACA_RC=0
 if "${RUN_CMD[@]}"; then
@@ -97,6 +121,13 @@ fi
 BT_RUN_ID="${RUN_ID}_backtest"
 BT_STRATARGS="$STRATARGS decision_date_override='$TRADING_DATE'"
 BACKTEST_CMD=(python btmain.py --strat "$STRAT" --ticker "$TICKER" --stratargs "$BT_STRATARGS" --timeframe daily --provider "$DATA_PROVIDER" --alpaca-feed "$ALPACA_FEED" --fromdate "$FROMDATE" --todate "$DATA_CUTOFF" --mode backtest --margin-leverage "$MARGIN_LEVERAGE" --commission "$COMMISSION" --id "$BT_RUN_ID")
+if [[ "$SYNC_BACKTEST_EQUITY" == 1 ]]; then
+    if [[ -z "$ENTRY_EQUITY" ]]; then
+        record_failed backtest 'Pre-entry Alpaca equity unavailable; no default capital substitution'
+        exit 1
+    fi
+    BACKTEST_CMD+=(--cash "$ENTRY_EQUITY")
+fi
 record_receipt backtest --running
 BT_RC=0
 if "${BACKTEST_CMD[@]}"; then

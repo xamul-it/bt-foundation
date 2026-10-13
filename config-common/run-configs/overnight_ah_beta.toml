@@ -1,0 +1,108 @@
+# btmain run config.
+# Usa questo file con: python btmain.py --run-config NOME
+# Genera/aggiorna un file con: python btmain.py [parametri] --write-run-config NOME
+
+# Valori ammessi: "backtest" | "paper" | "shadow" | "live"
+mode = "backtest"
+
+[data]
+# Provider dati. Valori ammessi: "yahoo" | "alpaca".
+provider = "yahoo_adj"
+
+# Modalita feed Alpaca. Valori ammessi: "direct" | "proxy".
+# Serve quando provider="alpaca" e il flusso dati passa diretto o via proxy.
+alpaca_mode = "direct"
+
+# Feed storico Alpaca. Valori ammessi: "sip" | "iex".
+alpaca_feed = "sip"
+
+# Finestra dati globale del run, esterna alle strategie.
+fromdate = "2023-01-01"
+todate = "2026-06-23"
+
+# Cartella dati logica usata da btmain.
+data = "data"
+
+# Benchmark opzionale. Lascia vuoto per fallback automatico.
+benchmark = ""
+bench_feed = false
+
+[broker]
+# Commissioni. Valori ammessi: "none" | "fineco" | "lfineco".
+commission = "none"
+
+# Cash iniziale per backtest/shadow. In paper/live il conto Alpaca e' la sorgente reale.
+cash = 200000
+
+# Importo default per trade, mantenuto per compatibilita con --amount.
+amount = 10000
+
+# Parametri usati in backtest per simulare costo/leva margin.
+# margin_rate: tasso annuo, es. 0.10 = 10%. Vuoto = disabilitato.
+margin_rate = 0.1
+# margin_leverage: leva massima custom. Vuoto = nessun cap custom.
+margin_leverage = 2
+
+# Slippage percentuale opzionale per broker backtest. Vuoto = disabilitato.
+slippage = ""
+
+[capital]
+# Selettore base per i bucket. Valori ammessi:
+# "cash" | "equity" | "buying_power" | "non_marginable_buying_power".
+# In questo step e' documentato ma non ancora applicato dal motore.
+allocation_base = "equity"
+
+# Limite operativo nuovi ordini. Per zero leva usare "cash".
+# Valori ammessi: "cash" | "buying_power" | "non_marginable_buying_power".
+execution_cap = "cash"
+
+# 1.0 = gross exposure totale <= equity, quindi niente leva.
+max_gross_exposure = 1.0
+
+# Riserva globale sul conto.
+global_reserve_pct = 0.05
+
+[capital.buckets.core]
+weight = 0.50
+
+[capital.buckets.tactical]
+weight = 0.50
+
+[universe]
+# Policy overlap simboli tra strategie. Valori ammessi: "error" | "warn" | "allow".
+# Default consigliato: "error" finche non esiste ownership persistente per simbolo/quantita.
+overlap_policy = "error"
+
+[[strategies]]
+# Identificativo logico della strategia nel run.
+id = "overnightah"
+# Classe strategia nel formato modulo.Classe.
+class = "overnight_ah.OvernightAH"
+# Bucket capitale. Valori definiti in [capital.buckets.*].
+bucket = "core"
+# Universo ticker. Oggi btmain supporta un ticker globale; multi-ticker per strategia e' step successivo.
+ticker = "yahoo_adj_research_universe.json"
+# Timeframe. Valori ammessi oggi: "minutes" | "daily" | "weekly" | "monthly".
+timeframe = "daily"
+
+# Parametri specifici strategia. In questo step btmain li applica solo se compatibili
+# con l'attuale --stratargs globale.
+[strategies.params]
+ah_lag1_threshold = -0.1
+auction = true
+intraday_vol_filter_side = "any"
+max_concurrent = 5
+max_exposure = 2
+max_intraday_vol = 0.045
+min_adv = 100000000
+min_intraday_vol = 0.025
+monthly_universe_base_weight = 0.85
+monthly_universe_mode = "weak_theme"
+monthly_universe_spy_dd3m_threshold = -0.1
+monthly_universe_switch_feature = "semis_total_3m"
+monthly_universe_switch_threshold = 0.0
+monthly_universe_theme_score = "corr12"
+monthly_universe_theme_weight = 0.15
+monthly_universe_top_n = 50
+size_by_max_concurrent = true
+trade_start_date = "2024-01-01"
