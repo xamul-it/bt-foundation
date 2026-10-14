@@ -37,7 +37,10 @@ Core convention:
 - Studio corrente OvernightAH, cooldown adattivo (2026-10-14):
   [indice, protocollo, decisioni e dati](../../bt-strategy-test/overnight-ah/studies/adaptive_cooldown_20261014/README.md).
   Baseline dal 2000 con produzione attuale e cooldown disattivato completata;
-  verifica delle sequenze e della ripresa dopo tre osservazioni ancora da eseguire.
+  primo profilo dell'impronta statistica disponibile, stabilità ancora da
+  verificare; anticipo/uscita e falsi positivi da studiare. Tre osservazioni
+  nel range sono solo un candidato di ripresa. Riferimenti globale retrospettivo
+  e cumulativo ex-ante con cinque anni di warmup documentati nel protocollo.
 
 - `docs/context/strategies/supertrend-intraday.md`
 - `docs/context/strategies/tech-momentum.md`
