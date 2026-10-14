@@ -34,6 +34,11 @@ Core convention:
 
 ## Strategy Files
 
+- Studio corrente OvernightAH, cooldown adattivo (2026-10-14):
+  [indice, protocollo, decisioni e dati](../../bt-strategy-test/overnight-ah/studies/adaptive_cooldown_20261014/README.md).
+  Baseline dal 2000 con produzione attuale e cooldown disattivato completata;
+  verifica delle sequenze e della ripresa dopo tre osservazioni ancora da eseguire.
+
 - `docs/context/strategies/supertrend-intraday.md`
 - `docs/context/strategies/tech-momentum.md`
 - `docs/context/ah_context.md`
