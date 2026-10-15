@@ -39,6 +39,10 @@ tabella inutilizzata è comunque innocuo e conserva lo storico.
   Backtest prima della prima mutazione e committa una giornata alla volta.
 - Un riavvio recupera i job in coda. Un worker vivo conserva il job `running`; un
   worker abbandonato diventa `interrupted` e non viene rilanciato automaticamente.
+  La presenza del worker è verificata tramite il lock del suo profilo, ereditato
+  dal subprocess: heartbeat recente, PID riutilizzato o lock di altri profili non
+  mantengono attivo un job morto. Il controllo si ripete ogni 30 secondi, anche
+  per i worker sopravvissuti al riavvio dell'API e terminati in seguito.
 
 Timeout configurabili:
 
