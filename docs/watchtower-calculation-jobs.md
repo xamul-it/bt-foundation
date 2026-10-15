@@ -29,7 +29,9 @@ tabella inutilizzata è comunque innocuo e conserva lo storico.
 
 ## Esecuzione e limiti
 
-- `baseline_build` e `backtest_rebuild` sono gli unici tipi ammessi dal worker.
+- Il worker ammette `baseline_build`, `backtest_rebuild`, `simulation` e
+  `market_data_refresh`. Le ultime due operazioni sono descritte in
+  [Backtesting online](backtesting-studio.md).
 - È consentito un solo job `queued`/`running` per profilo e un solo calcolo globale
   alla volta. Il claim è atomico nel DB; i lock file proteggono anche più processi API.
 - Il ricalcolo accetta soltanto `window=25` e richiede `replace_backtest=true`.

@@ -8,6 +8,7 @@ import os
 import sys
 import threading
 import traceback
+import subprocess
 from datetime import date
 from pathlib import Path
 
@@ -23,7 +24,7 @@ import watchtower_backfill_current_params as backfill  # noqa: E402
 from watchtower_runtime import WatchtowerRepository  # noqa: E402
 
 
-ALLOWED_KINDS = {"baseline_build", "backtest_rebuild"}
+ALLOWED_KINDS = {"baseline_build", "backtest_rebuild", "simulation", "market_data_refresh"}
 
 
 class Heartbeat:
@@ -82,6 +83,26 @@ def run_rebuild(repo, row, snapshot):
     )
 
 
+def run_simulation(repo, row, snapshot):
+    from simulation_studio import execute_simulation
+    repo.update_calculation_progress(row['id'], row['worker_token'], progress_done=0, phase='backtest')
+    return execute_simulation(snapshot['configuration'], row['id'])
+
+
+def run_market_refresh(repo, row, snapshot):
+    from simulation_studio import data_inventory
+    config = snapshot['configuration']
+    repo.update_calculation_progress(row['id'], row['worker_token'], progress_done=0, phase='download_market_data')
+    command = [str(BT_CORE / '.venv/bin/python'), 'load_tickers.py', '--ticker', config['ticker'],
+               '--provider', config['provider'], '--timeframe', 'm' if config['timeframe'] == 'minutes' else 'd',
+               '--alpaca-feed', config['alpaca_feed'], '--fromdate', config['fromdate'], '--todate', config['todate']]
+    subprocess.run(command, cwd=BT_CORE, check=True, timeout=10800)
+    coverage = data_inventory(config['ticker'], config['provider'], config['timeframe'], config['alpaca_feed'])
+    if not any(item['available'] for item in coverage):
+        raise RuntimeError('Il download non ha prodotto dati locali: consultare il log')
+    return dict(configuration=config, coverage=coverage)
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--job-id", required=True)
@@ -101,7 +122,9 @@ def main():
     print(json.dumps({"job_id": row["id"], "kind": row["kind"], "profile": row["profile"]}), flush=True)
     with Heartbeat(repo, row["id"], args.worker_token):
         try:
-            result = run_baseline(repo, row, snapshot) if row["kind"] == "baseline_build" else run_rebuild(repo, row, snapshot)
+            runner = {'baseline_build': run_baseline, 'backtest_rebuild': run_rebuild,
+                      'simulation': run_simulation, 'market_data_refresh': run_market_refresh}[row['kind']]
+            result = runner(repo, row, snapshot)
             failures = int(result.get("failed") or 0)
             status = "failed" if failures else "completed"
             error = f"{failures}_dates_failed" if failures else None
