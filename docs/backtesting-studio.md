@@ -10,7 +10,13 @@
 - **Verifica configurazione e dati** controlla i valori e mostra la presenza dei
   file locali; la copertura temporale è consultabile in Dati ticker. Presenza del
   file non garantisce che bastino barre per il warmup della strategia.
-- **Risultati e archivio** e **Dashboard**: stato persistente, ricerca, preferiti,
+- **Dashboard**: una card per ID run completato, con nome/etichetta in evidenza;
+  run della stessa strategia, anche con etichette uguali, restano indipendenti.
+  Pin persistente per tenerli in alto e cestino reversibile. Ultimi 200 job più
+  i preferiti anche più vecchi, con rendimento composto, drawdown, trade chiusi,
+  capitale iniziale/finale, periodo, provider, leva e link a risultati e report.
+  Le card non sono una classifica: periodi e configurazioni possono differire.
+- **Risultati e archivio**: stato persistente, ricerca, preferiti,
   note, duplicazione, curva equity, trade paginati, configurazione richiesta,
   ricevuta effettiva, log e download. Nascondere un run non elimina gli artefatti.
 - **Simulazioni giornaliere**: configura ora/minuti Europe/Rome e attiva/disattiva
@@ -19,8 +25,14 @@
 - **Benchmark**: curve da CSV presenti in config-common/benchmark, importazione
   CSV date/return, salvataggio dei rendimenti di un run, etichette, note tramite
   API, archivio reversibile e download. Un import non sovrascrive un benchmark.
+  Provenienze distinte: CSV statico, run salvato statico, Buy&Hold lista mantenuto.
+  La colonna obsolescenza conta i giorni di calendario dall'ultima data contenuta
+  nella serie (Europe/Rome), non dalla data di scrittura del file. CSV storici
+  vuoti o senza date leggibili sono segnalati ed esclusi dalla selezione.
 - **Dati ticker**: yahoo, yahoo_adj e Alpaca SIP/IEX; timeframe daily/minutes,
   copertura e aggiornamento file, ultime 500 barre e grafico normalizzato.
+  Date daily senza orario, date minute con orario; formato e disponibilità
+  compattati in icone e semafori con tooltip e legenda.
   Il download è un job monitorato che usa load_tickers.py incrementale con i
   lock esistenti; richiede connessione/credenziali valide per il provider.
 
@@ -44,6 +56,39 @@ rispetto al capitale iniziale; il drawdown usa la curva partendo da equity 1.
 Il numero di trade indica operazioni chiuse: BuyAndHold può avere posizioni
 aperte e rendimento non nullo anche con zero trade chiusi.
 
+## Benchmark automatici e giornalieri
+
+Nei nuovi run, lasciare vuoto il benchmark genera il Buy&Hold degli stessi
+ticker congelati nel run, con lo stesso provider/feed e periodo richiesto.
+Pesi iniziali uguali e quote frazionarie costanti: si media il rapporto dei
+prezzi rispetto al prezzo iniziale, NON i rendimenti giornalieri (che causerebbe
+ribilanciamento). Nessuna leva, commissione o slippage. Si usano le chiusure
+giornaliere; per simulazioni minute la chiusura giornaliera delle barre minute.
+Il periodo effettivo comune è registrato: se un componente inizia più tardi,
+il benchmark parte dalla prima data comune; se termina prima, termina alla
+data comune finale. Componenti mancanti o copertura insufficiente fanno fallire
+il job esplicitamente, senza sostituzioni di provider o esclusioni silenziose.
+
+In **Benchmark → Liste da usare per benchmark**, selezionare lista, provider,
+feed e data iniziale, spuntare **Usa per benchmark** e salvare. Solo quelle
+combinazioni lista/provider/feed hanno un timer; le altre liste non vengono
+scaricate né calcolate. Default 01:15 Europe/Rome, modificabile nel form.
+Salvare una configurazione abilitata avvia anche il primo job. Il refresh manuale
+è possibile anche con timer disattivato. Il toggle disattiva i futuri avvii,
+non cancella un job già accodato né un benchmark pubblicato.
+
+Il job persistente `market_data_refresh` esegue download incrementale dei simboli
+congelati, poi la fase `benchmark_buyhold`. Stato, errore e log sono visibili
+accanto alla lista. Un errore di download/calcolo mantiene il CSV precedente.
+Il calcolo è applicato solo dopo il download: nessun CSV parziale viene pubblicato.
+I timer vengono ripristinati all'avvio API. CSV importati e run salvati restano
+statici; archiviare un benchmark lo nasconde ma non disabilita il suo timer.
+
+Ogni simulazione conserva `benchmark.csv` negli artefatti: anche un benchmark
+esplicito viene copiato prima dell'esecuzione, per impedire agli aggiornamenti
+giornalieri di alterare un confronto già eseguito. Le copie interne `__run_benchmark_*`
+non appaiono nell'archivio. I run precedenti non vengono ricalcolati retroattivamente.
+
 ## Architettura e deploy
 
 API `/dyn/simulations`, autenticazione a sessione esistente. Job `simulation` e
@@ -55,7 +100,7 @@ Le configurazioni delle pianificazioni e metadati archivio sono in
 `bt-api/config/backtesting/registry.json`, con lock e sostituzione atomica.
 Gli artefatti restano nell'archivio output condiviso. Non vengono esposti comandi
 shell, path arbitrari o credenziali dal browser. Il catalogo dei job è limitato
-alle ultime 200 esecuzioni; il registro conserva anche le precedenti.
+alle ultime 200 esecuzioni più i preferiti; il registro conserva anche le precedenti.
 
 Per aggiornare un'installazione:
 

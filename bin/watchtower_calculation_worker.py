@@ -92,14 +92,21 @@ def run_simulation(repo, row, snapshot):
 def run_market_refresh(repo, row, snapshot):
     from simulation_studio import data_inventory
     config = snapshot['configuration']
+    ticker = ','.join(config['symbols']) if snapshot.get('benchmark_definition') else config['ticker']
     repo.update_calculation_progress(row['id'], row['worker_token'], progress_done=0, phase='download_market_data')
-    command = [str(BT_CORE / '.venv/bin/python'), 'load_tickers.py', '--ticker', config['ticker'],
+    command = [str(BT_CORE / '.venv/bin/python'), 'load_tickers.py', '--ticker', ticker,
                '--provider', config['provider'], '--timeframe', 'm' if config['timeframe'] == 'minutes' else 'd',
                '--alpaca-feed', config['alpaca_feed'], '--fromdate', config['fromdate'], '--todate', config['todate']]
     subprocess.run(command, cwd=BT_CORE, check=True, timeout=10800)
-    coverage = data_inventory(config['ticker'], config['provider'], config['timeframe'], config['alpaca_feed'])
+    coverage = data_inventory(ticker, config['provider'], config['timeframe'], config['alpaca_feed'])
     if not any(item['available'] for item in coverage):
         raise RuntimeError('Il download non ha prodotto dati locali: consultare il log')
+    if snapshot.get('benchmark_definition'):
+        from benchmark_studio import publish_buyhold
+        repo.update_calculation_progress(row['id'], row['worker_token'], progress_done=0, phase='benchmark_buyhold')
+        info = publish_buyhold(config, snapshot['benchmark_definition'], job_id=row['id'])
+        return dict(configuration=config, coverage=coverage, benchmark=info,
+                    benchmark_definition=snapshot['benchmark_definition'])
     return dict(configuration=config, coverage=coverage)
 
 
