@@ -35,6 +35,14 @@
   compattati in icone e semafori con tooltip e legenda.
   Il download è un job monitorato che usa load_tickers.py incrementale con i
   lock esistenti; richiede connessione/credenziali valide per il provider.
+- **Liste ticker**: elenco paginato, ricerca per nome e appartenenza di un simbolo
+  esatto, numero di simboli unici, sorgenti, download e benchmark. Il nome della
+  lista apre Dati ticker con lista/provider/feed preselezionati. Creazione da
+  CSV con colonna `symbol`/`ticker`, TXT con un simbolo per riga oppure array JSON
+  (UTF-8, massimo 1 MB e 1000 simboli); i duplicati vengono rimossi. La modifica
+  può sostituire i simboli con un nuovo file. L'archiviazione sposta il file in
+  `config-common/tickers/.archived`, conserva gli storici e disattiva i timer;
+  il ripristino recupera la lista con schedulazione disabilitata.
 
 ## Parametri
 
@@ -71,11 +79,29 @@ il job esplicitamente, senza sostituzioni di provider o esclusioni silenziose.
 
 In **Benchmark → Liste da usare per benchmark**, selezionare lista, provider,
 feed e data iniziale, spuntare **Usa per benchmark** e salvare. Solo quelle
-combinazioni lista/provider/feed hanno un timer; le altre liste non vengono
-scaricate né calcolate. Default 01:15 Europe/Rome, modificabile nel form.
+combinazioni lista/provider/feed entrano nel batch condiviso; le altre liste
+vengono scaricate solo se il download è abilitato in Liste ticker.
+Default 01:15 Europe/Rome, modificabile nel form.
 Salvare una configurazione abilitata avvia anche il primo job. Il refresh manuale
-è possibile anche con timer disattivato. Il toggle disattiva i futuri avvii,
-non cancella un job già accodato né un benchmark pubblicato.
+è possibile anche con timer disattivato. Disattivare il benchmark conserva il
+download; disattivare il download disattiva anche il benchmark. Un cambio di
+configurazione non cancella un job già accodato né un benchmark pubblicato.
+
+Un solo timer per orario raccoglie le liste abilitate e congela la composizione.
+I ticker sovrapposti vengono deduplicati per sorgente/feed; Yahoo grezzo e
+aggiustato condividono una richiesta di rete. Si scarica dall'inizio storico
+più remoto richiesto dal gruppo, usando il loader incrementale e i suoi lock.
+I batch di catalogo manuali e automatici condividono un profilo esclusivo.
+La deduplicazione riguarda il catalogo: gli script dei profili trading conservano
+la propria pianificazione e continuano a usare i lock dei dati esistenti.
+
+Il loader produce una ricevuta per simbolo: un CSV vecchio già presente non
+certifica il successo di un nuovo download. Gli errori parziali non impediscono
+l'aggiornamento delle altre liste; il benchmark della lista incompleta resta
+quello precedente. Ultimo batch ed esito sono distinti dall'ultimo download
+completato: nessuna delle due date garantisce una data uniforme delle barre.
+Per la copertura effettiva consultare Dati ticker. I log del batch sono accessibili
+dall'elenco; le configurazioni benchmark precedenti vengono riconosciute dal catalogo.
 
 Il job persistente `market_data_refresh` esegue download incrementale dei simboli
 congelati, poi la fase `benchmark_buyhold`. Stato, errore e log sono visibili

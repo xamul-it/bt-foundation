@@ -90,6 +90,10 @@ def run_simulation(repo, row, snapshot):
 
 
 def run_market_refresh(repo, row, snapshot):
+    if snapshot.get('ticker_batch'):
+        from ticker_catalog import execute_plan
+        return execute_plan(snapshot['ticker_batch'], row['id'], lambda phase:
+            repo.update_calculation_progress(row['id'], row['worker_token'], progress_done=0, phase=phase))
     from simulation_studio import data_inventory
     config = snapshot['configuration']
     ticker = ','.join(config['symbols']) if snapshot.get('benchmark_definition') else config['ticker']
@@ -134,7 +138,7 @@ def main():
             result = runner(repo, row, snapshot)
             failures = int(result.get("failed") or 0)
             status = "failed" if failures else "completed"
-            error = f"{failures}_dates_failed" if failures else None
+            error = (f"{failures}_lists_failed" if snapshot.get('ticker_batch') else f"{failures}_dates_failed") if failures else None
             repo.finish_calculation_job(
                 row["id"], args.worker_token, status=status, result=result, error=error,
             )
