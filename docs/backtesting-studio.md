@@ -10,17 +10,21 @@
 - **Verifica configurazione e dati** controlla i valori e mostra la presenza dei
   file locali; la copertura temporale è consultabile in Dati ticker. Presenza del
   file non garantisce che bastino barre per il warmup della strategia.
-- **Dashboard**: una card per ID run completato, con nome/etichetta in evidenza;
-  run della stessa strategia, anche con etichette uguali, restano indipendenti.
-  Pin persistente per tenerli in alto e cestino reversibile. Ultimi 200 job più
-  i preferiti anche più vecchi, con rendimento composto, drawdown, trade chiusi,
-  capitale iniziale/finale, periodo, provider, leva e link a risultati e report.
-  Le card non sono una classifica: periodi e configurazioni possono differire.
+- **Dashboard**: una card per nome/etichetta mostra il run completato più recente.
+  Quando esistono più esecuzioni con lo stesso titolo, la card appare come fogli
+  sovrapposti e apre lo storico completo, ordinato dal più recente. Pin persistente
+  per tenerli in alto e cestino reversibile. Ogni card può creare o modificare una
+  pianificazione giornaliera, metterla in pausa o rimuoverla. La data iniziale
+  resta quella del run sorgente; a ogni esecuzione la data finale diventa il giorno
+  corrente (Europe/Rome). Il nuovo run sostituisce la card principale e il vecchio
+  resta consultabile nello storico. Le card non sono una classifica: periodi e
+  configurazioni possono differire.
 - **Risultati e archivio**: stato persistente, ricerca, preferiti,
   note, duplicazione, curva equity, trade paginati, configurazione richiesta,
   ricevuta effettiva, log e download. Nascondere un run non elimina gli artefatti.
 - **Simulazioni giornaliere**: configura ora/minuti Europe/Rome e attiva/disattiva
-  il timer. La finestra scorre mantenendo la durata in giorni di calendario.
+  il timer. La data iniziale resta fissa e la data finale viene impostata al giorno
+  dell'esecuzione.
   Il timer non scarica automaticamente dati e non esegue ordini broker.
 - **Benchmark**: curve da CSV presenti in config-common/benchmark, importazione
   CSV date/return, salvataggio dei rendimenti di un run, etichette, note tramite
