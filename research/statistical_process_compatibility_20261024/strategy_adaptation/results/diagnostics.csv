@@ -1,0 +1,5 @@
+strategy,method,order_changes_score_fraction,same_bin_loss_changes_score_fraction,same_bin_loss_median_score_ratio
+OvernightAH,C5_Q6,0.999554565701559,0.0,1.0
+OvernightAH,F1_continuous,0.998218262806236,1.0,2.018857802895967
+FlatComposite,C5_Q6,0.9697104677060133,0.0,1.0
+FlatComposite,F1_continuous,0.999554565701559,1.0,3.44093431407573

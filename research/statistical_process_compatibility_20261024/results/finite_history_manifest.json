@@ -1,0 +1,19 @@
+{
+  "seed": 20261025,
+  "baseline": "sticky_06",
+  "replications": 20,
+  "episodes_per_scenario_per_replication": 2000,
+  "blocks": [
+    16,
+    47,
+    100
+  ],
+  "elapsed_seconds": 1.330481872020755,
+  "peak_rss_mib": 272.6328125,
+  "sha256": {
+    "finite_history.py": "6b54a80b6083628636cd5cc8f839139f73a6af53d9b878b5cf115a6f37ae2200",
+    "finite_history_extension.md": "c9a5d77a9effd1f1884d24b0890e9af87572148e8473716059ffa213a8cd17e6",
+    "results/finite_history.csv": "53eceb5cbac6621c4cb760edfc79f178f4756fdd52b024e65f4072abab54ef65",
+    "results/finite_history_summary.csv": "7d8619df9e06006486d46882d6e53f80a19e7cb57d069bc114e5171be9d2adc9"
+  }
+}

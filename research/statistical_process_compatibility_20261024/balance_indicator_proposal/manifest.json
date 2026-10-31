@@ -1,0 +1,15 @@
+{
+  "scope": "Proposal and retrospective descriptive financial counts; no application changes or validated significance test",
+  "notebook_executed_cells": 2,
+  "notebook_errors": 0,
+  "rendered_tables_checked": 3,
+  "rendered_horizontal_overflow": false,
+  "visual_review": "Notebook screenshot inspected",
+  "sha256": {
+    "analisi.html": "971efcee3f9328e351d0c004fd888b6c122a4957e889bb085cfb449468c1fb41",
+    "analisi.ipynb": "7f1301301eaefa6420201ada6fa738abebc82dd3e2559075fefa19ccce7e518d",
+    "analyze.py": "27107c67120a149e8a3e6e7bbb58c4d9b959e375078eadf0ab66a0ca550796aa",
+    "proposta.md": "464eddd96b038d0be5f0b0a47f3f8b3e89c781ec5f07ba3727af4901e51ac9ae",
+    "results.json": "bfb3875c755c2f79b0e03e45e2c51f24e51ac62ac4cbd97c8c05034b145561a5"
+  }
+}

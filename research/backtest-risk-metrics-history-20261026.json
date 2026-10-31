@@ -1,0 +1,817 @@
+[
+  {
+    "path": "out/overnight_ah_flat_composite/OvernightAHFlatComposite/simulation_7db85460e76e4e51a0d27139078e5e70/stats.html",
+    "sortino": 1.95,
+    "volatility_pct": 74.33
+  },
+  {
+    "path": "out/overnight_ah_flat_composite/OvernightAHFlatComposite/simulation_7e6281cd6ab54ffda94ec73d05b47f23/stats.html",
+    "sortino": 2.51,
+    "volatility_pct": 70.56
+  },
+  {
+    "path": "out/overnight_ah_flat_composite/OvernightAHFlatComposite/simulation_c33346b683be4dd698eed3d5fd7547fd/stats.html",
+    "sortino": 3.15,
+    "volatility_pct": 67.03
+  },
+  {
+    "path": "out/overnight_ah_flat_composite/OvernightAHFlatComposite/simulation_d720bed26b8c4712af3e6abfe013a48c/stats.html",
+    "sortino": 2.73,
+    "volatility_pct": 20.29
+  },
+  {
+    "path": "out/overnight_ah_flat_composite/OvernightAHFlatComposite/simulation_86073dd2b34f4f868c9c999b00a23209/stats.html",
+    "sortino": 2.11,
+    "volatility_pct": 27.24
+  },
+  {
+    "path": "out/overnight_ah_flat_composite/OvernightAHFlatComposite/simulation_6f3e039f985b48d1b5d75ce4cd4a3746/stats.html",
+    "sortino": 2.72,
+    "volatility_pct": 20.32
+  },
+  {
+    "path": "out/overnight_ah_flat_composite/OvernightAHFlatComposite/simulation_d601fb3fd5c14e64ab1faa52018102d3/stats.html",
+    "sortino": 1.77,
+    "volatility_pct": 32.21
+  },
+  {
+    "path": "out/overnight_ah_flat_composite/OvernightAHFlatComposite/simulation_58b216276a85422182734eca8047d0f9/stats.html",
+    "sortino": 2.36,
+    "volatility_pct": 25.14
+  },
+  {
+    "path": "out/overnight_ah_flat_composite/OvernightAHFlatComposite/simulation_d43162d2fb9e4cbf8c04a5eed723320f/stats.html",
+    "sortino": 2.93,
+    "volatility_pct": 18.88
+  },
+  {
+    "path": "out/overnight_ah_flat_composite/OvernightAHFlatComposite/simulation_ed2ea1a5f03c440f94e89c486d10337a/stats.html",
+    "sortino": 2.52,
+    "volatility_pct": 35.41
+  },
+  {
+    "path": "out/overnight_ah_flat_composite/OvernightAHFlatComposite/simulation_c66a6df9210445b9ad06a0a5c561460c/stats.html",
+    "sortino": 2.96,
+    "volatility_pct": 18.79
+  },
+  {
+    "path": "out/overnight_ah_flat_composite/OvernightAHFlatComposite/simulation_c33e9c2426ec49e79c4feaf251ec1094/stats.html",
+    "sortino": 2.5,
+    "volatility_pct": 70.76
+  },
+  {
+    "path": "out/overnight_ah_flat_composite/OvernightAHFlatComposite/simulation_491fb34b650b4ac9a5fd55de6274c1da/stats.html",
+    "sortino": 2.76,
+    "volatility_pct": 20.02
+  },
+  {
+    "path": "out/overnight_ah_flat_composite/OvernightAHFlatComposite/simulation_88cf18edbe0344a7920fae36a5ab90c9/stats.html",
+    "sortino": -0.59,
+    "volatility_pct": 49.7
+  },
+  {
+    "path": "out/overnight_ah_flat_composite/OvernightAHFlatComposite/simulation_5d707ba99c644438a2b3c18a6633ca25/stats.html",
+    "sortino": 2.84,
+    "volatility_pct": 19.47
+  },
+  {
+    "path": "out/overnight_ah_flat_composite/OvernightAHFlatComposite/simulation_de2d70f570284f88bf84795c534bdac1/stats.html",
+    "sortino": 2.41,
+    "volatility_pct": 68.68
+  },
+  {
+    "path": "out/overnight_ah_flat_composite/OvernightAHFlatComposite/simulation_c1f42b90dc4643f5a880f7bc32330537/stats.html",
+    "sortino": 2.8,
+    "volatility_pct": 19.81
+  },
+  {
+    "path": "out/overnight_ah_flat_composite/OvernightAHFlatComposite/simulation_62e95c3a670c497ea3d1e2745b650b0b/stats.html",
+    "sortino": 2.94,
+    "volatility_pct": 18.82
+  },
+  {
+    "path": "out/overnight_ah_flat_composite/OvernightAHFlatComposite/simulation_78d4da7ea6ef4c64a62997b4dee76a50/stats.html",
+    "sortino": 2.5,
+    "volatility_pct": 35.36
+  },
+  {
+    "path": "out/overnight_ah_flat_composite/OvernightAHFlatComposite/simulation_af55af31c2a34fcd80e13e3dd0592d99/stats.html",
+    "sortino": 1.8,
+    "volatility_pct": 32.29
+  },
+  {
+    "path": "out/overnight_ah_flat_composite/OvernightAHFlatComposite/simulation_c158c2dadf7e410b82a0bc0104ad9c98/stats.html",
+    "sortino": 2.51,
+    "volatility_pct": 70.56
+  },
+  {
+    "path": "out/overnight_ah_flat_composite/OvernightAHFlatComposite/simulation_3590335863c64b4fba4dfa28660a4ebb/stats.html",
+    "sortino": 2.85,
+    "volatility_pct": 19.48
+  },
+  {
+    "path": "out/overnight_ah_flat_composite/OvernightAHFlatComposite/simulation_57f205c0193e4ac1b58361599657a175/stats.html",
+    "sortino": 3.34,
+    "volatility_pct": 65.28
+  },
+  {
+    "path": "out/overnight_ah_flat_composite/OvernightAHFlatComposite/simulation_c4434f2914224114b4145370f3a7081d/stats.html",
+    "sortino": 2.56,
+    "volatility_pct": 35.07
+  },
+  {
+    "path": "out/overnight_ah_flat_composite/OvernightAHFlatComposite/simulation_d70a18319de342d494e803cec819b4cb/stats.html",
+    "sortino": 2.95,
+    "volatility_pct": 17.95
+  },
+  {
+    "path": "out/overnight_ah_flat_composite/OvernightAHFlatComposite/simulation_36aea02c62764931a63d32842d2230c3/stats.html",
+    "sortino": 3.13,
+    "volatility_pct": 33.59
+  },
+  {
+    "path": "out/overnight_ah_flat_composite/OvernightAHFlatComposite/simulation_9e73d99589c94f65b61e4133e82cd6e2/stats.html",
+    "sortino": 2.95,
+    "volatility_pct": 18.77
+  },
+  {
+    "path": "out/overnight_ah_flat_composite/OvernightAHFlatComposite/simulation_820557a3e6b74835ab523d497af5cc92/stats.html",
+    "sortino": 2.36,
+    "volatility_pct": 25.13
+  },
+  {
+    "path": "out/overnight_ah_flat_composite/OvernightAHFlatComposite/simulation_bb0c2f7eaa6b4364931719ab10d62d1e/stats.html",
+    "sortino": 2.69,
+    "volatility_pct": 64.75
+  },
+  {
+    "path": "out/overnight_ah_flat_composite/OvernightAHFlatComposite/simulation_61c6274317b54527a26b608c58b4e61f/stats.html",
+    "sortino": 3.1,
+    "volatility_pct": 33.59
+  },
+  {
+    "path": "out/overnight_ah_flat_composite/OvernightAHFlatComposite/simulation_bc40263188ab491e87336f6279b00fdc/stats.html",
+    "sortino": 3.13,
+    "volatility_pct": 33.59
+  },
+  {
+    "path": "out/overnight_ah_flat_composite/OvernightAHFlatComposite/simulation_413f2eca071e417ba859e621c0a256a9/stats.html",
+    "sortino": 2.41,
+    "volatility_pct": 34.32
+  },
+  {
+    "path": "out/overnight_ah_flat_composite/OvernightAHFlatComposite/simulation_f8f730d4178a4671bc9545b95ae4e556/stats.html",
+    "sortino": 2.91,
+    "volatility_pct": 18.95
+  },
+  {
+    "path": "out/overnight_ah_flat_composite/OvernightAHFlatComposite/simulation_9ff15e0f1a084c98ad436a762a90e80e/stats.html",
+    "sortino": 3.13,
+    "volatility_pct": 33.59
+  },
+  {
+    "path": "out/overnight_ah_flat_composite/OvernightAHFlatComposite/simulation_5f6e8cab2782453f84bb93d72ace1506/stats.html",
+    "sortino": 2.51,
+    "volatility_pct": 22.0
+  },
+  {
+    "path": "out/overnight_ah_flat_composite/OvernightAHFlatComposite/simulation_cc833e6986e54804bf9bf348fb5e9b74/stats.html",
+    "sortino": 2.84,
+    "volatility_pct": 19.47
+  },
+  {
+    "path": "out/overnight_ah_flat_composite/OvernightAHFlatComposite/simulation_805b73497d61405cad99019be4b20280/stats.html",
+    "sortino": 3.12,
+    "volatility_pct": 67.04
+  },
+  {
+    "path": "out/overnight_ah_flat_composite/OvernightAHFlatComposite/simulation_9b53d07eeb254f7c857f2413bb36999e/stats.html",
+    "sortino": 2.96,
+    "volatility_pct": 18.76
+  },
+  {
+    "path": "out/overnight_ah_flat_composite/OvernightAHFlatComposite/simulation_102bc53b0d33404bbdc20a8598a886e6/stats.html",
+    "sortino": 2.49,
+    "volatility_pct": 16.89
+  },
+  {
+    "path": "out/overnight_ah_flat_composite/OvernightAHFlatComposite/simulation_86e39096f85e45ecbd5cde4682c3b168/stats.html",
+    "sortino": 2.11,
+    "volatility_pct": 20.16
+  },
+  {
+    "path": "out/overnight_ah_flat_composite/OvernightAHFlatComposite/simulation_dec02472e20d4bd7a9bea850ceb7e22f/stats.html",
+    "sortino": 2.93,
+    "volatility_pct": 18.93
+  },
+  {
+    "path": "out/overnight_ah_flat_composite/OvernightAHFlatComposite/simulation_b6b105533a8b46f29c5a0170a6ceabdd/stats.html",
+    "sortino": 1.69,
+    "volatility_pct": 32.51
+  },
+  {
+    "path": "out/overnight_ah_flat_composite/OvernightAHFlatComposite/simulation_ca575dd669ac436ab59427f578fbc7e8/stats.html",
+    "sortino": 2.67,
+    "volatility_pct": 21.99
+  },
+  {
+    "path": "out/overnight_ah_flat_composite/OvernightAHFlatComposite/simulation_cfc673dda5504c09b3a2f55abb79bd22/stats.html",
+    "sortino": 2.48,
+    "volatility_pct": 32.21
+  },
+  {
+    "path": "out/weekly/RMAStrategy/simulation_f3466677b8ac4ebd9570212527e1a26d/stats.html",
+    "sortino": 1.46,
+    "volatility_pct": 30.04
+  },
+  {
+    "path": "out/weekly/RMAStrategy/simulation_3844f96ca60f4f88b979db6a036a6cd9/stats.html",
+    "sortino": 1.49,
+    "volatility_pct": 29.99
+  },
+  {
+    "path": "out/weekly/RMAStrategy/simulation_44a7e9748f45495a9becd09ecf176e04/stats.html",
+    "sortino": 1.36,
+    "volatility_pct": 25.83
+  },
+  {
+    "path": "out/weekly/RMAStrategy/simulation_1d16fcb09b0c4b328602bdf2edda5336/stats.html",
+    "sortino": 1.49,
+    "volatility_pct": 29.99
+  },
+  {
+    "path": "out/weekly/RMAStrategy/simulation_38a7f76dac9748f9bedc02cdf3bf0018/stats.html",
+    "sortino": 1.46,
+    "volatility_pct": 30.04
+  },
+  {
+    "path": "out/weekly/RMAStrategy/simulation_3036d1b9f597444ca90a27e3ec8582eb/stats.html",
+    "sortino": 1.53,
+    "volatility_pct": 24.07
+  },
+  {
+    "path": "out/weekly/RMAStrategy/simulation_a6fe43c8185a4f92b47d2fe575c90a64/stats.html",
+    "sortino": 1.06,
+    "volatility_pct": 19.5
+  },
+  {
+    "path": "out/weekly/RMAStrategy/simulation_a660494401ab4b069c4ced0601628a61/stats.html",
+    "sortino": 1.49,
+    "volatility_pct": 23.41
+  },
+  {
+    "path": "out/weekly/RMAStrategy/simulation_eb70860649514ca287f7fec2a48f93eb/stats.html",
+    "sortino": 1.48,
+    "volatility_pct": 23.47
+  },
+  {
+    "path": "out/weekly/RMAStrategy/simulation_0468ae084dce457b9ba65f0bc017ae22/stats.html",
+    "sortino": 1.06,
+    "volatility_pct": 19.5
+  },
+  {
+    "path": "out/weekly/RMAStrategy/simulation_99875b9ab6e248d18278bed3ff7b3e7a/stats.html",
+    "sortino": 1.49,
+    "volatility_pct": 23.41
+  },
+  {
+    "path": "out/weekly/RMAStrategy/simulation_c1794eaeb5be4eb685ae6434b1a7665d/stats.html",
+    "sortino": 1.43,
+    "volatility_pct": 31.95
+  },
+  {
+    "path": "out/weekly/RMAStrategy/simulation_8dab07ad62cf424ba1b4a160d786d0cb/stats.html",
+    "sortino": 1.44,
+    "volatility_pct": 24.52
+  },
+  {
+    "path": "out/weekly/RMAStrategy/simulation_69bba2c863e0488684f3d78fc2a9f126/stats.html",
+    "sortino": 1.43,
+    "volatility_pct": 24.0
+  },
+  {
+    "path": "out/weekly/RMAStrategy/simulation_febc2bf9ecba4fc4a18f09dec5e08d10/stats.html",
+    "sortino": 2.92,
+    "volatility_pct": 31.2
+  },
+  {
+    "path": "out/weekly/RMAStrategy/simulation_4a6803f5a2ed4987920191265f96b449/stats.html",
+    "sortino": 1.44,
+    "volatility_pct": 24.52
+  },
+  {
+    "path": "out/weekly/SettimanaleLin/simulation_f461df162bf4406f9fbad555b5d7e64b/stats.html",
+    "sortino": 0.57,
+    "volatility_pct": 25.83
+  },
+  {
+    "path": "out/weekly/SettimanaleEsp/simulation_7dc060d339c14702a70f512ed3a7f9be/stats.html",
+    "sortino": 1.17,
+    "volatility_pct": 20.43
+  },
+  {
+    "path": "out/weekly/SettimanaleReg/simulation_e5217bc5c6574d6db100f935b69d23a2/stats.html",
+    "sortino": 0.36,
+    "volatility_pct": 3.59
+  },
+  {
+    "path": "out/weekly/SettimanaleFast/simulation_1ab89fb897f841e28bcac91682a4d631/stats.html",
+    "sortino": 0.39,
+    "volatility_pct": 31.7
+  },
+  {
+    "path": "out/overnight_ah/OvernightAH/simulation_c5df63b7ca3c4fc2b60156b9a156ed7b/stats.html",
+    "sortino": 2.13,
+    "volatility_pct": 28.35
+  },
+  {
+    "path": "out/overnight_ah/OvernightAH/simulation_b4decaad7cd84c569c4d9bce30936c91/stats.html",
+    "sortino": 3.08,
+    "volatility_pct": 35.81
+  },
+  {
+    "path": "out/overnight_ah/OvernightAH/simulation_f7829c956ed743e5866f0f83eb3ce3ec/stats.html",
+    "sortino": 3.08,
+    "volatility_pct": 32.43
+  },
+  {
+    "path": "out/overnight_ah/OvernightAH/simulation_05f45acd9d244d0caeead7e54f36b3ad/stats.html",
+    "sortino": 3.16,
+    "volatility_pct": 35.51
+  },
+  {
+    "path": "out/overnight_ah/OvernightAH/simulation_32bc92e68af14d4db8fb3bfbd68e2693/stats.html",
+    "sortino": 3.63,
+    "volatility_pct": 67.78
+  },
+  {
+    "path": "out/overnight_ah/OvernightAH/simulation_f8975237bc9a47d6ae043fe85ee73a39/stats.html",
+    "sortino": 2.49,
+    "volatility_pct": 22.04
+  },
+  {
+    "path": "out/overnight_ah/OvernightAH/simulation_a3e70ebfb97e4f909e571ce506287c4d/stats.html",
+    "sortino": 3.04,
+    "volatility_pct": 32.5
+  },
+  {
+    "path": "out/overnight_ah/OvernightAH/simulation_01492b1bc41046d2a75e5f9f7ceb38fc/stats.html",
+    "sortino": 3.22,
+    "volatility_pct": 34.77
+  },
+  {
+    "path": "out/overnight_ah/OvernightAH/simulation_5646c924bdc24b81908ffe3400078699/stats.html",
+    "sortino": 3.73,
+    "volatility_pct": 34.3
+  },
+  {
+    "path": "out/overnight_ah/OvernightAH/simulation_cd1b8824fb9d431f82b995e565cefd82/stats.html",
+    "sortino": 3.54,
+    "volatility_pct": 66.41
+  },
+  {
+    "path": "out/overnight_ah/OvernightAH/simulation_278a93ca6e6b4d098d5874683fd5635c/stats.html",
+    "sortino": 3.23,
+    "volatility_pct": 34.3
+  },
+  {
+    "path": "out/overnight_ah/OvernightAH/simulation_5333eb88c5484ce1adc6ee3ff4f8737c/stats.html",
+    "sortino": 3.62,
+    "volatility_pct": 34.39
+  },
+  {
+    "path": "out/overnight_ah/OvernightAH/simulation_73933107dccf4d30bead4b428b4ce85c/stats.html",
+    "sortino": 3.88,
+    "volatility_pct": 68.26
+  },
+  {
+    "path": "out/overnight_ah/OvernightAH/simulation_7a0c48d70b9e4288929ccb2edcc4b769/stats.html",
+    "sortino": 3.12,
+    "volatility_pct": 32.3
+  },
+  {
+    "path": "out/overnight_ah/OvernightAH/simulation_92f4ec41481042c19436c95f83a1e69a/stats.html",
+    "sortino": 3.82,
+    "volatility_pct": 68.4
+  },
+  {
+    "path": "out/overnight_ah/OvernightAH/simulation_8fe6253bdfb246c2ac517b63ca7db13a/stats.html",
+    "sortino": 3.12,
+    "volatility_pct": 99.76
+  },
+  {
+    "path": "out/overnight_ah/OvernightAH/simulation_59efc4262d8847e28d19262bb4824db0/stats.html",
+    "sortino": 2.64,
+    "volatility_pct": 21.07
+  },
+  {
+    "path": "out/overnight_ah/OvernightAH/simulation_c397a5c18e6f464eb610f4da98a825fa/stats.html",
+    "sortino": 2.49,
+    "volatility_pct": 22.04
+  },
+  {
+    "path": "out/overnight_ah/OvernightAH/simulation_a4d451d2be95436a84dc21d9d94313a8/stats.html",
+    "sortino": 3.01,
+    "volatility_pct": 35.08
+  },
+  {
+    "path": "out/overnight_ah/OvernightAH/simulation_dd9f088a224f4a29aa6ae9edd194baca/stats.html",
+    "sortino": 3.88,
+    "volatility_pct": 34.12
+  },
+  {
+    "path": "out/overnight_ah/OvernightAH/simulation_fd2a0fa57d7142eb8f333198488b5dde/stats.html",
+    "sortino": 3.66,
+    "volatility_pct": 68.64
+  },
+  {
+    "path": "out/overnight_ah/OvernightAH/simulation_d48c347c1e1b4746878afa598161b2a8/stats.html",
+    "sortino": 3.48,
+    "volatility_pct": 33.76
+  },
+  {
+    "path": "out/overnight_ah/OvernightAH/simulation_c28dce7cd49d41febe33ac4c0acbed33/stats.html",
+    "sortino": 3.18,
+    "volatility_pct": 34.85
+  },
+  {
+    "path": "out/overnight_ah/OvernightAH/simulation_34e1964bcc04471e9f810cb3188a6270/stats.html",
+    "sortino": 2.53,
+    "volatility_pct": 21.42
+  },
+  {
+    "path": "out/overnight_ah/OvernightAH/simulation_902e52196bd3472fa605d16d987c4c37/stats.html",
+    "sortino": 3.64,
+    "volatility_pct": 34.64
+  },
+  {
+    "path": "out/overnight_ah/OvernightAH/simulation_b4af54ff771b4f46adb2abf1a107fa17/stats.html",
+    "sortino": 2.67,
+    "volatility_pct": 20.87
+  },
+  {
+    "path": "out/overnight_ah/OvernightAH/simulation_6b03262e78f14d8d963c0a45c248393e/stats.html",
+    "sortino": 3.85,
+    "volatility_pct": 26.1
+  },
+  {
+    "path": "out/overnight_ah/OvernightAH/simulation_526dcab062ab4d658ca862474e007337/stats.html",
+    "sortino": 3.03,
+    "volatility_pct": 100.28
+  },
+  {
+    "path": "out/overnight_ah/OvernightAH/simulation_72a6fe84c28f4449b37b81f446f9a6c3/stats.html",
+    "sortino": 3.62,
+    "volatility_pct": 68.08
+  },
+  {
+    "path": "out/overnight_ah/OvernightAH/simulation_471e8b2b36454cfb9f1de06df8743236/stats.html",
+    "sortino": 3.13,
+    "volatility_pct": 38.09
+  },
+  {
+    "path": "out/overnight_ah/OvernightAH/simulation_23936b24caec400e905b5c9dc239e21f/stats.html",
+    "sortino": 3.49,
+    "volatility_pct": 69.5
+  },
+  {
+    "path": "out/overnight_ah/OvernightAH/simulation_2f4ed46068534dfb92eb098e6dc30839/stats.html",
+    "sortino": 3.56,
+    "volatility_pct": 99.14
+  },
+  {
+    "path": "out/overnight_ah/OvernightAH/simulation_36113f520ef141d2bbb7b6a2ece32b71/stats.html",
+    "sortino": 3.08,
+    "volatility_pct": 32.43
+  },
+  {
+    "path": "out/overnight_ah/OvernightAH/simulation_b509d48f250c4eb7927adaf37f2a0cd3/stats.html",
+    "sortino": 3.08,
+    "volatility_pct": 35.81
+  },
+  {
+    "path": "out/overnight_ah/OvernightAH/simulation_fa0ebc54ff414b8cacf74ce7d9e91041/stats.html",
+    "sortino": 3.01,
+    "volatility_pct": 35.08
+  },
+  {
+    "path": "out/overnight_ah/OvernightAH/simulation_2045f5ea54be48e2b72757d9ade5d319/stats.html",
+    "sortino": 3.0,
+    "volatility_pct": 35.78
+  },
+  {
+    "path": "out/overnight_ah/OvernightAH/simulation_f141d0497aaf4ba5abfaeabefcec899a/stats.html",
+    "sortino": 2.17,
+    "volatility_pct": 28.05
+  },
+  {
+    "path": "out/overnight_ah/OvernightAH/simulation_b93dc50a4dc14f4a86768ac543fd5a33/stats.html",
+    "sortino": 3.54,
+    "volatility_pct": 34.98
+  },
+  {
+    "path": "out/overnight_ah/OvernightAH/simulation_92db1b9c7a0d4f45b58b6b9f5bf14574/stats.html",
+    "sortino": 3.66,
+    "volatility_pct": 68.64
+  },
+  {
+    "path": "out/overnight_ah/OvernightAH/simulation_84050394ba55448d8799c04cb43bf6c5/stats.html",
+    "sortino": 3.0,
+    "volatility_pct": 33.2
+  },
+  {
+    "path": "out/overnight_ah/OvernightAH/simulation_bd2be1eaac62473f9480c1e2c91693b0/stats.html",
+    "sortino": 2.64,
+    "volatility_pct": 21.08
+  },
+  {
+    "path": "out/overnight_ah/OvernightAH/simulation_629f463fec7c4254b26bf14ab5339948/stats.html",
+    "sortino": 3.6,
+    "volatility_pct": 33.32
+  },
+  {
+    "path": "out/overnight_ah/OvernightAH/simulation_163fb4cd41f44377b9f21e9ae56e4e68/stats.html",
+    "sortino": 3.43,
+    "volatility_pct": 35.16
+  },
+  {
+    "path": "out/overnight_ah/OvernightAH/simulation_5ce5ada83555438dbd0d91af7c33d893/stats.html",
+    "sortino": 3.08,
+    "volatility_pct": 35.81
+  },
+  {
+    "path": "out/overnight_ah/OvernightAH/simulation_ff38e5002d5447a2b59c9bbb780147f6/stats.html",
+    "sortino": 2.87,
+    "volatility_pct": 32.02
+  },
+  {
+    "path": "out/overnight_ah/OvernightAH/simulation_8b0a324359cc4075ba3227b4670fefb2/stats.html",
+    "sortino": 3.37,
+    "volatility_pct": 35.21
+  },
+  {
+    "path": "out/overnight_ah/OvernightAH/simulation_d6502e580fcc460f990b20b20207167a/stats.html",
+    "sortino": 3.82,
+    "volatility_pct": 34.19
+  },
+  {
+    "path": "out/overnight_ah/OvernightAH/simulation_2f76caebccf743279ac32038d9fccd34/stats.html",
+    "sortino": 3.17,
+    "volatility_pct": 32.61
+  },
+  {
+    "path": "out/overnight_ah/OvernightAH/simulation_b17956fa00ee4501bfd6cba53e586378/stats.html",
+    "sortino": 2.18,
+    "volatility_pct": 27.87
+  },
+  {
+    "path": "out/overnight_ah/OvernightAH/simulation_4c92ebddc3a444b0845ad1e989b0a983/stats.html",
+    "sortino": 2.87,
+    "volatility_pct": 32.02
+  },
+  {
+    "path": "out/overnight_ah/OvernightAH/simulation_e0f6f88558014b779e7bf9a1579494f4/stats.html",
+    "sortino": 2.18,
+    "volatility_pct": 27.87
+  },
+  {
+    "path": "out/overnight_ah/OvernightAH/simulation_d9e0f0344e0b4de8acb43a46902fc87a/stats.html",
+    "sortino": 3.1,
+    "volatility_pct": 24.77
+  },
+  {
+    "path": "out/overnight_ah/OvernightAH/simulation_0acd865da3344f9c9d8bc532bdd73824/stats.html",
+    "sortino": 3.63,
+    "volatility_pct": 68.91
+  },
+  {
+    "path": "out/overnight_ah/OvernightAH/simulation_771997fa063f40ec93e6a3342f4d580a/stats.html",
+    "sortino": 3.14,
+    "volatility_pct": 71.24
+  },
+  {
+    "path": "out/overnight_ah/OvernightAH/simulation_ed70d177802d4ae6b19ae2434271e9ac/stats.html",
+    "sortino": 2.57,
+    "volatility_pct": 21.91
+  },
+  {
+    "path": "out/overnight_ah/OvernightAH/simulation_7f4f1c0dc483487e8f7f78caa10070a4/stats.html",
+    "sortino": 3.63,
+    "volatility_pct": 34.57
+  },
+  {
+    "path": "out/overnight_ah/OvernightAH/simulation_aef3faabb2f54eb38da7e4545c0cd4b0/stats.html",
+    "sortino": 3.08,
+    "volatility_pct": 35.81
+  },
+  {
+    "path": "out/overnight_ah/OvernightAH/simulation_488c80195a4648d2810563912303c838/stats.html",
+    "sortino": 3.66,
+    "volatility_pct": 68.64
+  },
+  {
+    "path": "out/overnight_ah/OvernightAH/simulation_e2b36830cd7e4dcab4165a3f8fda40a3/stats.html",
+    "sortino": 2.53,
+    "volatility_pct": 21.42
+  },
+  {
+    "path": "out/overnight_ah/OvernightAH/simulation_15b234d88b2d48cdbb5d95c7b82a65c4/stats.html",
+    "sortino": 2.39,
+    "volatility_pct": 23.21
+  },
+  {
+    "path": "out/overnight_ah/OvernightAH/simulation_2550b71e85a74339a0ba5ff0bb0b56e0/stats.html",
+    "sortino": 3.4,
+    "volatility_pct": 29.34
+  },
+  {
+    "path": "out/overnight_ah/OvernightAH/simulation_dfd35701af8542e0b8b5e6f95fb7ee96/stats.html",
+    "sortino": 2.62,
+    "volatility_pct": 21.12
+  },
+  {
+    "path": "out/overnight_ah/OvernightAH/simulation_7091be1c3f1747d5aa123a8cba1bd04d/stats.html",
+    "sortino": 3.14,
+    "volatility_pct": 35.6
+  },
+  {
+    "path": "out/overnight_ah/OvernightAH/simulation_b5cda8748fd84397b016f0affedf5933/stats.html",
+    "sortino": 3.09,
+    "volatility_pct": 35.81
+  },
+  {
+    "path": "out/overnight_ah/OvernightAH/simulation_cb673170f28c4b44a83e58c17ef77ba3/stats.html",
+    "sortino": 3.72,
+    "volatility_pct": 34.26
+  },
+  {
+    "path": "out/overnight_ah/OvernightAH/simulation_6cb3dcbf4b2d4806940578144f95971c/stats.html",
+    "sortino": 3.13,
+    "volatility_pct": 33.08
+  },
+  {
+    "path": "out/overnight_ah/OvernightAH/simulation_7f9150b60c23469fbcd827151fb5ebd2/stats.html",
+    "sortino": 2.6,
+    "volatility_pct": 21.64
+  },
+  {
+    "path": "out/overnight_ah/OvernightAH/simulation_cd2fff9ffec947f08afe2af1bf1b6197/stats.html",
+    "sortino": 2.6,
+    "volatility_pct": 21.64
+  },
+  {
+    "path": "out/overnight_ah/OvernightAH/simulation_6a92cfb7783f43c28e2d97288455987e/stats.html",
+    "sortino": 2.28,
+    "volatility_pct": 43.03
+  },
+  {
+    "path": "out/overnight_ah/OvernightAH/simulation_6ccfdcf58f6c44678ddde7332958dfc3/stats.html",
+    "sortino": 2.92,
+    "volatility_pct": 35.28
+  },
+  {
+    "path": "out/overnight_ah/OvernightAH/simulation_cd711c52af4d48169c1ae48c7f0af4fe/stats.html",
+    "sortino": 3.14,
+    "volatility_pct": 66.97
+  },
+  {
+    "path": "out/overnight_ah/OvernightAH/simulation_4573cb6cca2941e2beb46cf0a2c446f8/stats.html",
+    "sortino": 3.08,
+    "volatility_pct": 35.81
+  },
+  {
+    "path": "out/overnight_ah/OvernightAH/simulation_e5ddaab9ee7e44618b684333241e6662/stats.html",
+    "sortino": 3.59,
+    "volatility_pct": 34.66
+  },
+  {
+    "path": "out/overnight_ah/OvernightAH/simulation_c7e0f82ee65a46509d3aaa60299ed509/stats.html",
+    "sortino": 3.78,
+    "volatility_pct": 34.27
+  },
+  {
+    "path": "out/overnight_ah/OvernightAH/simulation_d010f458fcbd4eac99e65f7eea5424c8/stats.html",
+    "sortino": 3.08,
+    "volatility_pct": 32.43
+  },
+  {
+    "path": "out/overnight_ah/OvernightAH/simulation_a01709cae4c748059ed514a09889e2ef/stats.html",
+    "sortino": 3.08,
+    "volatility_pct": 35.81
+  },
+  {
+    "path": "out/overnight_ah/OvernightAH/simulation_b84ec82e2e0747d0b42d51e09df383e3/stats.html",
+    "sortino": 3.11,
+    "volatility_pct": 35.6
+  },
+  {
+    "path": "out/overnight_ah/OvernightAH/simulation_ad14f184e36047d7976c6431e83a75ad/stats.html",
+    "sortino": 3.16,
+    "volatility_pct": 100.08
+  },
+  {
+    "path": "out/overnight_ah/OvernightAH/simulation_bc4b336422e241199279d9151c0bb95d/stats.html",
+    "sortino": 3.08,
+    "volatility_pct": 35.81
+  },
+  {
+    "path": "out/overnight_ah/OvernightAH/simulation_af17a631e4f949d58c508e34c492e4af/stats.html",
+    "sortino": 3.15,
+    "volatility_pct": 33.77
+  },
+  {
+    "path": "out/overnight_ah/OvernightAH/simulation_0fa24f6387234f8fbb5c43195bb28c32/stats.html",
+    "sortino": 3.18,
+    "volatility_pct": 33.08
+  },
+  {
+    "path": "out/overnight_ah/OvernightAH/simulation_f7fd23bf0a034745853ca852441751da/stats.html",
+    "sortino": 3.18,
+    "volatility_pct": 33.58
+  },
+  {
+    "path": "out/overnight_ah/OvernightAH/simulation_bc021af3b876456a96a36288dd36ec1c/stats.html",
+    "sortino": 3.54,
+    "volatility_pct": 34.98
+  },
+  {
+    "path": "out/overnight_ah/OvernightAH/simulation_2205b9676d7545559d3da2d6e5c70b0a/stats.html",
+    "sortino": 2.49,
+    "volatility_pct": 22.03
+  },
+  {
+    "path": "out/overnight_ah/OvernightAH/simulation_997c3a202b3c48daa2dc3d069ee9c969/stats.html",
+    "sortino": 2.6,
+    "volatility_pct": 21.64
+  },
+  {
+    "path": "out/overnight_ah/OvernightAH/simulation_03ff11c6f479449d94f6c14ee8018bc7/stats.html",
+    "sortino": 3.11,
+    "volatility_pct": 71.23
+  },
+  {
+    "path": "out/overnight_ah/OvernightAH/simulation_954b400701854e24b27a29f70613c284/stats.html",
+    "sortino": 3.08,
+    "volatility_pct": 64.89
+  },
+  {
+    "path": "out/overnight_ah/OvernightAH/simulation_84d5bbcdaf464f0cb323b6095d67584e/stats.html",
+    "sortino": 2.65,
+    "volatility_pct": 83.57
+  },
+  {
+    "path": "out/overnight_ah/OvernightAH/simulation_b727d65dfb3a42ed96dc22b14f4e46d5/stats.html",
+    "sortino": 2.64,
+    "volatility_pct": 21.07
+  },
+  {
+    "path": "out/overnight_ah/OvernightAH/simulation_f5e0074e360e4db6896ab6bdaed5be4c/stats.html",
+    "sortino": 3.05,
+    "volatility_pct": 35.7
+  },
+  {
+    "path": "out/overnight_ah/OvernightAH/simulation_5a43b57a50b14bdd9c149c3821fb8c6e/stats.html",
+    "sortino": 3.39,
+    "volatility_pct": 33.19
+  },
+  {
+    "path": "out/overnight_ah/OvernightAH/simulation_6418ee94e2174d56aa146cb9dfd43f4f/stats.html",
+    "sortino": 3.63,
+    "volatility_pct": 69.17
+  },
+  {
+    "path": "out/generic/BuyCloseSellOpen/simulation_3dbb54daa4dd475fb91636938bfbe37a/stats.html",
+    "sortino": -1.06,
+    "volatility_pct": 23.21
+  },
+  {
+    "path": "out/generic/BuyCloseSellOpen/simulation_ce20d31c5cac4033aa3ccc4f1dc92c48/stats.html",
+    "sortino": 0.27,
+    "volatility_pct": 21.35
+  },
+  {
+    "path": "out/generic/BuyAndHold/simulation_3569684db75243c9b2f1a7b3d9222d62/stats.html",
+    "sortino": -2.22,
+    "volatility_pct": 30.7
+  },
+  {
+    "path": "out/generic/BuyAndHold/simulation_a0b8608acc1d44d5bf36974ec9ebb76e/stats.html",
+    "sortino": 1.29,
+    "volatility_pct": 22.04
+  },
+  {
+    "path": "out/generic/BuyAndHold/simulation_8e49c31727a442c78c4d6e6ee6637ee5/stats.html",
+    "sortino": -2.22,
+    "volatility_pct": 30.7
+  },
+  {
+    "path": "out/generic/BuyAndHold/simulation_960d407cab4b4eca8dd19f6e4f6a1f19/stats.html",
+    "sortino": 1.85,
+    "volatility_pct": 44.03
+  },
+  {
+    "path": "out/generic/BuyAndHold/simulation_fb721a6f1a854c97849e49cb5608640e/stats.html",
+    "sortino": 1.29,
+    "volatility_pct": 22.04
+  }
+]

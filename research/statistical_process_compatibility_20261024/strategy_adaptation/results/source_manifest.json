@@ -1,0 +1,53 @@
+{
+  "scope": "Frozen native backtest outputs; database SELECT only",
+  "sources": [
+    {
+      "name": "OvernightAH",
+      "baseline_id": 113,
+      "run_id": "baseline_live_e1eb0e34",
+      "source_directory": "/home/htpc/backtrader-prod/out/overnight_ah/OvernightAH/baseline_live_e1eb0e34",
+      "resolved_source_directory": "/home/htpc/backtrader-prod/out/overnight_ah/OvernightAH/baseline_live_e1eb0e34",
+      "source_sha256": {
+        "returns.csv": "acffcc2f747b347ccd76cf62aade1a6c7e68ec1a82e62ddfac11b50daf916b0d",
+        "results.json": "968d418374a190e16c668c9928fd49b10c6b8915b323d38e56e1dbb1c47cfb06",
+        "trades.json": "ef10d7617c4f6bd57ae1cf233325fb18a3c409ddc7016f0c018137451f214fa8"
+      },
+      "commission": "alpaca",
+      "margin_leverage": 1.0,
+      "strategy": "overnight_ah.OvernightAH",
+      "window_end": "2026-01-01",
+      "code_commit": "78ba27aa42d5176ae93021b72b1cf50ccd595011",
+      "trades": 30534
+    },
+    {
+      "name": "FlatComposite",
+      "baseline_id": 108,
+      "run_id": "baseline_challenger_8745d633",
+      "source_directory": "/home/htpc/backtrader/out/overnight_ah_flat_composite/OvernightAHFlatComposite/baseline_challenger_8745d633",
+      "resolved_source_directory": "/mnt/Backup/backtrader_archive/out/overnight_ah_flat_composite/OvernightAHFlatComposite/baseline_challenger_8745d633",
+      "source_sha256": {
+        "returns.csv": "5355c626f58f9d884ab3f46374ecf658bd6bf541e1f930fb49d82a167e8dab9a",
+        "results.json": "7c934ae4e5317d3dcb06eff262532befbeb66d7abe430b9a7e7d597a14c9f1c8",
+        "trades.json": "3432a0f3fde4cb5abc54cd8b67dfb6a143bf730e13ea8a0fda9044d85bc737c3"
+      },
+      "commission": "alpaca",
+      "margin_leverage": 2.0,
+      "strategy": "overnight_ah_flat_composite.OvernightAHFlatComposite",
+      "window_end": "2026-01-01",
+      "code_commit": "95a9d07116a90fcd2906b8a3c6ee902505971224",
+      "trades": 115246
+    }
+  ],
+  "frozen_sha256": {
+    "inputs/FlatComposite/baseline.json": "f989c819ae3ff46afd399cdf9595bbe5470cbcbdc350eb7ca550c6316d6baca6",
+    "inputs/FlatComposite/daily_trades.csv": "6185e3c04ef294738f04537433539aca0bde71d155499cb242fef4d81e3023ca",
+    "inputs/FlatComposite/results.json": "7c934ae4e5317d3dcb06eff262532befbeb66d7abe430b9a7e7d597a14c9f1c8",
+    "inputs/FlatComposite/returns.csv": "5355c626f58f9d884ab3f46374ecf658bd6bf541e1f930fb49d82a167e8dab9a",
+    "inputs/FlatComposite/trade_inputs.csv.gz": "1f9107d334db0bb01fc9235ee3d530652ee9832e0398c51fa2a83872e698f60d",
+    "inputs/OvernightAH/baseline.json": "5c3f998c23cdb34f741505cdc7f0815c7654bc6f56ee86ef5c85a89e2ad35559",
+    "inputs/OvernightAH/daily_trades.csv": "9f3ab88cca88da5e7cdca8cd5ce2fe54823139ad234e4e07e87fa27a32cc91a4",
+    "inputs/OvernightAH/results.json": "968d418374a190e16c668c9928fd49b10c6b8915b323d38e56e1dbb1c47cfb06",
+    "inputs/OvernightAH/returns.csv": "acffcc2f747b347ccd76cf62aade1a6c7e68ec1a82e62ddfac11b50daf916b0d",
+    "inputs/OvernightAH/trade_inputs.csv.gz": "8e6fba9fbfbe95cab137ac3f68514f8ee5a2b97f5e28391784b6ab546bdf99d6"
+  }
+}

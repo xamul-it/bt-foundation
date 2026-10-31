@@ -1,0 +1,66 @@
+{
+  "scope": "Feasibility on native backtest returns and controlled empirical blocks",
+  "all_diagnostic_gates_passed": false,
+  "gates": [
+    {
+      "strategy": "OvernightAH",
+      "criterion": "unchanged",
+      "rate": 0.051179999999999996,
+      "low": 0.025,
+      "high": 0.075,
+      "passed": true
+    },
+    {
+      "strategy": "OvernightAH",
+      "criterion": "mean_minus_1sd",
+      "rate": 0.9804499999999998,
+      "low": 0.8,
+      "high": 1.0,
+      "passed": true
+    },
+    {
+      "strategy": "OvernightAH",
+      "criterion": "dispersion_x2",
+      "rate": 0.44348999999999994,
+      "low": 0.5,
+      "high": 1.0,
+      "passed": false
+    },
+    {
+      "strategy": "OvernightAH",
+      "criterion": "order_and_magnitude_preserved",
+      "passed": true
+    },
+    {
+      "strategy": "FlatComposite",
+      "criterion": "unchanged",
+      "rate": 0.05007999999999999,
+      "low": 0.025,
+      "high": 0.075,
+      "passed": true
+    },
+    {
+      "strategy": "FlatComposite",
+      "criterion": "mean_minus_1sd",
+      "rate": 1.0,
+      "low": 0.8,
+      "high": 1.0,
+      "passed": true
+    },
+    {
+      "strategy": "FlatComposite",
+      "criterion": "dispersion_x2",
+      "rate": 0.37341,
+      "low": 0.5,
+      "high": 1.0,
+      "passed": false
+    },
+    {
+      "strategy": "FlatComposite",
+      "criterion": "order_and_magnitude_preserved",
+      "passed": true
+    }
+  ],
+  "future_real_null_false_alarm_rate_verified": false,
+  "production_application": false
+}

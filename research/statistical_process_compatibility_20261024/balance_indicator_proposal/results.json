@@ -1,0 +1,145 @@
+{
+  "scope": "Historical financial description; no statistical test calibrated or UI changed",
+  "unit": "Arithmetic daily portfolio return from native backtest",
+  "mean_definition": "Arithmetic mean of all reference daily returns, fixed as of 2018-12-31",
+  "overlap_note": "Windows overlap and are not independent episodes; historical frequency is descriptive",
+  "retrospective_note": "Threshold estimated on the same historical reference; not held-out test evidence",
+  "summaries": [
+    {
+      "strategy": "OvernightAH",
+      "reference_start": "2000-01-03",
+      "reference_end": "2018-12-31",
+      "observations": 4779,
+      "mean_daily_return": 0.0012317049037803526,
+      "positive_count": 2282,
+      "negative_count": 1630,
+      "zero_count": 867,
+      "below_mean_count": 2730,
+      "positive_below_mean_count": 233,
+      "at_or_above_mean_count": 2049,
+      "longest_negative": 10,
+      "longest_below_mean": 49,
+      "longest_below_start": "2009-02-27",
+      "longest_below_end": "2009-05-07",
+      "longest_below_zero_days": 47,
+      "longest_below_negative_days": 2,
+      "positive_fraction": 0.47750575434191256,
+      "negative_fraction": 0.34107553881565184,
+      "zero_fraction": 0.18141870684243566,
+      "below_mean_fraction": 0.5712492153170119
+    },
+    {
+      "strategy": "FlatComposite",
+      "reference_start": "2000-01-03",
+      "reference_end": "2018-12-31",
+      "observations": 4779,
+      "mean_daily_return": 0.0017162076963084258,
+      "positive_count": 2723,
+      "negative_count": 1968,
+      "zero_count": 88,
+      "below_mean_count": 2595,
+      "positive_below_mean_count": 539,
+      "at_or_above_mean_count": 2184,
+      "longest_negative": 10,
+      "longest_below_mean": 45,
+      "longest_below_start": "2009-02-27",
+      "longest_below_end": "2009-05-01",
+      "longest_below_zero_days": 43,
+      "longest_below_negative_days": 2,
+      "positive_fraction": 0.569784473739276,
+      "negative_fraction": 0.4118016321406152,
+      "zero_fraction": 0.01841389412010881,
+      "below_mean_fraction": 0.5430006277463905
+    }
+  ],
+  "windows": [
+    {
+      "strategy": "OvernightAH",
+      "window": 3,
+      "observed_windows": 4777,
+      "windows_all_below_mean": 1096,
+      "historical_fraction": 0.22943269834624241,
+      "naive_iid_fraction": 0.18641328064047372
+    },
+    {
+      "strategy": "OvernightAH",
+      "window": 5,
+      "observed_windows": 4775,
+      "windows_all_below_mean": 485,
+      "historical_fraction": 0.10157068062827225,
+      "naive_iid_fraction": 0.060831437956303754
+    },
+    {
+      "strategy": "OvernightAH",
+      "window": 10,
+      "observed_windows": 4770,
+      "windows_all_below_mean": 144,
+      "historical_fraction": 0.03018867924528302,
+      "naive_iid_fraction": 0.0037004638438316332
+    },
+    {
+      "strategy": "OvernightAH",
+      "window": 15,
+      "observed_windows": 4765,
+      "windows_all_below_mean": 88,
+      "historical_fraction": 0.018467995802728225,
+      "naive_iid_fraction": 0.0002251045367255893
+    },
+    {
+      "strategy": "OvernightAH",
+      "window": 20,
+      "observed_windows": 4760,
+      "windows_all_below_mean": 63,
+      "historical_fraction": 0.013235294117647059,
+      "naive_iid_fraction": 1.3693432659505187e-05
+    },
+    {
+      "strategy": "FlatComposite",
+      "window": 3,
+      "observed_windows": 4777,
+      "windows_all_below_mean": 804,
+      "historical_fraction": 0.16830646849487127,
+      "naive_iid_fraction": 0.16010356227182837
+    },
+    {
+      "strategy": "FlatComposite",
+      "window": 5,
+      "observed_windows": 4775,
+      "windows_all_below_mean": 376,
+      "historical_fraction": 0.0787434554973822,
+      "naive_iid_fraction": 0.047206484380164
+    },
+    {
+      "strategy": "FlatComposite",
+      "window": 10,
+      "observed_windows": 4770,
+      "windows_all_below_mean": 188,
+      "historical_fraction": 0.039412997903563944,
+      "naive_iid_fraction": 0.0022284521675346677
+    },
+    {
+      "strategy": "FlatComposite",
+      "window": 15,
+      "observed_windows": 4765,
+      "windows_all_below_mean": 120,
+      "historical_fraction": 0.025183630640083946,
+      "naive_iid_fraction": 0.0001051973924386679
+    },
+    {
+      "strategy": "FlatComposite",
+      "window": 20,
+      "observed_windows": 4760,
+      "windows_all_below_mean": 73,
+      "historical_fraction": 0.015336134453781512,
+      "naive_iid_fraction": 4.965999062989958e-06
+    }
+  ],
+  "validation": {
+    "partition_counts_reconcile": true,
+    "all_window_counts_checked_by_scalar_code": true
+  },
+  "source_sha256": {
+    "strategy_adaptation/inputs/OvernightAH/returns.csv": "acffcc2f747b347ccd76cf62aade1a6c7e68ec1a82e62ddfac11b50daf916b0d",
+    "strategy_adaptation/inputs/FlatComposite/returns.csv": "5355c626f58f9d884ab3f46374ecf658bd6bf541e1f930fb49d82a167e8dab9a"
+  }
+}

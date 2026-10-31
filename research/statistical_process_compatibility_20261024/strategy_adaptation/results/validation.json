@@ -1,0 +1,12 @@
+{
+  "passed": true,
+  "source_and_analysis_hashes_match": true,
+  "previous_revision_03_unchanged": true,
+  "raw_controlled_rows_checked": 13200,
+  "trade_rows_independently_aggregated": 145780,
+  "scalar_feature_and_full_normalization_checks": "both models, both strategies, all five window lengths",
+  "independent_rank_count_cells": 288,
+  "detailed_rank_sampling": "replicas 0,17,49; unchanged, sorted, mean -1sd, dispersion x2; all windows",
+  "dated_scalar_score_check": "sampled dates from 2019,2020,2025 for both models and strategies",
+  "limits": "Arithmetic and implementation audit; not proof of a stationary financial null or future performance"
+}

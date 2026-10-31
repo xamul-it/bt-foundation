@@ -1,0 +1,102 @@
+{
+  "status": "eligible_for_real_data_validation",
+  "gates": [
+    {
+      "criterion": "Upper CI of pointwise false alarms <= 7.5% for every confirmation null",
+      "passed": true,
+      "worst_upper_ci": 0.0639217017086122
+    },
+    {
+      "criterion": "Upper CI of whole-period false alarms <= 7.5% for every null and horizon",
+      "passed": true,
+      "worst_upper_ci": 0.0633036596467561
+    },
+    {
+      "criterion": "At least 4/5 strong change families have mean recognition >=80%",
+      "passed": true,
+      "families_passed": 5
+    },
+    {
+      "criterion": "No strong change family has zero recognition",
+      "passed": true
+    },
+    {
+      "criterion": "Removal of lag5/7/10 dependence recognized in at least 50% of blocks for each case",
+      "passed": true,
+      "long_memory_cases": [
+        {
+          "null": "lag5",
+          "rate": 0.99495,
+          "ci95_low": 0.9925146913741354,
+          "ci95_high": 0.9973853086258646,
+          "passes_50pct": true
+        },
+        {
+          "null": "lag7",
+          "rate": 0.9711,
+          "ci95_low": 0.9560063014830412,
+          "ci95_high": 0.986193698516959,
+          "passes_50pct": true
+        },
+        {
+          "null": "lag10",
+          "rate": 0.8700750000000002,
+          "ci95_low": 0.8168127660330377,
+          "ci95_high": 0.9233372339669628,
+          "passes_50pct": true
+        }
+      ]
+    }
+  ],
+  "strong_change_families": [
+    {
+      "null": "iid",
+      "scenario": "sticky_06",
+      "rate": 0.946825,
+      "ci95_low": 0.9304842592831296,
+      "ci95_high": 0.96316574071687,
+      "passes_80pct": true
+    },
+    {
+      "null": "sticky_06",
+      "scenario": "iid",
+      "rate": 0.9233,
+      "ci95_low": 0.8780225962105116,
+      "ci95_high": 0.9685774037894884,
+      "passes_80pct": true
+    },
+    {
+      "null": "cycle_forward",
+      "scenario": "cycle_reverse",
+      "rate": 1.0,
+      "ci95_low": 1.0,
+      "ci95_high": 1.0,
+      "passes_80pct": true
+    },
+    {
+      "null": "lag2",
+      "scenario": "iid",
+      "rate": 0.986175,
+      "ci95_low": 0.9690438228758228,
+      "ci95_high": 1.0,
+      "passes_80pct": true
+    },
+    {
+      "null": "sticky_09",
+      "scenario": "iid",
+      "rate": 1.0,
+      "ci95_low": 1.0,
+      "ci95_high": 1.0,
+      "passes_80pct": true
+    }
+  ],
+  "pointwise_null_range": [
+    0.038175,
+    0.0537
+  ],
+  "period_null_range": [
+    0.007,
+    0.0455
+  ],
+  "applies_to": "Synthetic categorical sequences; not a production approval or a posterior probability of sameness."
+}

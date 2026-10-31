@@ -1,0 +1,13 @@
+{
+  "finite_history_extension_checked": true,
+  "status": "Ready within reviewed synthetic scope; deployment validity not established",
+  "result_rows": 728,
+  "independently_recomputed_mean_tests": 140,
+  "all_wilson_intervals_recomputed": true,
+  "all_manifest_hashes_match": true,
+  "exact_probabilities_and_covariance_matrix_checked": true,
+  "limitations": [
+    "Monte Carlo intervals condition on the frozen reference.",
+    "No real strategy inference or anytime guarantee."
+  ]
+}

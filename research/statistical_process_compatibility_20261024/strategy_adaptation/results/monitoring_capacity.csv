@@ -1,0 +1,5 @@
+strategy,horizon,reference_periods,minimum_p,estimable
+OvernightAH,20,38,0.02564102564102564,True
+OvernightAH,100,16,0.058823529411764705,False
+FlatComposite,20,38,0.02564102564102564,True
+FlatComposite,100,16,0.058823529411764705,False

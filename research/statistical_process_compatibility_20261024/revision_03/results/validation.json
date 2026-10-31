@@ -1,0 +1,34 @@
+{
+  "status": "Reviewed synthetic scope; not an application approval",
+  "pointwise_rows": 20400,
+  "monitoring_rows": 3280,
+  "original_study_unchanged": true,
+  "all_manifest_hashes_match": true,
+  "representative_independent_checks": [
+    {
+      "phase": "development",
+      "history_size": 2480,
+      "null": "sticky_06",
+      "raw_features_checked": true,
+      "normalizer_heldout_checked": true,
+      "rank_counts_checked": true
+    },
+    {
+      "phase": "confirmation",
+      "history_size": 4960,
+      "null": "lag10",
+      "raw_features_checked": true,
+      "normalizer_heldout_checked": true,
+      "rank_counts_checked": true
+    },
+    {
+      "phase": "confirmation",
+      "history_size": 4960,
+      "null": "lag8",
+      "raw_features_checked": true,
+      "normalizer_heldout_checked": true,
+      "rank_counts_checked": true
+    }
+  ],
+  "confidence_note": "t intervals across 20 histories are approximate; degenerate intervals do not establish exact probability 0 or 1."
+}

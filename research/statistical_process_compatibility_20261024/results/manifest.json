@@ -1,0 +1,76 @@
+{
+  "config": {
+    "seed": 20261024,
+    "windows": [
+      3,
+      5,
+      10,
+      15,
+      20
+    ],
+    "train_size": 20000,
+    "calibration_blocks": 1000,
+    "spacing": 60,
+    "gap": 200,
+    "trials": 10000,
+    "alpha": 0.05,
+    "nulls": [
+      "iid",
+      "sticky_06",
+      "cycle_forward",
+      "lag2"
+    ],
+    "scenarios": [
+      "iid",
+      "sticky_06",
+      "sticky_09",
+      "cycle_forward",
+      "cycle_reverse",
+      "lag2",
+      "biased_iid"
+    ],
+    "bootstrap_trials": 20000,
+    "outer_replications": 20,
+    "outer_trials": 2000,
+    "monitor_runs": 1000,
+    "monitor_horizon": 100
+  },
+  "elapsed_seconds": 4.367652216984425,
+  "peak_rss_mib": 272.6328125,
+  "versions": {
+    "python": "3.13.7",
+    "numpy": "1.26.4",
+    "scipy": "1.17.1",
+    "pandas": "2.3.3"
+  },
+  "affinity": [
+    0
+  ],
+  "scope": "Synthetic only. No strategy backtest, broker, operational data, or production change.",
+  "sha256": {
+    "protocol.md": "345175402b7689a922d972e9b83551851910f6b20aa0e6c5bf96e9fb9ad84961",
+    "protocol_addendum_before_execution.md": "1f06cb22904fc7ab80134ccef67af639a1f05788bffe6d8519227d8f88ad092f",
+    "sources.md": "474ef020abafc53d03c718e9569b9e3a4c239fdf7413ec66bb2d96542f29d640",
+    "experiment.py": "59c252b0751c83fa3178d382ad77d008730469d07f6a8b89b3d31d69b0282b32",
+    "inputs/current_baseline_compatibility.js": "464ed0359ed2ba87179289cce6f1d8891c594e7d7b868fa6b9b225b3d0412109",
+    "inputs/cycle_forward_evaluation_paths.npz": "291834a92bc7e3a2fdffb57f20a77a2261014f9c1b67e8074736b3f75b51cc4a",
+    "inputs/cycle_forward_historical_stream.npz": "954b1197d9ffc024b32fe824e252ed2815f43d28fe4e67bc8617379268394f33",
+    "inputs/iid_evaluation_paths.npz": "c9073a566d4c8fe6aef74958c43c393c894f58b1eb3390d50ac95682a1de61d5",
+    "inputs/iid_historical_stream.npz": "ac74948b2b260790fb09f8cd85494927b63e56d0ae2bb641a22fab715ba089ce",
+    "inputs/lag2_evaluation_paths.npz": "bd38c07179772d26f70df6e3b327a1afa055c5e419d90b40f0a031b09faca9da",
+    "inputs/lag2_historical_stream.npz": "b3df739490fdc5c0601e5f94b6b069446b6f5a0d7e3ad3968baad1035c2e4a81",
+    "inputs/protocol.sha256": "eaedd95c4dca7b6dace1752a1b70e2f967f78292b82b760b23446deb75860bae",
+    "inputs/sticky_06_evaluation_paths.npz": "5dfadfd941f60d93eb1831a7ace9de3892469bc91cc925d57984cc4635a4fe37",
+    "inputs/sticky_06_historical_stream.npz": "15024da6819b221b46d2163ba1c7eba39236c7fd848ba67f9b769d9a71280da4",
+    "results/baseline_variability.csv": "f7b71638f913e1eb71167889200e2acd4fb71a4a12a2d1e792b0e24b49fb9e49",
+    "results/bootstrap_sensitivity.csv": "c99d8cfa493e74ba68577b6fc800c047f45e2c96daec86f01e7606b0c5d33d78",
+    "results/finite_history.csv": "53eceb5cbac6621c4cb760edfc79f178f4756fdd52b024e65f4072abab54ef65",
+    "results/finite_history_summary.csv": "7d8619df9e06006486d46882d6e53f80a19e7cb57d069bc114e5171be9d2adc9",
+    "results/generator_checks.csv": "9d4ca4da07153af23342b45b524c7b20662a3884696e0c3679c19dc373938e57",
+    "results/monitoring.csv": "fa636ba4bc476beb3fa6f929d1dfcee04414b701e755bc771a27c3e572bfda57",
+    "results/ordered_examples.csv": "5f07df090613bf331d504c8bc6413cf9c700f8df647e2088897933e6c26652d3",
+    "results/rejection_rates.csv": "bc47742653d3131aea1de4ffd30330c37e8357a7b7b61a7b184a0ae626e82582",
+    "results/relabeling.csv": "500805f29e82cc33eae346c05cefecc2695152ec923747e0d0844b375de34def",
+    "results/exact_probabilities.json": "44091b9809f5797ff4a75c6fd66377b079530f3201f3b45afabfc60b4f601add"
+  }
+}

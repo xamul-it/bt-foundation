@@ -1,0 +1,61 @@
+null,example,window,method,pvalue,sequence
+iid,forward_cycle,20,mean_iid,0.569565347915534,1 2 3 4 5 6 1 2 3 4 5 6 1 2 3 4 5 6 1 2
+iid,forward_cycle,20,histogram_blocks,0.025974025974025976,1 2 3 4 5 6 1 2 3 4 5 6 1 2 3 4 5 6 1 2
+iid,forward_cycle,20,markov1_blocks,0.003996003996003996,1 2 3 4 5 6 1 2 3 4 5 6 1 2 3 4 5 6 1 2
+iid,forward_cycle,20,omnibus4_blocks,0.03696303696303696,1 2 3 4 5 6 1 2 3 4 5 6 1 2 3 4 5 6 1 2
+iid,forward_cycle,20,ensemble5_blocks,0.00999000999000999,1 2 3 4 5 6 1 2 3 4 5 6 1 2 3 4 5 6 1 2
+sticky_06,forward_cycle,20,mean_iid,0.6118357440725756,1 2 3 4 5 6 1 2 3 4 5 6 1 2 3 4 5 6 1 2
+sticky_06,forward_cycle,20,histogram_blocks,0.001998001998001998,1 2 3 4 5 6 1 2 3 4 5 6 1 2 3 4 5 6 1 2
+sticky_06,forward_cycle,20,markov1_blocks,0.001998001998001998,1 2 3 4 5 6 1 2 3 4 5 6 1 2 3 4 5 6 1 2
+sticky_06,forward_cycle,20,omnibus4_blocks,0.002997002997002997,1 2 3 4 5 6 1 2 3 4 5 6 1 2 3 4 5 6 1 2
+sticky_06,forward_cycle,20,ensemble5_blocks,0.004995004995004995,1 2 3 4 5 6 1 2 3 4 5 6 1 2 3 4 5 6 1 2
+cycle_forward,forward_cycle,20,mean_iid,0.5801098166950258,1 2 3 4 5 6 1 2 3 4 5 6 1 2 3 4 5 6 1 2
+cycle_forward,forward_cycle,20,histogram_blocks,0.4875124875124875,1 2 3 4 5 6 1 2 3 4 5 6 1 2 3 4 5 6 1 2
+cycle_forward,forward_cycle,20,markov1_blocks,0.04595404595404595,1 2 3 4 5 6 1 2 3 4 5 6 1 2 3 4 5 6 1 2
+cycle_forward,forward_cycle,20,omnibus4_blocks,0.7922077922077922,1 2 3 4 5 6 1 2 3 4 5 6 1 2 3 4 5 6 1 2
+cycle_forward,forward_cycle,20,ensemble5_blocks,0.0959040959040959,1 2 3 4 5 6 1 2 3 4 5 6 1 2 3 4 5 6 1 2
+lag2,forward_cycle,20,mean_iid,0.6165370841985773,1 2 3 4 5 6 1 2 3 4 5 6 1 2 3 4 5 6 1 2
+lag2,forward_cycle,20,histogram_blocks,0.001998001998001998,1 2 3 4 5 6 1 2 3 4 5 6 1 2 3 4 5 6 1 2
+lag2,forward_cycle,20,markov1_blocks,0.4155844155844156,1 2 3 4 5 6 1 2 3 4 5 6 1 2 3 4 5 6 1 2
+lag2,forward_cycle,20,omnibus4_blocks,0.001998001998001998,1 2 3 4 5 6 1 2 3 4 5 6 1 2 3 4 5 6 1 2
+lag2,forward_cycle,20,ensemble5_blocks,0.001998001998001998,1 2 3 4 5 6 1 2 3 4 5 6 1 2 3 4 5 6 1 2
+iid,reverse_order,20,mean_iid,0.569565347915534,2 1 6 5 4 3 2 1 6 5 4 3 2 1 6 5 4 3 2 1
+iid,reverse_order,20,histogram_blocks,0.025974025974025976,2 1 6 5 4 3 2 1 6 5 4 3 2 1 6 5 4 3 2 1
+iid,reverse_order,20,markov1_blocks,0.46153846153846156,2 1 6 5 4 3 2 1 6 5 4 3 2 1 6 5 4 3 2 1
+iid,reverse_order,20,omnibus4_blocks,0.03696303696303696,2 1 6 5 4 3 2 1 6 5 4 3 2 1 6 5 4 3 2 1
+iid,reverse_order,20,ensemble5_blocks,0.05194805194805195,2 1 6 5 4 3 2 1 6 5 4 3 2 1 6 5 4 3 2 1
+sticky_06,reverse_order,20,mean_iid,0.6118357440725756,2 1 6 5 4 3 2 1 6 5 4 3 2 1 6 5 4 3 2 1
+sticky_06,reverse_order,20,histogram_blocks,0.001998001998001998,2 1 6 5 4 3 2 1 6 5 4 3 2 1 6 5 4 3 2 1
+sticky_06,reverse_order,20,markov1_blocks,0.001998001998001998,2 1 6 5 4 3 2 1 6 5 4 3 2 1 6 5 4 3 2 1
+sticky_06,reverse_order,20,omnibus4_blocks,0.002997002997002997,2 1 6 5 4 3 2 1 6 5 4 3 2 1 6 5 4 3 2 1
+sticky_06,reverse_order,20,ensemble5_blocks,0.004995004995004995,2 1 6 5 4 3 2 1 6 5 4 3 2 1 6 5 4 3 2 1
+cycle_forward,reverse_order,20,mean_iid,0.5801098166950258,2 1 6 5 4 3 2 1 6 5 4 3 2 1 6 5 4 3 2 1
+cycle_forward,reverse_order,20,histogram_blocks,0.4875124875124875,2 1 6 5 4 3 2 1 6 5 4 3 2 1 6 5 4 3 2 1
+cycle_forward,reverse_order,20,markov1_blocks,0.001998001998001998,2 1 6 5 4 3 2 1 6 5 4 3 2 1 6 5 4 3 2 1
+cycle_forward,reverse_order,20,omnibus4_blocks,0.7922077922077922,2 1 6 5 4 3 2 1 6 5 4 3 2 1 6 5 4 3 2 1
+cycle_forward,reverse_order,20,ensemble5_blocks,0.001998001998001998,2 1 6 5 4 3 2 1 6 5 4 3 2 1 6 5 4 3 2 1
+lag2,reverse_order,20,mean_iid,0.6165370841985773,2 1 6 5 4 3 2 1 6 5 4 3 2 1 6 5 4 3 2 1
+lag2,reverse_order,20,histogram_blocks,0.001998001998001998,2 1 6 5 4 3 2 1 6 5 4 3 2 1 6 5 4 3 2 1
+lag2,reverse_order,20,markov1_blocks,0.4995004995004995,2 1 6 5 4 3 2 1 6 5 4 3 2 1 6 5 4 3 2 1
+lag2,reverse_order,20,omnibus4_blocks,0.001998001998001998,2 1 6 5 4 3 2 1 6 5 4 3 2 1 6 5 4 3 2 1
+lag2,reverse_order,20,ensemble5_blocks,0.001998001998001998,2 1 6 5 4 3 2 1 6 5 4 3 2 1 6 5 4 3 2 1
+iid,ten_sixes,10,mean_iid,4.106889324791722e-06,6 6 6 6 6 6 6 6 6 6
+iid,ten_sixes,10,histogram_blocks,0.001998001998001998,6 6 6 6 6 6 6 6 6 6
+iid,ten_sixes,10,markov1_blocks,0.44555444555444557,6 6 6 6 6 6 6 6 6 6
+iid,ten_sixes,10,omnibus4_blocks,0.000999000999000999,6 6 6 6 6 6 6 6 6 6
+iid,ten_sixes,10,ensemble5_blocks,0.000999000999000999,6 6 6 6 6 6 6 6 6 6
+sticky_06,ten_sixes,10,mean_iid,3.7025452299747725e-06,6 6 6 6 6 6 6 6 6 6
+sticky_06,ten_sixes,10,histogram_blocks,0.053946053946053944,6 6 6 6 6 6 6 6 6 6
+sticky_06,ten_sixes,10,markov1_blocks,0.025974025974025976,6 6 6 6 6 6 6 6 6 6
+sticky_06,ten_sixes,10,omnibus4_blocks,0.04595404595404595,6 6 6 6 6 6 6 6 6 6
+sticky_06,ten_sixes,10,ensemble5_blocks,0.03196803196803197,6 6 6 6 6 6 6 6 6 6
+cycle_forward,ten_sixes,10,mean_iid,4.19400950199713e-06,6 6 6 6 6 6 6 6 6 6
+cycle_forward,ten_sixes,10,histogram_blocks,0.001998001998001998,6 6 6 6 6 6 6 6 6 6
+cycle_forward,ten_sixes,10,markov1_blocks,0.001998001998001998,6 6 6 6 6 6 6 6 6 6
+cycle_forward,ten_sixes,10,omnibus4_blocks,0.001998001998001998,6 6 6 6 6 6 6 6 6 6
+cycle_forward,ten_sixes,10,ensemble5_blocks,0.001998001998001998,6 6 6 6 6 6 6 6 6 6
+lag2,ten_sixes,10,mean_iid,3.858270522501136e-06,6 6 6 6 6 6 6 6 6 6
+lag2,ten_sixes,10,histogram_blocks,0.061938061938061936,6 6 6 6 6 6 6 6 6 6
+lag2,ten_sixes,10,markov1_blocks,0.45754245754245754,6 6 6 6 6 6 6 6 6 6
+lag2,ten_sixes,10,omnibus4_blocks,0.055944055944055944,6 6 6 6 6 6 6 6 6 6
+lag2,ten_sixes,10,ensemble5_blocks,0.07892107892107893,6 6 6 6 6 6 6 6 6 6

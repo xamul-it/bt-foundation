@@ -1,0 +1,23 @@
+{
+  "0.0": {
+    "probability_ten_sixes": 1.6538171687920194e-08,
+    "probability_ten_identical": 9.922903012752117e-08,
+    "probability_ten_new_sixes_given_previous_six": 1.6538171687920194e-08,
+    "probability_ten_new_sixes_given_previous_one": 1.6538171687920194e-08,
+    "variance_inflation_n20": 1.0
+  },
+  "0.6": {
+    "probability_ten_sixes": 0.004335382478958151,
+    "probability_ten_identical": 0.02601229487374891,
+    "probability_ten_new_sixes_given_previous_six": 0.017341529915832606,
+    "probability_ten_new_sixes_given_previous_one": 0.0017341529915832605,
+    "variance_inflation_n20": 3.62501371059415
+  },
+  "0.9": {
+    "probability_ten_sixes": 0.07616434325174422,
+    "probability_ten_identical": 0.45698605951046534,
+    "probability_ten_new_sixes_given_previous_six": 0.41890388788459326,
+    "probability_ten_new_sixes_given_previous_one": 0.00761643432517442,
+    "variance_inflation_n20": 11.094189891315125
+  }
+}
