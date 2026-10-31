@@ -17,7 +17,7 @@ out/
 **/out/
 *.log
 data/
-
+/config-common/data.old/
 # Scratch git worktrees for the execution-reconciliation replay job
 # (bin/watchtower_replay_reconcile.py) -- created and removed per run,
 # never meant to be tracked.
