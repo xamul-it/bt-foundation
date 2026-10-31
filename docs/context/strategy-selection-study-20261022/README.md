@@ -1,8 +1,10 @@
 # Studio di scelta fra OvernightAH, FlatComposite e RMA
 
-Avviato il 22 ottobre e completato il 23 ottobre 2026. **21 tentativi nativi conclusi, review indipendente e firma scientifica completate.** Cutoff invariato al 21 ottobre. Nessuna modifica operativa.
+**Ripresa del 27 ottobre 2026:** verificati indipendentemente i due replay iniziali AH/RMA con trading dal gennaio 2000. Avviato il completamento dei 34 scenari statici/accessori dell'estensione, con massimo due worker. Il nuovo manifest conserva la correzione del pannello Composite senza alterare quello storico. [Avanzamento aggiornato](../../../bt-strategy-test/strategy-selection/study_20261022/extension_20261023/progress_20261027.json), [review dei dati e delle baseline](../../../bt-strategy-test/strategy-selection/study_20261022/extension_20261023/reviews/resume_static_review.md), [checkpoint del Director](director_resume_20261027.md). La fase adattiva e le conclusioni richiedono ancora i rispettivi controlli; nessuna scelta produttiva definitiva deriva dal semplice avvio del batch.
 
-La proposta è OvernightAH A00 stabile come riferimento prospettico condizionato ai dati e ai costi, con tutto il conto dedicato al rischio e target 1x. Non emerge un vincitore universale: costi elevati cambiano il confronto con RMA; né switch automatico né target 2x sono sostenuti nei confronti eseguiti. La metà del budget è un compromesso di rischio, senza riserva personale presunta.
+**RICERCA RIAPERTA il 23 ottobre 2026.** I 21 tentativi precedenti e i loro audit sono conclusi, ma non completavano il mandato. È in corso un’estensione correttiva per coprire RMA dal 2000 al 2010, datare tutte le metriche e confrontare calibrazioni lunghe e recenti su gruppi economici rappresentativi. Il cutoff rimane il 21 ottobre 2026; nessuna modifica operativa.
+
+La precedente preferenza per A00 è preliminare. Le lacune sui tre quesiti centrali sono nella [rettifica di adeguatezza](decision_adequacy_review.md); le conclusioni precedenti non valgono come scelta di produzione già risolta. Il capitale del conto resta interamente dedicato al rischio.
 
 ## Consegne consultabili
 

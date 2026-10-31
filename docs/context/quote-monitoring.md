@@ -2,16 +2,20 @@
 
 ## Pagine
 
-- **Liquidità L1** (`/dash/#/QuoteMonitoring`): selezione persistente dei ticker, aggiunta manuale dal portafoglio, stato quote e download storico SIP AH.
-- **Amministrazione proxy** (`/dash/#/ProxyAdministration`): servizi proxy/logger, identità complete dei client, applicazioni, canali richiesti e campione live con bid/ask, trade tick e close delle barre distinti.
-- **Registrazioni flussi** (`/dash/#/RecordedFlows`): inventario per simbolo, estratto finale, replay mediante proxy dedicato e cancellazione definitiva con conferma del simbolo. Il download non è esposto tra le azioni principali, come richiesto.
-- **Watchtower**, anche in **Feed Monitoring**: selezione dei simboli richiesti da Watchtower, indipendente dalla lista Liquidità L1.
+Tutte le funzioni sono raccolte nel menu **Amministrazione ZMQ**:
+
+- **Monitoraggio ZMQ** (`/dash/#/Zmq/Monitoring`): grafici live in prima posizione; servizi, applicazioni e sottoscrizioni sotto.
+- **Titoli monitorati** (`/dash/#/Zmq/Recording`): scelta persistente dei simboli e importazione manuale dal portafoglio; schede bid/ask, size native, spread e ultimo scambio. Si osservano i dati di mercato dei titoli, non la liquidità del conto.
+- **Gestione storico** (`/dash/#/Zmq/History`): grafico finanziario, conteggio e selezione delle finestre salvate, filtro AH, azioni a icone per grafico/replay/cancellazione. Dati grezzi e download storico Alpaca sono strumenti secondari richiudibili.
+- **Replay ZMQ** (`/dash/#/Zmq/Replay`): preparazione e controllo del proxy dedicato, separati dalla consultazione dello storico.
+
+I precedenti URL rimangono alias. Watchtower conserva la propria selezione dei simboli in **Feed Monitoring**, indipendente dalla lista manuale in Titoli monitorati.
 
 La raccolta continua a pagina chiusa. L'importazione dal portafoglio è manuale, non segue automaticamente le posizioni successive. Nessun componente invia ordini.
 
 ## Registrazioni e client
 
-Configurazione condivisa `config-common/quote-monitor.json`: `symbols` per Liquidità L1 e `sources.watchtower` per Watchtower. Il registratore usa l'unione, massimo 100 simboli. Gli aggiornamenti sono serializzati con flock e pubblicati atomicamente: salvare una lista conserva l'altra.
+Configurazione condivisa `config-common/quote-monitor.json`: `symbols` per Titoli monitorati e `sources.watchtower` per Watchtower. Il registratore usa l'unione, massimo 100 simboli. Gli aggiornamenti sono serializzati con flock e pubblicati atomicamente: salvare una lista conserva l'altra.
 
 Il logger ha un client dedicato, identificato mediante `REGISTER`. Ogni 5 secondi legge la configurazione e interroga `ADMIN`; ogni 15 secondi rinnova `MIN`, `QUOTE`, `TRADE`. Il proxy condivide ogni sottoscrizione upstream tra client e la rilascia quando si disconnette l'ultimo richiedente.
 
@@ -37,7 +41,7 @@ Il logger conserva `out/dump/<SYMBOL>.json` in formato JSONL, preservando i file
 - `/archives/<symbol>/download`: download HTTP, incluse richieste parziali. Un archivio attivo può continuare a crescere.
 - `DELETE /archives/<symbol>`: richiede simbolo digitato e versione inventario. Rifiuta file cambiati, simboli nelle liste salvate o sottoscritti da altri client, oppure telemetria non verificabile. La verifica delle sottoscrizioni usa l'ultimo snapshot (circa 5 secondi), non blocca nuove richieste concorrenti. Non arresta applicazioni.
 
-I link simbolici sono rifiutati. La cancellazione è bloccata anche se un replay gestito sta utilizzando l'archivio. La consultazione mostra un estratto; la riproduzione passa dal proxy ZMQ descritto sotto.
+I link simbolici sono rifiutati. La cancellazione è bloccata anche se un replay gestito sta utilizzando l'archivio. La riproduzione passa dal proxy ZMQ descritto sotto. La consultazione grafica completa usa l’indice descritto di seguito.
 
 ## Replay ZMQ
 
@@ -89,3 +93,32 @@ Suite complete: API 135 passati e un errore PostgreSQL nel test Watchtower basel
 L'estensione è stata attivata dopo consenso esplicito al riavvio di proxy, logger e API. Tutti e tre risultano active/running, senza riavvii anomali. Le nuove API autenticate `/status`, `/admin`, `/archives`, `/replay` rispondono HTTP 200; il logger conferma la connessione al proxy e il feed SIP. Verifica browser autenticata sulla PWA servita, senza fixture: client/servizi del proxy e pagina archivi/replay visibili.
 
 Una sottoscrizione temporanea AAPL (MIN/QUOTE/TRADE, applicazione "Verifica post-riavvio") ha ricevuto 10 trade e una quote bid/ask reali ed è stata rilasciata con DISCONNECT; le liste persistenti sono rimaste invariate. La gestione replay è disponibile ma nessuna sessione è stata lasciata avviata: la prova del motore replay resta quella isolata su dati sintetici descritta sopra. Nessun ordine inviato e nessun archivio reale cancellato.
+
+
+## Revisione usabilità e indice storico — 27 ottobre 2026
+
+Il visualizzatore usa lightweight-charts, con bid/ask a gradini, punti per gli scambi e candele soltanto quando sono presenti barre OHLC reali. Supporta zoom, scorrimento, intero periodo e schermo intero. I dati grezzi restano richiusi inizialmente.
+
+L’analisi viene avviata solo aprendo un simbolo: `POST /archives/<symbol>/index`, con stato e progresso tramite GET sullo stesso URL. Un indice SQLite derivato, sotto `bt-api/config/archive-index/` ed escluso da Git, legge lo storico completo in background. Le finestre sono gruppi derivati da giorno New York, sessione standard e interruzioni superiori a 30 minuti: non sono identificatori espliciti di sessione del registratore, né un calendario di festività o mezze giornate.
+
+`GET /archives/<symbol>/chart` accetta finestre e intervallo temporale. La panoramica copre l’intero arco dei dati scelti con un campione limitato; lo zoom richiede dettaglio dall’indice. La selezione multipla mostra quante finestre sono disponibili e quante selezionate. Un archivio cresciuto dopo l’analisi viene segnalato e può essere reindicizzato. L’indicizzazione non modifica i JSONL originali.
+
+Verifica della revisione: 26 test API mirati, 24 file di test frontend e due prove browser con API simulate, incluse navigazione, finestre, schermo intero e mobile. Suite API completa: 141 passati e il noto errore PostgreSQL Watchtower baseline. Prova offline su AEP reale: 2.805 eventi, 50 finestre, panoramica di 700 punti con estremi temporali verificati. PWA compilata e servita da Apache.
+
+**Attivazione completata il 28 ottobre 2026:** dopo autorizzazione esplicita è stata riavviata la sola `bt-api@prod.service`, risultata active. API autenticate admin, archivi e indice AEP HTTP 200; pagina storico autenticata verificata con finestre e grafico AEP. Proxy e logger non sono stati riavviati.
+
+
+## Correzioni monitoraggio — 28 ottobre 2026
+
+Nel monitoraggio live il conto selezionato fornisce le posizioni attuali tramite `/dyn/al/portfolio`, aggiornate ogni 15 secondi. Per il simbolo selezionato compare una linea viola tratteggiata al prezzo medio di carico, con lato e quantità. Se esiste un solo conto viene selezionato automaticamente; con più conti occorre sceglierlo. Non rappresenta la cronologia delle operazioni.
+
+La pagina chiarisce la finestra mobile: ultimi 500 eventi complessivi del logger, filtrati per simbolo, non dall’apertura del mercato o della pagina. Mostra gli estremi temporali effettivi del campione. Il cambio simbolo reinizializza la vista del grafico. Le candele sono barre ricevute, con timestamp iniziale del provider; quote e scambi conservano il proprio timestamp.
+
+Menu: icone al primo livello, nessuna icona nelle voci ZMQ del secondo livello, selezione bianca su fondo evidenziato uniforme. La legenda e gli strumenti dei grafici usano gruppi flex adattabili per restare allineati anche su mobile. Verificati con browser e fixture: PMC, conto, periodo, contrasto del menu e ingombro dei controlli; passati 24 file di test Node e build PWA.
+
+
+## Posizioni su tutti i grafici ZMQ — 28 ottobre 2026
+
+Live, storico e replay condividono `OpenPositionChart`: carica le posizioni attuali da tutti i conti disponibili e consente di filtrare per conto. Ogni posizione del simbolo visualizzato ha una linea PMC viola e un’etichetta persistente con conto, Paper/Reale, lato, quantità e prezzo medio. L’etichetta resta visibile anche con prezzo fuori scala o senza campioni di mercato; la linea usa una serie indipendente dai controlli Bid/Ask. Nessuna posizione viene aggregata tra conti.
+
+Aggiornamento ogni 30 secondi; una lettura fallita viene segnalata per conto, senza rappresentarla come assenza di posizioni. Storico e replay specificano che il confronto riguarda posizioni aperte attualmente, non ricostruite alla data degli eventi. Il riferimento è al PMC e non include commissioni o costo stimato di uscita.

@@ -145,3 +145,11 @@ Giudizio del Director aggiornato dopo gli audit numerici: **ricerca condizionata
 **Firma scientifica conclusiva — Research Director, 23 ottobre 2026.** La [review indipendente finale](review.md) esprime `READY WITHIN REVIEWED SCOPE` su conti, clock, screening, controlli, conclusioni e copertura Q01–Q20. La differenza di conteggio 2.171/2.172 è riconciliata nelle due convenzioni esplicite. I conti decisivi sono stati ricostruiti da un Reviewer distinto; la firma del Director ne recepisce l'esito senza sostituirsi alla verifica indipendente.
 
 Lo studio è concluso entro il perimetro autorizzato: esiti negativi preservati, compromessi e lacune decisionali espliciti, protocollo prospettico proposto senza fingere dati futuri disponibili. Non è richiesta un'altra simulazione per chiudere questa ricerca. **Nessuna attività operativa è autorizzata da questa sintesi.**
+
+## Rettifica della firma: adeguatezza al mandato originario
+
+23 ottobre2026, dopo la contestazione dell'utente. **La dichiarazione precedente di completamento era troppo ampia e viene rettificata:** sono conclusi il protocollo ristretto e i21tentativi verificati, non l'intero mandato decisionale. La [revisione critica di adeguatezza](decision_adequacy_review.md) distingue la correttezza dei risultati dalla sufficienza delle domande effettivamente testate.
+
+Restano non risolti il confronto richiesto fra calibrazione dei parametri economici su2000–2026 e2023–2026 e la discriminazione fra contingenza di mercato, crowding e deterioramento dell'edge. Le procedure expanding/trailing5y su due sole coppie di parametri e gli allarmi rolling non costituiscono quelle prove. Anche la preferenza produttiva per A00 è una proposta condizionata a semplicità, costi e dati, non superiorità dimostrata contro tutte le alternative; A01, C1/C2 e R2 hanno evidenze e lacune da presentare senza dedurne esclusioni più forti dei risultati.
+
+**Firma rettificata del Research Director: risultati verificati, mandato decisionale soddisfatto parzialmente.** Nessun numero, snapshot, protocollo o gate viene modificato; nessun nuovo test/budget è introdotto in questa rettifica e nessuna attività operativa è autorizzata.

@@ -125,8 +125,17 @@ Questa sezione serve a chi prepara o modifica una configurazione. I nomi nella p
 | monthly_universe_switch_feature | semis_total_1m/3m/6m/12m, semis_mean_*, semis_ma63_ratio, semis_ma126_ratio / semis_total_3m | Feature di regime. |
 | monthly_universe_switch_threshold | float / 0.0 | Dinamico solo se feature strettamente maggiore. |
 | monthly_universe_spy_dd3m_threshold | frazione / -0.10 | Chiude il ramo dinamico sotto soglia drawdown SPY; richiede SPY nel file. |
+| monthly_universe_spy_dd_lookback | intero positivo / 63 | Numero di sedute valide SPY usate per il massimo dei close. Il DD e' ultimo close / massimo dei close meno 1, non il massimo drawdown della finestra. |
+| monthly_universe_spy_dd_update | monthly, daily / monthly | monthly usa solo close precedenti all'inizio del mese; daily rivaluta il gate con close strettamente precedenti alla data decisionale. Ranking e regime semis restano mensili e il ramo statico conserva il bypass del gate. |
 
 ### Selezione e sizing
+
+Per il tuning del gate SPY, aggiungere a `STRATARGS`, ad esempio:
+`monthly_universe_spy_dd_lookback=126 monthly_universe_spy_dd_update='daily'`.
+In TOML gli stessi nomi sono accettati in `[strategies.params]`, con valori
+`126` e `"daily"`. Omettendoli si mantiene il comportamento storico 63/monthly.
+La soglia conserva il nome `monthly_universe_spy_dd3m_threshold` per compatibilita',
+anche quando la finestra configurata non corrisponde a tre mesi.
 
 | Parametro | Valori / candidato | Azione |
 |---|---|---|
@@ -160,7 +169,21 @@ Con max_exposure=2, max_concurrent=5, size_by_max_concurrent=true, uno slot rice
 | hedge_symbol, hedge_trend_symbol | SQQQ, QQQ | Devono stare nel ticker file; esclusi dai long normali. |
 | hedge_fast_period, hedge_slow_period, hedge_weight | 65, 150, 0.15 | Se EMA65(QQQ)<EMA150(QQQ), compra SQQQ overnight per 15% del budget; sottrae capitale ai long solo quella notte. |
 
-entry_minute e moo_timeout_min sono legacy nel flusso daily: gli orari reali sono dei cron. trade_start_date crea warm-up senza trade prima della data.
+Gli orari reali sono gestiti dallo scheduler e dagli handler MOO/fallback.
+I vecchi parametri `entry_minute` e `moo_timeout_min`, privi di effetto,
+sono stati rimossi: vanno eliminati da eventuali configurazioni salvate prima
+di riutilizzarle. `trade_start_date` crea warm-up senza trade prima della data.
+
+La pulizia del 19 ottobre 2026 ha eliminato anche gli helper temporali mai
+chiamati, i vecchi invii `_submit_moc` e `_force_close`, la coppia di filtri
+inutilizzata `_passes_filters_bt`/`_passes_filters_live` e campi solo scritti
+(quantita' entry duplicata, riferimenti ordini hedge, copie delle credenziali).
+La selezione attiva resta `_filter_reason`. Il ruolo `force_close` resta usato
+dal recupero posizioni residue; lo stato `_last_ah_gain_update_date` resta
+necessario alla variante target-rebalance. Gli altri parametri locali hanno
+utilizzi attivi, talvolta condizionati a una policy: `size_by_max_concurrent`
+serve solo a `legacy`, `fixed_notional_per_trade` solo a `fixed_notional`, i
+parametri hedge/CUSUM/throttle solo ai rispettivi overlay.
 
 ## Configurazioni riproducibili
 

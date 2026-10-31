@@ -1,6 +1,6 @@
 # Revisione indipendente finale dello studio
 
-**Esito: READY WITHIN REVIEWED SCOPE, con limiti economici espliciti.** Lo studio è riproducibile e sufficiente per chiudere lo screening storico nelle condizioni congelate. Non dimostra un vincitore universale, non certifica eseguibilità live e non autorizza ordini, profili, scheduler o deploy.
+**Esito revisionato: READY per conti e screening congelato; INCOMPLETO per la decisione di produzione richiesta.** Lo studio è riproducibile e sufficiente per chiudere i confronti storici eseguiti. Non identifica perché la produzione si comporti diversamente, non distingue contingenza recente da decay/crowding, non confronta in modo ampio storico lungo e calibrazione recente e non valida una regola economica di intervento. Non dimostra un vincitore universale, non certifica eseguibilità live e non autorizza ordini, profili, scheduler o deploy.
 
 Reviewer sostitutivo `gpt-5.6-sol` high, 23 ottobre 2026. Il modello richiesto `gpt-6.1-sol` e il primo sostituto `gpt-6-sol` hanno raggiunto i rispettivi usage limit; la sostituzione è ammessa dal mandato e non viene presentata come equivalente. La review non ha avviato simulazioni. Ha scritto soltanto gli audit sotto `reviews/` e questo documento.
 
@@ -15,7 +15,7 @@ Reviewer sostitutivo `gpt-5.6-sol` high, 23 ottobre 2026. Il modello richiesto `
 | Molteplicità | PASS | Famiglia maxT unica di 15 contrasti, 12 identificabili; nessun pass imputato ai tre contrasti a varianza zero. |
 | Controllo metà budget | PASS tecnico dopo repair | `A00_HALF` originario non misurava metà esposizione. `A00_HALF_BUDGET`, autorizzato prima dell'esito, dimezza davvero la base di sizing. |
 | Confronto leva | PASS tecnico, esito economico negativo | Target 2x a 10 bps RT e funding 10% non supera il requisito di crescita e peggiora fortemente il rischio. |
-| Decisione | CONDIZIONATA | Nessun candidato o switch passa il gate congiunto. A00 resta un riferimento prospettico semplice soltanto se costi e capacità effettivi sono compatibili; R2 resta l'alternativa credibile nello scenario di costo alto. |
+| Decisione | INCOMPLETA rispetto al mandato forte | Nessun candidato o switch passa il gate congiunto. A00 può essere il riferimento di una raccolta dati prospettica soltanto se costi e capacità effettivi sono compatibili; lo studio non supporta una preferenza forte per la produzione oggi. |
 
 Fonti di governo: [protocollo](../../../bt-strategy-test/strategy-selection/study_20261022/protocol.md), [gate v0.4](../../../bt-strategy-test/strategy-selection/study_20261022/reviews/protocol_gate.json), [ruling sul clock](../../../bt-strategy-test/strategy-selection/study_20261022/reviews/timing_clarification.md), [ruling sul finanziamento](../../../bt-strategy-test/strategy-selection/study_20261022/reviews/financing_convention_clarification.md), [amendment metà budget](../../../bt-strategy-test/strategy-selection/study_20261022/reviews/half_budget_control_amendment.md) e [amendment leva](../../../bt-strategy-test/strategy-selection/study_20261022/reviews/leverage_user_amendment.md).
 
@@ -84,6 +84,20 @@ Le quattro [proposte risolte](../../../bt-strategy-test/strategy-selection/study
 
 Il [riferimento monitoring 2026](../../../bt-strategy-test/strategy-selection/study_20261022/proposals/monitoring_2026_reference.json) è coerente con le serie finali: 5.221 finestre rolling63 sovrapposte fino al 2025, soglie q05 congelate prima del 2026, ultima osservazione 21 ottobre e valori finali A00 +8,77%, C1 +4,11%, R2 −18,58%. La valutazione after-close rende il segnale disponibile solo alla decisione successiva e l'azione resta diagnosi, senza stop o switch automatici.
 
+## Rettifica di adeguatezza decisionale — 23 ottobre 2026
+
+Questa rettifica sostituisce il precedente giudizio di adeguatezza sulle conclusioni. Il precedente `READY WITHIN REVIEWED SCOPE` vale per correttezza contabile, clock, screening e controlli del protocollo ristretto; non vale come attestazione che il mandato decisionale centrale sia completo. La correttezza dei conti non basta a chiudere le tre domande centrali del mandato.
+
+**Produzione oggi.** A00 prevale come riferimento semplice per robustezza storica simulata nello scenario di costo basso. Lo studio non dispone però di un estratto autenticato e comparabile di settlements, fill, commissioni, slippage e NAV della produzione, né certifica capacità d'asta e unità ADV. Non misura quindi il divario produzione→replay e non identifica se esso nasca da dati, esecuzione o strategia. “A00 come primo riferimento prospettico” è un disegno di raccolta dati, non una dimostrazione che A00 sia oggi la scelta di produzione.
+
+**Contingenza contro decay o crowding.** Le 79 sedute dopo il taglio retrospettivo di luglio, le epoche e il rolling63 descrivono il percorso recente. Non esistono un change-point preregistrato, una variabile osservabile di crowding/flow, una decomposizione produzione-vs-replay o una causa identificante. I risultati escludono soltanto l'affermazione che luglio provi da solo un break; contingenza, decay, crowding ed errore di esecuzione restano indistinguibili.
+
+**Storico lungo contro calibrazione recente.** Il [protocollo, righe 79–83](../../../bt-strategy-test/strategy-selection/study_20261022/protocol.md) limita esplicitamente expanding/trailing5y a due menu: cooldown off/on per AH e breadth 2/5 per RMA, senza tuning dei 21 pesi Composite. La finestra trailing5y è annuale e non costituisce una calibrazione specifica sul regime 2023–2026; tre procedure coincidono col riferimento perché il menu selezionabile è piccolo. Il risultato respinge l'aggiornamento automatico fra quei bracci. Non prova in generale che configurazioni stabili o storia lunga siano superiori a finestre recenti per universo, ranking, gap, hedge o pesi Composite.
+
+**Allarmi e interventi.** L'implementazione in [analyze_results.py, righe 338–417](../../../bt-strategy-test/strategy-selection/study_20261022/scripts/analyze_results.py) calcola rolling 20/63/126, soglia q05 sul passato e definisce falso allarme quando il forward shadow63 è non negativo. Non stima l'utilità di stop, riduzione o switch rispetto al mantenimento dopo costi; non etichetta veri episodi di perdita dell'edge e non calibra un ritardo accettabile. Il codice stesso dichiara che i micro-drawdown sono descrittivi e non stimano edge-death detection. I pochi episodi sovrapposti supportano la conclusione negativa “nessun automatismo validato”, ma non forniscono una regola decisionale pronta.
+
+Ne consegue che Q09 è coperta solo per i due menu preregistrati, Q11 resta non identificata, Q12/Q13 producono un protocollo osservativo senza policy economica validata e Q18 consente soltanto la scelta di un braccio di riferimento prospettico. Presentare tutte queste domande come chiuse senza tale distinzione eccede l'evidenza.
+
 ## Copertura Q01–Q20
 
 | Q | Copertura revisionata | Esito |
@@ -96,16 +110,16 @@ Il [riferimento monitoring 2026](../../../bt-strategy-test/strategy-selection/st
 | Q06 | lag, Open/Close e clock sintetico | Verificata causalità del tape; asta daily resta proxy |
 | Q07 | 18 core, due amendment e pilota | Tutti completi e distinti; 21 slot usati |
 | Q08 | mappa di parametri e letteratura interna | Coperta; origine economica di alcuni default resta incompleta |
-| Q09 | expanding/trailing5y | Nessun miglioramento; tre contrasti identici non identificabili |
+| Q09 | expanding/trailing5y su due menu ridotti | Copertura parziale; nessun miglioramento nei bracci testati, nessuna conclusione generale lungo-vs-recente |
 | Q10 | cooldown, hedge, half budget | Cooldown negativo; hedge promettente ma non confermato; half riduce rischio e crescita |
-| Q11 | 2023–2025 e 2026 osservato | Coperta, senza dichiarare break di regime |
-| Q12 | soglie rolling e falsi allarmi | Coperta descrittivamente; nessun detector di edge death validato |
-| Q13 | rientro e shadow | Processo proposto; nessuna policy automatica validata |
+| Q11 | 2023–2025 e 2026 osservato | Descritta, causa non identificata; contingenza/decay/crowding restano indistinguibili |
+| Q12 | soglie rolling e falsi allarmi | Diagnostica descrittiva; non valida detector, ritardo o utilità dell'intervento |
+| Q13 | rientro e shadow | Protocollo osservativo proposto; policy economica non validata |
 | Q14 | S126 e mix | Clock corretto, maxT replicato, gate fallito |
 | Q15 | correlazioni e co-eccedenze simmetriche | Coperta con denominatori e caveat |
 | Q16 | capitale 20k/200k/2M e cap | Scenari nativi; capacità live non certificata |
 | Q17 | DD, recuperi, censura e leva | Coperta; nessun limite futuro alla coda o alla rovina |
-| Q18 | scelta orientata alla crescita netta | A00 condizionato ai costi; R2 se attrito alto; 2x respinto nello scenario testato |
+| Q18 | scelta orientata alla crescita netta | A00 soltanto come braccio prospettico condizionato; nessuna preferenza di produzione forte identificata |
 | Q19 | NAV netto, fee, funding, benchmark e proxy | Metriche riconciliate e definizioni separate |
 | Q20 | correzioni e trasferibilità | Vecchio HALF preservato; repair autorizzato e auditato senza attribuirgli alpha |
 
@@ -113,12 +127,12 @@ Il [riferimento monitoring 2026](../../../bt-strategy-test/strategy-selection/st
 
 Restano quattro limiti capaci di cambiare la decisione: universo/panel survivor-conditioned, assenza di un holdout storico intatto, unità share/volume e corporate action non certificate, e fill Open/Close come proxy d'asta senza impatto o probabilità di esecuzione. Adaptive, switch e mix sono screening sintetici; una policy positiva richiederebbe un conto nativo continuo con stato, cash, liquidazioni e costi propri.
 
-Per il capitale interamente dedicato al rischio, la lettura più fedele è:
+Per il capitale interamente dedicato al rischio, la lettura più fedele entro i confronti eseguiti è:
 
-1. conservare A00 come riferimento prospettico semplice se costi reali all-in e capacità risultano vicini allo scenario basso;
-2. considerare R2 come alternativa se l'attrito misurato è più vicino a 10 bps, senza confondere il benchmark di gamba differente;
+1. usare A00 soltanto come riferimento shadow o braccio di una prova prospettica controllata se costi reali all-in e capacità risultano vicini allo scenario basso;
+2. non convertire il vantaggio simulato di R2 a 10 bps in una scelta finché costo ed esecuzione effettivi non sono misurati sullo stesso clock;
 3. mantenere A01 in shadow come possibile trade-off di drawdown, perché il miglioramento puntuale non supera il gate e manca uno stress nativo specifico;
 4. non usare HALF come default di prudenza per cash personale e non aumentare a target 2x nello scenario studiato;
 5. non attivare S126, retuning annuale automatico o switch dalla debolezza recente.
 
-Questa è una scelta di riferimento per osservazione prospettica, non una promozione live. La review approva la coerenza del pacchetto scientifico entro le convenzioni congelate e approva la chiusura negativa dei gate. Ogni uso operativo richiede verifica separata di dati, account, strumenti, costi, margine, aste e riconciliazione dello stato reale.
+Questa è una scelta di riferimento per osservazione prospettica, non una promozione live né una risposta completa su quale strategia usare in produzione. La review approva conti, ricostruzione e chiusura negativa dei gate entro le convenzioni congelate; non approva come chiuse le domande su causa recente, calibrazione generale lungo-vs-recente e intervento economico. Ogni uso operativo richiede verifica separata di dati, account, strumenti, costi, margine, aste e riconciliazione dello stato reale.

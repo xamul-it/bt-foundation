@@ -1,12 +1,50 @@
-# Quale strategia sperimentare: proposta decisionale
+# Quale strategia sperimentare: report in revisione
 
-Studio avviato il 22 ottobre e concluso documentalmente il 23 ottobre 2026. Dati congelati al **21 ottobre 2026**: la ripresa della sessione non amplia il campione. Revisione indipendente e giudizio del Director sono collegati in fondo.
+Studio avviato il 22 ottobre 2026. Dati congelati al **21 ottobre 2026**. **Rettifica del 23 ottobre dopo le osservazioni dell'utente: gli esperimenti del protocollo ristretto sono conclusi, ma le tre domande decisionali centrali sono risolte soltanto in parte. La precedente dichiarazione di completamento del mandato era troppo ampia.** La correttezza contabile dei risultati non risolve questa carenza di adeguatezza. I numeri e il protocollo originale restano invariati.
+
+**Estensione correttiva in corso:** recupero del warmup anteriore al 2000, copertura economica RMA2000–2010, date esplicite e nuove prove di calibrazione. I numeri di crescita completa citati nelle sezioni precedenti all’estensione si riferiscono al **2005-01-03–2026-10-21**, non al 2000–2026.
+
+## Le tre risposte: evidenze disponibili e risposte ancora mancanti
+
+### 1. Quale strategia ha senso provare in produzione, e perché?
+
+**La preferenza preliminare è OvernightAH; A00 è un riferimento di partenza, non un vincitore produttivo dimostrato.** La motivazione disponibile è concreta ma condizionata: nel confronto a costi5bps RT A00 ha CAGR30,93% contro22,19% di RMA, DD36,01% contro42,82% e durata massima dal picco al recupero632 contro1.134sedute. Il Composite matched C1 ha crescita vicina,31,57%, DD maggiore39,91% e forte dipendenza nelle code con AH: il ranking più complesso non ha dimostrato un vantaggio incrementale.
+
+Questi dati spiegano perché cominciare a verificare AH. Non bastano a scegliere definitivamente A00 come configurazione di produzione. **A01 con hedge ha infatti una stima puntuale migliore sia di crescita sia di DD,32,13%/26,24%; C2 cresce ancora di più,39,53%, con altre differenze di configurazione.** La preferenza per A00 deriva da semplicità e ruolo di riferimento, non da una superiorità dimostrata su questi due candidati. Il mancato superamento di un gate non prova che un compromesso sia economicamente inutile per l'utente.
+
+La sensibilità ai costi può cambiare la famiglia da scegliere: a10bps RT A00 scende a15,46%, C1 a16,69% e RMA resta a21,15%. Non abbiamo misurato qui i costi effettivi del conto né verificato la corrispondenza fra produzione e replay. Di conseguenza la conclusione sostenibile è **AH prima candidata a una prova controllata, con confronto A00/A01 ancora aperto; nessuna preferenza forte di produzione già certificata**. Il contesto recente, da solo, non rende RMA la sostituta giusta.
+
+### 2. Come distinguere un periodo difficile da crowding o perdita dell'edge?
+
+**Lo studio non ha validato un discriminatore fra queste cause.** Ha descritto epoche e finestre recenti e misurato allarmi di rendimento; non ha stimato la probabilità che l'edge sia cessato o identificato il crowding. Una soglia rolling insolita segnala un'anomalia, senza spiegarne il motivo. I recuperi successivi63sedute non sono etichette verificate di "strategia ancora sana" e non dimostrano la convenienza di uno stop.
+
+Il percorso diagnostico necessario va distinto dalle prove già eseguite:
+
+| Confronto da osservare | Cosa aiuterebbe a distinguere | Limite dell'inferenza |
+|---|---|---|
+|Produzione contro replay con configurazione, segnali, tempi e quantità confrontabili|Gap dovuto a fill mancati, slippage, costi o implementazione|Un gap esecutivo può anche essere compatibile con capacità/crowding; non ne identifica da solo la causa|
+|Premio della strategia congelata contro opportunità del mercato/universo nella stessa sessione e negli stessi regimi|Debolezza generale delle opportunità contro perdita del vantaggio di selezione|Serve un riferimento economicamente coerente; un benchmark lordo diverso non basta|
+|Persistenza futura del vantaggio netto, stabilità fra titoli e sensibilità a quantità/costi|Evidenza compatibile con deterioramento del meccanismo o capacità|Persistenza non dimostra irreversibilità; attribuire crowding richiede evidenza ulteriore su liquidità, flussi o impatto|
+
+Sono confronti proposti, non risultati di questo studio. Mancano una loro verifica sui dati pertinenti e una valutazione delle azioni conseguenti: continuare, sospendere e rientrare vanno confrontati dopo costi e occasioni perse. **Non abbiamo quindi una regola dimostrata che consenta di dire oggi "questo DD è contingente" oppure "questa strategia va abbandonata".** Questa è una lacuna sostanziale rispetto al mandato, non un dettaglio del monitoraggio.
+
+### 3. Parametri migliori sullo storico lungo oppure sul2023–2026?
+
+**Il confronto richiesto non è stato eseguito con ampiezza sufficiente per rispondere.** Il protocollo ha confrontato selezioni annuali expanding/trailing5anni fra due soli bracci AH — cooldown spento/acceso — e due soli bracci RMA — minimo2/5titoli. Non ha confrontato una calibrazione rappresentativa dei parametri di ranking, universo, gap, hedge o dei21pesi Composite su storico lungo contro2023–2026. Tre procedure rimangono identiche al riferimento anche perché il menu è estremamente ristretto.
+
+La conclusione "quegli aggiornamenti non hanno aggiunto valore" resta valida. **Non autorizza la conclusione generale "i parametri stabili o calibrati sul lungo sono migliori dei recenti".** Usare per ora un riferimento congelato è una scelta provvisoria di metodo; non è la risposta empirica alla domanda dell'utente.
+
+Il confronto pertinente deve scegliere i parametri sul solo passato e valutarli nel periodo successivo, ripetendo la stessa procedura su più origini temporali. Storico crescente e finestra recente devono competere con lo stesso menu motivato, lo stesso obiettivo netto, costi e regole di selezione; la finestra recente non va scelta perché vince sull'ultima curva. Vanno misurate anche stabilità dei parametri, sensibilità dei valori vicini e costo delle variazioni. La bontà dell'ottimo sul suo stesso campione, lungo o recente, non decide quale procedura generalizzi meglio.
+
+Questo esperimento più pertinente è ancora mancante. Inoltre2023–2026 era già osservato: anche un confronto retrospettivo ben costruito richiederebbe una conferma futura. I nuovi run economici negoziano dal2005, mentre2000–2004èwarmup: non vanno descritti come una calibrazione economica completa2000–2026.
+
+**Stato corretto:** scelta della famiglia preliminare e condizionata; causa del deterioramento non identificata; confronto generale fra calibrazione lunga e recente incompleto. Gli scenari di esposizione successivi sono controlli accessori e non colmano queste tre risposte.
 
 ## Decisione proposta
 
 **Usare OvernightAH A00, con configurazione stabile e target di impiego 1x, come primo riferimento per una sperimentazione prospettica condizionata alla verifica dei dati e dei costi.** Il conto è interamente capitale di rischio: nessuna quota viene riservata a esigenze finanziarie personali. L'impiego effettivo dipende da segnali, cap e disponibilità di titoli; il target non è una garanzia di esposizione esatta ai prezzi di fill.
 
-Questa priorità serve a raccogliere evidenza confrontabile. **Non è dimostrato un vincitore universale da promuovere live:** il costo effettivo può ribaltare la scelta a favore di RMA, mentre selezione retrospettiva e proxy d'asta limitano tutte le candidate. Non introdurre adesso né switch automatico né aggiornamenti automatici dei parametri. Conservare A01 con hedge come alternativa shadow interessante; non sostituire A00 con FlatComposite sulla sola equity finale.
+Questa priorità serve a raccogliere evidenza confrontabile e ha la forza limitata descritta nella rettifica iniziale. **Non è dimostrato un vincitore universale da promuovere live:** il costo effettivo può ribaltare la scelta a favore di RMA, mentre selezione retrospettiva e proxy d'asta limitano tutte le candidate. Non introdurre adesso né switch automatico né aggiornamenti automatici dei parametri. Il confronto A00/A01 e il supporto a C2 restano aperti; la sola equity finale non li risolve.
 
 La leva aggiuntiva è stata valutata per la crescita del capitale. Nel confronto nativo a costo10 bps RT e finanziamento10%, passare alla policy target2x produce **CAGR15,05% contro15,46%, DD78,22% contro46,04%**: non emerge una ragione economica per aumentarla in quello scenario. Il risultato non determina la leva ottimale e non dimostra che ogni leva, costo o strumento alternativo sia inutile.
 
@@ -57,7 +95,7 @@ Il segno del filtro gap conta:−0,20 è il limite inferiore firmato del gap sin
 
 AH/Composite usano YahooAdj e100 feed,97tradabili; RMA Yahoo raw e90 feed. Questi universi di ricerca, ripuliti ex post, non vanno esportati come certificazione point-in-time. Broker, calendario, unità, panel e regole d'ordine sono parte della configurazione. I JSON sono proposte di ricerca e riferimenti risolti; non sono profili operativi installati.
 
-Nelle quattro procedure confrontate, AH expanding, AH trailing5y e RMA expanding coincidono con il riferimento: delta0 e statistica non identificabile. RMA trailing5y perde1,394 punti di log-return annuo nel primario. Nessuna giustifica cambiare automaticamente i valori ogni anno. **Mantenere i parametri stabili; rivedere annualmente ipotesi, dati ed esecuzione, cambiando valori solo tramite un nuovo confronto motivato e congelato.** Il risultato riguarda le coppie cooldown off/on e breadth2/5, non dimostra l'ottimalità di tutti i default o dei21 pesi.
+Nelle quattro procedure confrontate, AH expanding, AH trailing5y e RMA expanding coincidono con il riferimento: delta0 e statistica non identificabile. RMA trailing5y perde1,394 punti di log-return annuo nel primario. Quei confronti non giustificano aggiornamenti automatici dei due interruttori testati. **La stabilità del riferimento è una scelta provvisoria di metodo, non la dimostrazione che calibrare sul lungo sia meglio che sul recente.** Il confronto generale resta mancante, come chiarito nell'apertura. La cadenza annuale di revisione proposta non è risultata ottimale da questi esperimenti.
 
 ## Protezioni e switch
 
@@ -141,7 +179,7 @@ Le evidenze che cambierebbero davvero scelta sono: unità e vintage verificabili
 
 ## Audit, domande e riproduzione
 
-La [review indipendente](review.md) ricostruisce le metriche decisive senza importare il calcolo dell'analista; la [sintesi del Director](decision_synthesis.md) contiene anche l'esito di tutte le questioniQ01–Q20 e ciò che cambierebbe ciascuna risposta. La domanda aggiuntiva sulla leva è chiusa come confronto esplorativo negativo nello scenario dichiarato. Questioni non identificabili sono chiuse con limite esplicito, senza inventare una risposta.
+La [review indipendente](review.md) ricostruisce le metriche decisive senza importare il calcolo dell'analista; la [sintesi del Director](decision_synthesis.md) contiene anche le questioniQ01–Q20. La successiva [revisione di adeguatezza](decision_adequacy_review.md) distingue la verifica dei calcoli dal completamento del mandato. Q09 resta parziale; Q11 non identifica la causa; Q12/Q13 forniscono osservazione, non una policy efficace validata; Q18 conserva una preferenza esplorativa. La domanda aggiuntiva sulla leva è chiusa come confronto esplorativo negativo nello scenario dichiarato.
 
 Il [protocollo v0.4](../../../bt-strategy-test/strategy-selection/study_20261022/protocol.md), i gate, gli amendment, il [registro tentativi](../../../bt-strategy-test/strategy-selection/study_20261022/experiment_registry.jsonl), gli [output finali](../../../bt-strategy-test/strategy-selection/study_20261022/analysis/final/run_metrics.json), il [notebook eseguito](../../../bt-strategy-test/strategy-selection/study_20261022/analysis/final/study_companion.ipynb) e la [procedura riproducibile](../../../bt-strategy-test/strategy-selection/study_20261022/README.md) permettono di risalire dalle conclusioni ai run. La versione originaria con HALF non conforme resta preservata e il controllo corretto non ha riaperto la selezione.
 
