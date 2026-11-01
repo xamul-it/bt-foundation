@@ -1,7 +1,7 @@
 LOG_LEVEL=INFO
 
 # Public hostname exposed by reverse proxy.
-ALLOWED_ORIGINS=https://ilz.duckdns.org
+ALLOWED_ORIGINS=https://bt-dash.ilz.it,https://ilz.duckdns.org,https://ilz.duckdns.org:1443
 
 # Optional webhook/runtime values can stay here if needed later.
 # GITHUB_WEBHOOK_SECRET=
