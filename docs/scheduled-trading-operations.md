@@ -104,14 +104,11 @@ day at 00:15 Europe/Rome and incrementally appends sessions newly published by
 Alpaca. An entry only reads this local cache; it never refreshes the calendar
 or downloads symbols.
 
-The scheduled profiles also set
-`live_reenter_positions_pending_fallback=True`. A residual Alpaca position from
-the preceding overnight does not consume an entry slot and does not exclude its
-symbol from the new selection: the entry run still submits the full new `CLS`
-quantity. The 15:52 `exit-fallback` independently cancels pending sells and
-closes every residual long at market before the close auction. The strategy
-emits `ENTRY_EXISTING_POSITION_IGNORED` as a warning whenever this path is used;
-an order already submitted by the current strategy run is never duplicated.
+The legacy strategy parameters `live_reenter_positions_pending_fallback` and
+`opg_failed_hold_if_eligible` are accepted for saved configuration compatibility
+but ignored. Existing positions count toward entry slots and are not eligible
+for a new entry. The exit and fallback handlers operate independently; their
+broker order status and scheduling must be monitored.
 
 The independent 23:30 job refreshes the adjusted daily dataset after the US
 session. Set `REFRESH_MARKET_DATA=1` only for an explicit diagnostic run; it is
