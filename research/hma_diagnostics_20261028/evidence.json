@@ -1,0 +1,268 @@
+{
+  "runs": [
+    {
+      "artifact": "bt-core/out/intraday/HMA/tuning2/p14_eb6",
+      "results": {
+        "fromdate": "01/01/2025",
+        "todate": "06/03/2026",
+        "PNL": 0.245,
+        "PNL_money": null,
+        "trades": 22375,
+        "SQN": 2.237,
+        "param_period": 14,
+        "param_exitbar": 6,
+        "param_inverted": true,
+        "param_sl_pct": null,
+        "param_tp_pct": null,
+        "param_amount": -1,
+        "input_ticker": "HMA_top9.json",
+        "input_commission": "none",
+        "ptf inizio": 200000.0
+      },
+      "trade_rows": 22610,
+      "median_duration_bars": 7.0,
+      "max_trades_per_symbol_entry_day": 39,
+      "exit_clock_counts": [
+        [
+          "19:46:00",
+          1419
+        ],
+        [
+          "20:46:00",
+          1067
+        ],
+        [
+          "13:48:00",
+          396
+        ]
+      ]
+    },
+    {
+      "artifact": "bt-core/out/intraday/HMA/tuning2/p14_ebn1",
+      "results": {
+        "fromdate": "01/01/2025",
+        "todate": "28/02/2026",
+        "PNL": 0.063,
+        "PNL_money": null,
+        "trades": 20426,
+        "SQN": 0.615,
+        "param_period": 14,
+        "param_exitbar": -1,
+        "param_inverted": true,
+        "param_sl_pct": null,
+        "param_tp_pct": null,
+        "param_amount": -1,
+        "input_ticker": "HMA_top9.json",
+        "input_commission": "none",
+        "ptf inizio": 200000.0
+      },
+      "trade_rows": 20623,
+      "median_duration_bars": 8,
+      "max_trades_per_symbol_entry_day": 40,
+      "exit_clock_counts": [
+        [
+          "19:46:00",
+          1422
+        ],
+        [
+          "20:46:00",
+          1048
+        ],
+        [
+          "14:43:00",
+          170
+        ]
+      ]
+    },
+    {
+      "artifact": "bt-core/out/intraday/HMA/test/baseline_p8_full",
+      "results": {
+        "fromdate": "02/01/2025",
+        "todate": "06/03/2026",
+        "PNL": 0.594,
+        "PNL_money": null,
+        "trades": 42950,
+        "SQN": 9.743,
+        "param_period": 8,
+        "param_exitbar": 6,
+        "param_inverted": true,
+        "param_sl_pct": 0.0,
+        "param_tp_pct": 0.0,
+        "param_amount": -1,
+        "input_ticker": "HMA_top9.json",
+        "input_commission": "none",
+        "ptf inizio": 200000.0
+      },
+      "trade_rows": 45378,
+      "median_duration_bars": 4.0,
+      "max_trades_per_symbol_entry_day": 90,
+      "exit_clock_counts": [
+        [
+          "19:46:00",
+          521
+        ],
+        [
+          "20:46:00",
+          349
+        ],
+        [
+          "18:01:00",
+          181
+        ]
+      ]
+    },
+    {
+      "artifact": "bt-core/out/intraday/HMA/simulation_8993f66d0a9e42e687c6496aa3f994ba",
+      "results": {
+        "fromdate": "01/01/2026",
+        "todate": "01/05/2026",
+        "PNL": -0.025,
+        "PNL_money": -5091.85,
+        "trades": 249,
+        "SQN": -0.217,
+        "param_period": 14,
+        "param_exitbar": -1,
+        "param_inverted": false,
+        "param_sl_pct": 0.0,
+        "param_tp_pct": 0.0,
+        "param_amount": -1,
+        "input_ticker": "NVDA,AVGO,MU",
+        "input_commission": "alpaca",
+        "ptf inizio": 200000.0
+      },
+      "trade_rows": 249,
+      "median_duration_bars": 358,
+      "max_trades_per_symbol_entry_day": 1,
+      "exit_clock_counts": [
+        [
+          "15:45:00",
+          249
+        ]
+      ]
+    },
+    {
+      "artifact": "bt-core/out/intraday/HMA/simulation_26e70e56cdca4ae7b5e07a49b4579bfa",
+      "results": {
+        "fromdate": "01/01/2026",
+        "todate": "01/05/2026",
+        "PNL": 0.012,
+        "PNL_money": 2404.269,
+        "trades": 7870,
+        "SQN": 0.742,
+        "param_period": 14,
+        "param_exitbar": -1,
+        "param_inverted": false,
+        "param_sl_pct": 0.0,
+        "param_tp_pct": 0.0,
+        "param_amount": -1,
+        "input_ticker": "AAPL,ABNB,ADBE,ADI,ADP,ADSK,ALGN,AMAT,AMD,AMGN,AMZN,ARM,ASML,AVGO,AXON,AZN,BIIB,BKNG,BKR,CDNS,CDW,CEG,CHTR,CMCSA,COST,CPRT,CRWD,CSCO,CSX,CTAS,CTSH,DDOG,DLTR,DXCM,EA,EBAY,EXC,FANG,FAST,FTNT,GEHC,GFS,GILD,GOOG,GOOGL,HON,IDXX,INTC,INTU,ISRG,KDP,KHC,KLAC,LRCX,LULU,MAR,MCHP,MDLZ,MELI,META,MNST,MRVL,MSFT,MSTR,MTCH,MU,NFLX,NOW,NTES,NVDA,NXPI,ODFL,ON,ORLY,PANW,PAYX,PCAR,PDD,PEP,PLTR,PYPL,QCOM,REGN,ROP,ROST,SBUX,SNPS,TCOM,TEAM,TMUS,TSLA,TTD,TTWO,TXN,VRSK,VRTX,WBD,WDAY,XEL,ZS,SPY",
+        "input_commission": "alpaca",
+        "ptf inizio": 200000.0
+      },
+      "trade_rows": 7870,
+      "median_duration_bars": 234.0,
+      "max_trades_per_symbol_entry_day": 1,
+      "exit_clock_counts": [
+        [
+          "15:45:00",
+          7746
+        ],
+        [
+          "15:44:00",
+          97
+        ],
+        [
+          "15:43:00",
+          17
+        ]
+      ]
+    },
+    {
+      "artifact": "bt-core/out/intraday/HMA/simulation_1fb3d2d9e5824c19bfacf964f23c3ed9",
+      "results": {
+        "fromdate": "01/01/2026",
+        "todate": "01/05/2026",
+        "PNL": 0.014,
+        "PNL_money": 2720.235,
+        "trades": 7870,
+        "SQN": 0.84,
+        "param_period": 14,
+        "param_exitbar": -1,
+        "param_inverted": false,
+        "param_sl_pct": 0.0,
+        "param_tp_pct": 0.0,
+        "param_amount": -1,
+        "input_ticker": "AAPL,ABNB,ADBE,ADI,ADP,ADSK,ALGN,AMAT,AMD,AMGN,AMZN,ARM,ASML,AVGO,AXON,AZN,BIIB,BKNG,BKR,CDNS,CDW,CEG,CHTR,CMCSA,COST,CPRT,CRWD,CSCO,CSX,CTAS,CTSH,DDOG,DLTR,DXCM,EA,EBAY,EXC,FANG,FAST,FTNT,GEHC,GFS,GILD,GOOG,GOOGL,HON,IDXX,INTC,INTU,ISRG,KDP,KHC,KLAC,LRCX,LULU,MAR,MCHP,MDLZ,MELI,META,MNST,MRVL,MSFT,MSTR,MTCH,MU,NFLX,NOW,NTES,NVDA,NXPI,ODFL,ON,ORLY,PANW,PAYX,PCAR,PDD,PEP,PLTR,PYPL,QCOM,REGN,ROP,ROST,SBUX,SNPS,TCOM,TEAM,TMUS,TSLA,TTD,TTWO,TXN,VRSK,VRTX,WBD,WDAY,XEL,ZS,SPY",
+        "input_commission": "none",
+        "ptf inizio": 200000.0
+      },
+      "trade_rows": 7870,
+      "median_duration_bars": 234.0,
+      "max_trades_per_symbol_entry_day": 1,
+      "exit_clock_counts": [
+        [
+          "15:45:00",
+          7746
+        ],
+        [
+          "15:44:00",
+          97
+        ],
+        [
+          "15:43:00",
+          17
+        ]
+      ]
+    },
+    {
+      "artifact": "bt-core/out/intraday/HMA/simulation_cfe554419baf40cc8d40fc36be9bb241",
+      "results": {
+        "fromdate": "01/01/2026",
+        "todate": "01/05/2026",
+        "PNL": 0.018,
+        "PNL_money": 3665.598,
+        "trades": 7870,
+        "SQN": 1.126,
+        "param_period": 14,
+        "param_exitbar": -1,
+        "param_inverted": true,
+        "param_sl_pct": 0.0,
+        "param_tp_pct": 0.0,
+        "param_amount": -1,
+        "input_ticker": "AAPL,ABNB,ADBE,ADI,ADP,ADSK,ALGN,AMAT,AMD,AMGN,AMZN,ARM,ASML,AVGO,AXON,AZN,BIIB,BKNG,BKR,CDNS,CDW,CEG,CHTR,CMCSA,COST,CPRT,CRWD,CSCO,CSX,CTAS,CTSH,DDOG,DLTR,DXCM,EA,EBAY,EXC,FANG,FAST,FTNT,GEHC,GFS,GILD,GOOG,GOOGL,HON,IDXX,INTC,INTU,ISRG,KDP,KHC,KLAC,LRCX,LULU,MAR,MCHP,MDLZ,MELI,META,MNST,MRVL,MSFT,MSTR,MTCH,MU,NFLX,NOW,NTES,NVDA,NXPI,ODFL,ON,ORLY,PANW,PAYX,PCAR,PDD,PEP,PLTR,PYPL,QCOM,REGN,ROP,ROST,SBUX,SNPS,TCOM,TEAM,TMUS,TSLA,TTD,TTWO,TXN,VRSK,VRTX,WBD,WDAY,XEL,ZS,SPY",
+        "input_commission": "none",
+        "ptf inizio": 200000.0
+      },
+      "trade_rows": 7870,
+      "median_duration_bars": 235.0,
+      "max_trades_per_symbol_entry_day": 1,
+      "exit_clock_counts": [
+        [
+          "15:45:00",
+          7746
+        ],
+        [
+          "15:44:00",
+          97
+        ],
+        [
+          "15:43:00",
+          17
+        ]
+      ]
+    }
+  ],
+  "code_cause": {
+    "commit": "5f77e677",
+    "date": "2026-04-27",
+    "file": "bt-core/strategies/intraday.py",
+    "line": 2786,
+    "behavior": "Non-flat positions continue before reversal handling; with exitbar=-1 and SL/TP=0 only calendar exit remains."
+  },
+  "limitations": [
+    "No matched-input replay performed: return difference cannot be attributed numerically to this change alone.",
+    "Historical results count and trades.json row count disagree; historical ledger aggregation needs reconciliation before economic claims.",
+    "Recent universe and date window differ from historical tuning.",
+    "No production files modified."
+  ]
+}

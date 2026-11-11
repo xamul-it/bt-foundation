@@ -1,0 +1,6182 @@
+{
+  "method": "future monthly close-to-next-open compounded per symbol; equal-weight arithmetic mean of per-symbol compounded returns; no execution/costs",
+  "input": "current parquet Yahoo adjusted, not frozen run-specific; selected symbol price spot-check required",
+  "months_logged": 57,
+  "months_usable_universe": 55,
+  "excluded": [
+    {
+      "month": "2005-01-01",
+      "reason": "spy_history_insufficient"
+    },
+    {
+      "month": "2005-02-01",
+      "reason": "spy_history_insufficient"
+    }
+  ],
+  "records": [
+    {
+      "month": "2005-04-01",
+      "eligible": 68,
+      "fully_covered": 68,
+      "excluded_missing_future": 0,
+      "base_list": [
+        "NVDA",
+        "MU",
+        "AMD",
+        "MSTR",
+        "ASML",
+        "MRVL"
+      ],
+      "research_list": [
+        "ADBE",
+        "INTC",
+        "MRVL",
+        "REGN"
+      ],
+      "oracle_top10": [
+        "ON",
+        "GOOG",
+        "GOOGL",
+        "REGN",
+        "MNST",
+        "BKR",
+        "ALGN",
+        "ADSK",
+        "MCHP",
+        "ROP"
+      ],
+      "spearman_previous_win_to_future_gain": 0.3396772668981788,
+      "spearman_previous_win_to_future_win": 0.2842593120990627,
+      "oracle_3": 0.18153674527509697,
+      "base_3": {
+        "names": [
+          "NVDA",
+          "MU",
+          "AMD"
+        ],
+        "gain": 0.05491129383015561,
+        "win": 0.5714285714285714,
+        "percentile": 0.7114427860696516,
+        "overlap": 0,
+        "regret": 0.12662545144494136
+      },
+      "research_3": {
+        "names": [
+          "ADBE",
+          "INTC",
+          "MRVL"
+        ],
+        "gain": 0.017281644935925794,
+        "win": 0.5555555555555555,
+        "percentile": 0.472636815920398,
+        "overlap": 0,
+        "regret": 0.16425510033917118
+      },
+      "oracle_5": 0.17564357762419722,
+      "base_5": {
+        "names": [
+          "NVDA",
+          "MU",
+          "AMD",
+          "MSTR",
+          "ASML"
+        ],
+        "gain": 0.010993818750644363,
+        "win": 0.5714285714285714,
+        "percentile": 0.4955223880597014,
+        "overlap": 0,
+        "regret": 0.16464975887355285
+      },
+      "research_5": null
+    },
+    {
+      "month": "2005-05-01",
+      "eligible": 68,
+      "fully_covered": 68,
+      "excluded_missing_future": 0,
+      "base_list": [
+        "NVDA",
+        "MU",
+        "AMD",
+        "MSTR",
+        "ASML",
+        "MRVL"
+      ],
+      "research_list": [
+        "MAR",
+        "BIIB",
+        "MNST",
+        "ON",
+        "ORLY",
+        "REGN",
+        "AAPL",
+        "ADBE",
+        "BKR",
+        "COST",
+        "CTAS",
+        "GILD",
+        "MSTR",
+        "NVDA",
+        "PEP",
+        "ROP",
+        "ADI",
+        "ADSK",
+        "AMAT",
+        "EA",
+        "HON",
+        "ISRG",
+        "KLAC",
+        "MU",
+        "NFLX",
+        "PAYX",
+        "SNPS",
+        "TCOM",
+        "VRTX",
+        "XEL",
+        "ALGN",
+        "AZN",
+        "INTC",
+        "LRCX",
+        "NTES",
+        "PCAR",
+        "AXON",
+        "CSX",
+        "EBAY",
+        "GOOG",
+        "GOOGL",
+        "MCHP",
+        "SBUX",
+        "TTWO",
+        "TXN",
+        "ADP",
+        "AMD",
+        "CMCSA",
+        "CSCO",
+        "CTSH"
+      ],
+      "oracle_top10": [
+        "AXON",
+        "NFLX",
+        "MNST",
+        "REGN",
+        "VRTX",
+        "ODFL",
+        "NVDA",
+        "GOOGL",
+        "GOOG",
+        "CSX"
+      ],
+      "spearman_previous_win_to_future_gain": 0.3052650371997566,
+      "spearman_previous_win_to_future_win": 0.20255559774181364,
+      "oracle_3": 0.18234783734939838,
+      "base_3": {
+        "names": [
+          "NVDA",
+          "MU",
+          "AMD"
+        ],
+        "gain": 0.0388463565402352,
+        "win": 0.5555555555555555,
+        "percentile": 0.6865671641791044,
+        "overlap": 0,
+        "regret": 0.1435014808091632
+      },
+      "research_3": {
+        "names": [
+          "MAR",
+          "BIIB",
+          "MNST"
+        ],
+        "gain": 0.060972739493777885,
+        "win": 0.5555555555555555,
+        "percentile": 0.7363184079601991,
+        "overlap": 1,
+        "regret": 0.1213750978556205
+      },
+      "oracle_5": 0.1619779620922373,
+      "base_5": {
+        "names": [
+          "NVDA",
+          "MU",
+          "AMD",
+          "MSTR",
+          "ASML"
+        ],
+        "gain": 0.0251856408477949,
+        "win": 0.5523809523809523,
+        "percentile": 0.6179104477611939,
+        "overlap": 0,
+        "regret": 0.1367923212444424
+      },
+      "research_5": {
+        "names": [
+          "MAR",
+          "BIIB",
+          "MNST",
+          "ON",
+          "ORLY"
+        ],
+        "gain": 0.049786242391765045,
+        "win": 0.5238095238095237,
+        "percentile": 0.7313432835820896,
+        "overlap": 1,
+        "regret": 0.11219171970047226
+      }
+    },
+    {
+      "month": "2005-06-01",
+      "eligible": 69,
+      "fully_covered": 69,
+      "excluded_missing_future": 0,
+      "base_list": [
+        "NVDA",
+        "MU",
+        "AMD",
+        "MSTR",
+        "ASML",
+        "MRVL"
+      ],
+      "research_list": [
+        "CSX",
+        "MNST",
+        "ADI",
+        "COST",
+        "FAST",
+        "GOOG",
+        "GOOGL"
+      ],
+      "oracle_top10": [
+        "GILD",
+        "AXON",
+        "DXCM",
+        "PAYX",
+        "MNST",
+        "PCAR",
+        "CTSH",
+        "ON",
+        "EBAY",
+        "MCHP"
+      ],
+      "spearman_previous_win_to_future_gain": 0.47659805125261134,
+      "spearman_previous_win_to_future_win": 0.507548896621041,
+      "oracle_3": 0.08726395715485502,
+      "base_3": {
+        "names": [
+          "NVDA",
+          "MU",
+          "AMD"
+        ],
+        "gain": 0.012320282832108037,
+        "win": 0.4545454545454546,
+        "percentile": 0.4754901960784313,
+        "overlap": 0,
+        "regret": 0.07494367432274698
+      },
+      "research_3": {
+        "names": [
+          "CSX",
+          "MNST",
+          "ADI"
+        ],
+        "gain": 0.044873000196720685,
+        "win": 0.6363636363636364,
+        "percentile": 0.8039215686274509,
+        "overlap": 0,
+        "regret": 0.042390956958134336
+      },
+      "oracle_5": 0.08017922443282424,
+      "base_5": {
+        "names": [
+          "NVDA",
+          "MU",
+          "AMD",
+          "MSTR",
+          "ASML"
+        ],
+        "gain": 0.00994848587718501,
+        "win": 0.4818181818181818,
+        "percentile": 0.45588235294117646,
+        "overlap": 0,
+        "regret": 0.07023073855563923
+      },
+      "research_5": {
+        "names": [
+          "CSX",
+          "MNST",
+          "ADI",
+          "COST",
+          "FAST"
+        ],
+        "gain": 0.030234836856799972,
+        "win": 0.6545454545454545,
+        "percentile": 0.6705882352941176,
+        "overlap": 1,
+        "regret": 0.04994438757602427
+      }
+    },
+    {
+      "month": "2005-11-01",
+      "eligible": 70,
+      "fully_covered": 70,
+      "excluded_missing_future": 0,
+      "base_list": [
+        "NVDA",
+        "MU",
+        "AMD",
+        "MSTR",
+        "ASML",
+        "MRVL"
+      ],
+      "research_list": [
+        "AMD",
+        "ODFL",
+        "GILD",
+        "MSTR",
+        "NVDA",
+        "AMGN",
+        "AXON",
+        "GOOG",
+        "GOOGL",
+        "MAR",
+        "NTES",
+        "BIIB",
+        "INTC",
+        "MU",
+        "ROP",
+        "AAPL",
+        "ADI",
+        "ASML",
+        "BKNG",
+        "CTSH",
+        "EA",
+        "FAST",
+        "ISRG",
+        "MSFT",
+        "PCAR"
+      ],
+      "oracle_top10": [
+        "MNST",
+        "GILD",
+        "BKNG",
+        "MRVL",
+        "SBUX",
+        "AMD",
+        "MU",
+        "ISRG",
+        "AAPL",
+        "DXCM"
+      ],
+      "spearman_previous_win_to_future_gain": 0.3395385476379128,
+      "spearman_previous_win_to_future_win": 0.4045990063963083,
+      "oracle_3": 0.2328582986031739,
+      "base_3": {
+        "names": [
+          "NVDA",
+          "MU",
+          "AMD"
+        ],
+        "gain": 0.08434009114676178,
+        "win": 0.7619047619047619,
+        "percentile": 0.8019323671497585,
+        "overlap": 0,
+        "regret": 0.14851820745641212
+      },
+      "research_3": {
+        "names": [
+          "AMD",
+          "ODFL",
+          "GILD"
+        ],
+        "gain": 0.10899707914348371,
+        "win": 0.6507936507936508,
+        "percentile": 0.8550724637681159,
+        "overlap": 1,
+        "regret": 0.12386121945969018
+      },
+      "oracle_5": 0.18894862034276186,
+      "base_5": {
+        "names": [
+          "NVDA",
+          "MU",
+          "AMD",
+          "MSTR",
+          "ASML"
+        ],
+        "gain": 0.05381427545552764,
+        "win": 0.638095238095238,
+        "percentile": 0.6144927536231883,
+        "overlap": 0,
+        "regret": 0.13513434488723422
+      },
+      "research_5": {
+        "names": [
+          "AMD",
+          "ODFL",
+          "GILD",
+          "MSTR",
+          "NVDA"
+        ],
+        "gain": 0.0731099657922778,
+        "win": 0.6571428571428571,
+        "percentile": 0.6840579710144927,
+        "overlap": 1,
+        "regret": 0.11583865455048406
+      }
+    },
+    {
+      "month": "2006-05-01",
+      "eligible": 70,
+      "fully_covered": 70,
+      "excluded_missing_future": 0,
+      "base_list": [
+        "NVDA",
+        "MU",
+        "AMD",
+        "MSTR",
+        "ASML",
+        "MRVL"
+      ],
+      "research_list": [
+        "TCOM"
+      ],
+      "oracle_top10": [
+        "TCOM",
+        "MNST",
+        "ON",
+        "AMD",
+        "AXON",
+        "EBAY",
+        "ASML",
+        "MRVL",
+        "CTSH",
+        "ODFL"
+      ],
+      "spearman_previous_win_to_future_gain": 0.34957284222284574,
+      "spearman_previous_win_to_future_win": 0.38239574186834263,
+      "oracle_3": 0.2309132318634802,
+      "base_3": {
+        "names": [
+          "NVDA",
+          "MU",
+          "AMD"
+        ],
+        "gain": 0.07228739974651982,
+        "win": 0.6060606060606061,
+        "percentile": 0.8067632850241546,
+        "overlap": 0,
+        "regret": 0.15862583211696038
+      },
+      "research_3": null,
+      "oracle_5": 0.19158378772528958,
+      "base_5": {
+        "names": [
+          "NVDA",
+          "MU",
+          "AMD",
+          "MSTR",
+          "ASML"
+        ],
+        "gain": 0.06711402454634526,
+        "win": 0.5636363636363637,
+        "percentile": 0.7536231884057971,
+        "overlap": 1,
+        "regret": 0.12446976317894433
+      },
+      "research_5": null
+    },
+    {
+      "month": "2006-06-01",
+      "eligible": 70,
+      "fully_covered": 70,
+      "excluded_missing_future": 0,
+      "base_list": [
+        "NVDA",
+        "MU",
+        "AMD",
+        "MSTR",
+        "ASML",
+        "MRVL"
+      ],
+      "research_list": [
+        "GILD",
+        "ODFL",
+        "TCOM",
+        "XEL",
+        "ADSK",
+        "EBAY",
+        "GOOG",
+        "GOOGL",
+        "KLAC",
+        "MSFT",
+        "AAPL",
+        "AMD",
+        "ASML",
+        "AXON",
+        "MNST",
+        "MU"
+      ],
+      "oracle_top10": [
+        "ODFL",
+        "VRTX",
+        "AZN",
+        "ADBE",
+        "MNST",
+        "INTC",
+        "NTES",
+        "ISRG",
+        "PAYX",
+        "AMD"
+      ],
+      "spearman_previous_win_to_future_gain": 0.27078657020226377,
+      "spearman_previous_win_to_future_win": 0.37593411132649257,
+      "oracle_3": 0.14283382862324326,
+      "base_3": {
+        "names": [
+          "NVDA",
+          "MU",
+          "AMD"
+        ],
+        "gain": 0.054587725948932554,
+        "win": 0.5909090909090908,
+        "percentile": 0.753623188405797,
+        "overlap": 0,
+        "regret": 0.08824610267431071
+      },
+      "research_3": {
+        "names": [
+          "GILD",
+          "ODFL",
+          "TCOM"
+        ],
+        "gain": 0.0542441638930565,
+        "win": 0.5606060606060607,
+        "percentile": 0.5169082125603864,
+        "overlap": 1,
+        "regret": 0.08858966473018676
+      },
+      "oracle_5": 0.12851124961360927,
+      "base_5": {
+        "names": [
+          "NVDA",
+          "MU",
+          "AMD",
+          "MSTR",
+          "ASML"
+        ],
+        "gain": 0.044231401453030054,
+        "win": 0.5363636363636364,
+        "percentile": 0.681159420289855,
+        "overlap": 0,
+        "regret": 0.08427984816057921
+      },
+      "research_5": {
+        "names": [
+          "GILD",
+          "ODFL",
+          "TCOM",
+          "XEL",
+          "ADSK"
+        ],
+        "gain": 0.03031045557377523,
+        "win": 0.5181818181818182,
+        "percentile": 0.39420289855072466,
+        "overlap": 1,
+        "regret": 0.09820079403983403
+      }
+    },
+    {
+      "month": "2006-07-01",
+      "eligible": 70,
+      "fully_covered": 70,
+      "excluded_missing_future": 0,
+      "base_list": [
+        "NVDA",
+        "MU",
+        "AMD",
+        "MSTR",
+        "ASML",
+        "MRVL"
+      ],
+      "research_list": [
+        "AMAT",
+        "INTC",
+        "ADBE",
+        "BKR",
+        "EXC",
+        "MNST",
+        "MSFT",
+        "ODFL"
+      ],
+      "oracle_top10": [
+        "AAPL",
+        "AXON",
+        "IDXX",
+        "NVDA",
+        "EXC",
+        "TCOM",
+        "PCAR",
+        "BKR",
+        "HON",
+        "ON"
+      ],
+      "spearman_previous_win_to_future_gain": -0.057439349558636534,
+      "spearman_previous_win_to_future_win": 0.12688053521047118,
+      "oracle_3": 0.11142640718668251,
+      "base_3": {
+        "names": [
+          "NVDA",
+          "MU",
+          "AMD"
+        ],
+        "gain": -0.029346469353655688,
+        "win": 0.48333333333333334,
+        "percentile": 0.5072463768115942,
+        "overlap": 0,
+        "regret": 0.1407728765403382
+      },
+      "research_3": {
+        "names": [
+          "AMAT",
+          "INTC",
+          "ADBE"
+        ],
+        "gain": -0.05333201578144533,
+        "win": 0.3666666666666667,
+        "percentile": 0.2222222222222222,
+        "overlap": 0,
+        "regret": 0.16475842296812784
+      },
+      "oracle_5": 0.08985287492118187,
+      "base_5": {
+        "names": [
+          "NVDA",
+          "MU",
+          "AMD",
+          "MSTR",
+          "ASML"
+        ],
+        "gain": -0.04412104012409248,
+        "win": 0.45,
+        "percentile": 0.39130434782608703,
+        "overlap": 1,
+        "regret": 0.13397391504527434
+      },
+      "research_5": {
+        "names": [
+          "AMAT",
+          "INTC",
+          "ADBE",
+          "BKR",
+          "EXC"
+        ],
+        "gain": -0.012926950855382447,
+        "win": 0.51,
+        "percentile": 0.5014492753623188,
+        "overlap": 1,
+        "regret": 0.10277982577656432
+      }
+    },
+    {
+      "month": "2006-08-01",
+      "eligible": 70,
+      "fully_covered": 70,
+      "excluded_missing_future": 0,
+      "base_list": [
+        "NVDA",
+        "MU",
+        "AMD",
+        "MSTR",
+        "ASML",
+        "MRVL"
+      ],
+      "research_list": [
+        "PCAR",
+        "BKR",
+        "EXC",
+        "AAPL",
+        "TCOM",
+        "AMGN"
+      ],
+      "oracle_top10": [
+        "CSCO",
+        "CTSH",
+        "AMD",
+        "VRTX",
+        "EA",
+        "EBAY",
+        "QCOM",
+        "FAST",
+        "PAYX",
+        "ODFL"
+      ],
+      "spearman_previous_win_to_future_gain": -0.08795834172502712,
+      "spearman_previous_win_to_future_win": 0.04955692316665591,
+      "oracle_3": 0.14486967233494388,
+      "base_3": {
+        "names": [
+          "NVDA",
+          "MU",
+          "AMD"
+        ],
+        "gain": 0.0566491779759804,
+        "win": 0.5942028985507246,
+        "percentile": 0.5603864734299516,
+        "overlap": 1,
+        "regret": 0.08822049435896348
+      },
+      "research_3": {
+        "names": [
+          "PCAR",
+          "BKR",
+          "EXC"
+        ],
+        "gain": 0.033614888299420165,
+        "win": 0.5797101449275363,
+        "percentile": 0.45893719806763283,
+        "overlap": 0,
+        "regret": 0.11125478403552372
+      },
+      "oracle_5": 0.13471829647086636,
+      "base_5": {
+        "names": [
+          "NVDA",
+          "MU",
+          "AMD",
+          "MSTR",
+          "ASML"
+        ],
+        "gain": 0.03564869321301869,
+        "win": 0.5304347826086956,
+        "percentile": 0.42608695652173906,
+        "overlap": 1,
+        "regret": 0.09906960325784767
+      },
+      "research_5": {
+        "names": [
+          "PCAR",
+          "BKR",
+          "EXC",
+          "AAPL",
+          "TCOM"
+        ],
+        "gain": 0.010124249005324572,
+        "win": 0.5739130434782609,
+        "percentile": 0.3391304347826086,
+        "overlap": 0,
+        "regret": 0.12459404746554179
+      }
+    },
+    {
+      "month": "2007-03-01",
+      "eligible": 70,
+      "fully_covered": 70,
+      "excluded_missing_future": 0,
+      "base_list": [
+        "NVDA",
+        "MU",
+        "AMD",
+        "MSTR",
+        "ASML",
+        "MRVL"
+      ],
+      "research_list": [
+        "FAST",
+        "ADBE",
+        "AMD",
+        "COST",
+        "DLTR",
+        "GOOG",
+        "GOOGL",
+        "INTC",
+        "MNST",
+        "NFLX",
+        "ORLY"
+      ],
+      "oracle_top10": [
+        "TTWO",
+        "REGN",
+        "SBUX",
+        "AXON",
+        "AAPL",
+        "NTES",
+        "NVDA",
+        "MCHP",
+        "ADBE",
+        "QCOM"
+      ],
+      "spearman_previous_win_to_future_gain": 0.13799369896989644,
+      "spearman_previous_win_to_future_win": 0.18952223256546163,
+      "oracle_3": 0.1522203560713412,
+      "base_3": {
+        "names": [
+          "NVDA",
+          "MU",
+          "AMD"
+        ],
+        "gain": 0.023773539487007916,
+        "win": 0.5,
+        "percentile": 0.608695652173913,
+        "overlap": 0,
+        "regret": 0.1284468165843333
+      },
+      "research_3": {
+        "names": [
+          "FAST",
+          "ADBE",
+          "AMD"
+        ],
+        "gain": 0.0133872239793688,
+        "win": 0.5454545454545454,
+        "percentile": 0.5265700483091788,
+        "overlap": 0,
+        "regret": 0.1388331320919724
+      },
+      "oracle_5": 0.120826854001109,
+      "base_5": {
+        "names": [
+          "NVDA",
+          "MU",
+          "AMD",
+          "MSTR",
+          "ASML"
+        ],
+        "gain": 0.0116337298498194,
+        "win": 0.4727272727272728,
+        "percentile": 0.472463768115942,
+        "overlap": 0,
+        "regret": 0.1091931241512896
+      },
+      "research_5": {
+        "names": [
+          "FAST",
+          "ADBE",
+          "AMD",
+          "COST",
+          "DLTR"
+        ],
+        "gain": 0.004809436079973534,
+        "win": 0.5181818181818182,
+        "percentile": 0.4579710144927536,
+        "overlap": 0,
+        "regret": 0.11601741792113547
+      }
+    },
+    {
+      "month": "2007-04-01",
+      "eligible": 70,
+      "fully_covered": 70,
+      "excluded_missing_future": 0,
+      "base_list": [
+        "NVDA",
+        "MU",
+        "AMD",
+        "MSTR",
+        "ASML",
+        "MRVL"
+      ],
+      "research_list": [
+        "FAST",
+        "MCHP",
+        "AXON",
+        "BKR",
+        "DLTR",
+        "MDLZ",
+        "NTES",
+        "ADI",
+        "BKNG",
+        "CTSH",
+        "ORLY",
+        "SBUX",
+        "VRTX"
+      ],
+      "oracle_top10": [
+        "ALGN",
+        "AMZN",
+        "AMGN",
+        "TXN",
+        "ADI",
+        "ORLY",
+        "AAPL",
+        "PCAR",
+        "EXC",
+        "EBAY"
+      ],
+      "spearman_previous_win_to_future_gain": 0.011382055732843436,
+      "spearman_previous_win_to_future_win": 0.223360384758657,
+      "oracle_3": 0.18473878840730587,
+      "base_3": {
+        "names": [
+          "NVDA",
+          "MU",
+          "AMD"
+        ],
+        "gain": 0.04300738654411251,
+        "win": 0.5,
+        "percentile": 0.6763285024154589,
+        "overlap": 0,
+        "regret": 0.14173140186319336
+      },
+      "research_3": {
+        "names": [
+          "FAST",
+          "MCHP",
+          "AXON"
+        ],
+        "gain": 0.010040451680862416,
+        "win": 0.5166666666666666,
+        "percentile": 0.4057971014492754,
+        "overlap": 0,
+        "regret": 0.17469833672644344
+      },
+      "oracle_5": 0.15512361972289745,
+      "base_5": {
+        "names": [
+          "NVDA",
+          "MU",
+          "AMD",
+          "MSTR",
+          "ASML"
+        ],
+        "gain": 0.024280214928954446,
+        "win": 0.47000000000000003,
+        "percentile": 0.5420289855072464,
+        "overlap": 0,
+        "regret": 0.13084340479394302
+      },
+      "research_5": {
+        "names": [
+          "FAST",
+          "MCHP",
+          "AXON",
+          "BKR",
+          "DLTR"
+        ],
+        "gain": 9.637799147150655e-05,
+        "win": 0.4499999999999999,
+        "percentile": 0.32753623188405795,
+        "overlap": 0,
+        "regret": 0.15502724173142596
+      }
+    },
+    {
+      "month": "2007-11-01",
+      "eligible": 73,
+      "fully_covered": 73,
+      "excluded_missing_future": 0,
+      "base_list": [
+        "NVDA",
+        "MU",
+        "AMD",
+        "MSTR",
+        "ASML",
+        "MRVL",
+        "MELI"
+      ],
+      "research_list": [
+        "GOOG",
+        "GOOGL",
+        "ISRG",
+        "GILD",
+        "AAPL",
+        "AXON",
+        "NTES",
+        "TTWO",
+        "ADP",
+        "ALGN",
+        "HON",
+        "TCOM",
+        "XEL",
+        "AMD",
+        "AMZN",
+        "BKNG",
+        "BKR",
+        "CSCO",
+        "DLTR",
+        "EXC",
+        "INTU",
+        "LULU",
+        "MSFT",
+        "MSTR",
+        "MU",
+        "PAYX",
+        "REGN",
+        "ADBE",
+        "ADSK",
+        "ASML",
+        "CPRT",
+        "CSX",
+        "DXCM",
+        "EBAY",
+        "MELI",
+        "MRVL",
+        "MTCH",
+        "NVDA",
+        "ODFL",
+        "PCAR",
+        "ROP",
+        "ROST"
+      ],
+      "oracle_top10": [
+        "REGN",
+        "BKNG",
+        "NVDA",
+        "MELI",
+        "ASML",
+        "AAPL",
+        "MTCH",
+        "TTWO",
+        "LULU",
+        "AMAT"
+      ],
+      "spearman_previous_win_to_future_gain": 0.2835432496618059,
+      "spearman_previous_win_to_future_win": 0.21087292932075635,
+      "oracle_3": 0.2661918764992057,
+      "base_3": {
+        "names": [
+          "NVDA",
+          "MU",
+          "AMD"
+        ],
+        "gain": 0.06758145616016391,
+        "win": 0.5714285714285715,
+        "percentile": 0.6851851851851852,
+        "overlap": 1,
+        "regret": 0.1986104203390418
+      },
+      "research_3": {
+        "names": [
+          "GOOG",
+          "GOOGL",
+          "ISRG"
+        ],
+        "gain": 0.07394417866200746,
+        "win": 0.6031746031746031,
+        "percentile": 0.7916666666666666,
+        "overlap": 0,
+        "regret": 0.19224769783719825
+      },
+      "oracle_5": 0.21341671839560564,
+      "base_5": {
+        "names": [
+          "NVDA",
+          "MU",
+          "AMD",
+          "MSTR",
+          "ASML"
+        ],
+        "gain": 0.0746068282892841,
+        "win": 0.5904761904761904,
+        "percentile": 0.7388888888888889,
+        "overlap": 2,
+        "regret": 0.13880989010632155
+      },
+      "research_5": {
+        "names": [
+          "GOOG",
+          "GOOGL",
+          "ISRG",
+          "GILD",
+          "AAPL"
+        ],
+        "gain": 0.07652801781396931,
+        "win": 0.5809523809523809,
+        "percentile": 0.7833333333333334,
+        "overlap": 0,
+        "regret": 0.13688870058163632
+      }
+    },
+    {
+      "month": "2007-12-01",
+      "eligible": 73,
+      "fully_covered": 73,
+      "excluded_missing_future": 0,
+      "base_list": [
+        "NVDA",
+        "MU",
+        "AMD",
+        "MSTR",
+        "ASML",
+        "MRVL",
+        "MELI"
+      ],
+      "research_list": [
+        "ASML",
+        "BKNG",
+        "TMUS"
+      ],
+      "oracle_top10": [
+        "MELI",
+        "TTWO",
+        "MNST",
+        "CPRT",
+        "SNPS",
+        "CTAS",
+        "NVDA",
+        "ALGN",
+        "EBAY",
+        "AAPL"
+      ],
+      "spearman_previous_win_to_future_gain": 0.30853783481949054,
+      "spearman_previous_win_to_future_win": 0.42570541202020123,
+      "oracle_3": 0.3114042087676289,
+      "base_3": {
+        "names": [
+          "NVDA",
+          "MU",
+          "AMD"
+        ],
+        "gain": 0.05098225997208491,
+        "win": 0.5499999999999999,
+        "percentile": 0.5972222222222222,
+        "overlap": 0,
+        "regret": 0.26042194879554403
+      },
+      "research_3": {
+        "names": [
+          "ASML",
+          "BKNG",
+          "TMUS"
+        ],
+        "gain": 0.019412445960908103,
+        "win": 0.5166666666666667,
+        "percentile": 0.4444444444444444,
+        "overlap": 0,
+        "regret": 0.2919917628067208
+      },
+      "oracle_5": 0.24533430211538576,
+      "base_5": {
+        "names": [
+          "NVDA",
+          "MU",
+          "AMD",
+          "MSTR",
+          "ASML"
+        ],
+        "gain": 0.055944674404956096,
+        "win": 0.54,
+        "percentile": 0.6638888888888889,
+        "overlap": 0,
+        "regret": 0.18938962771042966
+      },
+      "research_5": null
+    },
+    {
+      "month": "2008-01-01",
+      "eligible": 73,
+      "fully_covered": 73,
+      "excluded_missing_future": 0,
+      "base_list": [
+        "NVDA",
+        "MU",
+        "AMD",
+        "MSTR",
+        "ASML",
+        "MRVL",
+        "MELI"
+      ],
+      "research_list": [
+        "CPRT",
+        "MNST",
+        "TTWO",
+        "AMD",
+        "BKR",
+        "MELI",
+        "AXON",
+        "COST",
+        "EA",
+        "LRCX",
+        "PEP",
+        "WBD",
+        "AAPL",
+        "CSCO",
+        "LULU",
+        "NTES",
+        "NVDA",
+        "PCAR",
+        "REGN",
+        "TCOM",
+        "XEL"
+      ],
+      "oracle_top10": [
+        "AMD",
+        "MCHP",
+        "TMUS",
+        "WBD",
+        "MU",
+        "XEL",
+        "MRVL",
+        "TTWO",
+        "NFLX",
+        "QCOM"
+      ],
+      "spearman_previous_win_to_future_gain": -0.06654558686728093,
+      "spearman_previous_win_to_future_win": 0.1462038569767201,
+      "oracle_3": 0.051030716599798014,
+      "base_3": {
+        "names": [
+          "NVDA",
+          "MU",
+          "AMD"
+        ],
+        "gain": -0.043948651810621166,
+        "win": 0.5396825396825397,
+        "percentile": 0.6712962962962963,
+        "overlap": 1,
+        "regret": 0.09497936841041918
+      },
+      "research_3": {
+        "names": [
+          "CPRT",
+          "MNST",
+          "TTWO"
+        ],
+        "gain": -0.049538205287744164,
+        "win": 0.42857142857142855,
+        "percentile": 0.7175925925925926,
+        "overlap": 0,
+        "regret": 0.10056892188754218
+      },
+      "oracle_5": 0.04264466089090827,
+      "base_5": {
+        "names": [
+          "NVDA",
+          "MU",
+          "AMD",
+          "MSTR",
+          "ASML"
+        ],
+        "gain": -0.1023610614331805,
+        "win": 0.48571428571428565,
+        "percentile": 0.44444444444444436,
+        "overlap": 2,
+        "regret": 0.14500572232408876
+      },
+      "research_5": {
+        "names": [
+          "CPRT",
+          "MNST",
+          "TTWO",
+          "AMD",
+          "BKR"
+        ],
+        "gain": -0.04019619517959845,
+        "win": 0.47619047619047616,
+        "percentile": 0.7083333333333333,
+        "overlap": 1,
+        "regret": 0.08284085607050673
+      }
+    },
+    {
+      "month": "2008-02-01",
+      "eligible": 73,
+      "fully_covered": 73,
+      "excluded_missing_future": 0,
+      "base_list": [
+        "NVDA",
+        "MU",
+        "AMD",
+        "MSTR",
+        "ASML",
+        "MRVL",
+        "MELI"
+      ],
+      "research_list": [
+        "TMUS",
+        "CSX",
+        "GILD",
+        "WBD"
+      ],
+      "oracle_top10": [
+        "TTWO",
+        "CTSH",
+        "MELI",
+        "NTES",
+        "AXON",
+        "AAPL",
+        "AMAT",
+        "MDLZ",
+        "CMCSA",
+        "PEP"
+      ],
+      "spearman_previous_win_to_future_gain": 0.16331904080290252,
+      "spearman_previous_win_to_future_win": 0.11422559533361877,
+      "oracle_3": 0.2746015577200337,
+      "base_3": {
+        "names": [
+          "NVDA",
+          "MU",
+          "AMD"
+        ],
+        "gain": 0.0007536550865770569,
+        "win": 0.43333333333333335,
+        "percentile": 0.5972222222222222,
+        "overlap": 0,
+        "regret": 0.27384790263345665
+      },
+      "research_3": {
+        "names": [
+          "TMUS",
+          "CSX",
+          "GILD"
+        ],
+        "gain": -0.02977738788010618,
+        "win": 0.5166666666666666,
+        "percentile": 0.38888888888888884,
+        "overlap": 0,
+        "regret": 0.3043789456001399
+      },
+      "oracle_5": 0.19180957955814298,
+      "base_5": {
+        "names": [
+          "NVDA",
+          "MU",
+          "AMD",
+          "MSTR",
+          "ASML"
+        ],
+        "gain": -0.046887229392410065,
+        "win": 0.42000000000000004,
+        "percentile": 0.3611111111111111,
+        "overlap": 0,
+        "regret": 0.23869680895055306
+      },
+      "research_5": null
+    },
+    {
+      "month": "2008-03-01",
+      "eligible": 73,
+      "fully_covered": 73,
+      "excluded_missing_future": 0,
+      "base_list": [
+        "NVDA",
+        "MU",
+        "AMD",
+        "MSTR",
+        "ASML",
+        "MRVL",
+        "MELI"
+      ],
+      "research_list": [
+        "TMUS",
+        "MNST",
+        "AAPL",
+        "MDLZ",
+        "MRVL",
+        "NTES",
+        "PEP",
+        "ADSK",
+        "COST",
+        "ODFL",
+        "TCOM",
+        "ADBE",
+        "CTSH",
+        "FAST",
+        "LRCX",
+        "ROST",
+        "TTWO",
+        "AMAT",
+        "AMD",
+        "BKR",
+        "CSX",
+        "ISRG",
+        "MELI",
+        "MU",
+        "REGN"
+      ],
+      "oracle_top10": [
+        "NFLX",
+        "LULU",
+        "ADBE",
+        "MELI",
+        "VRTX",
+        "AXON",
+        "PCAR",
+        "WBD",
+        "ADI",
+        "MNST"
+      ],
+      "spearman_previous_win_to_future_gain": -0.07527952278974216,
+      "spearman_previous_win_to_future_win": 0.11025440866630577,
+      "oracle_3": 0.15267636571118468,
+      "base_3": {
+        "names": [
+          "NVDA",
+          "MU",
+          "AMD"
+        ],
+        "gain": 0.037242814955401084,
+        "win": 0.6,
+        "percentile": 0.5740740740740741,
+        "overlap": 0,
+        "regret": 0.1154335507557836
+      },
+      "research_3": {
+        "names": [
+          "TMUS",
+          "MNST",
+          "AAPL"
+        ],
+        "gain": 0.01812819940980266,
+        "win": 0.5333333333333333,
+        "percentile": 0.5509259259259259,
+        "overlap": 0,
+        "regret": 0.134548166301382
+      },
+      "oracle_5": 0.14182035527257292,
+      "base_5": {
+        "names": [
+          "NVDA",
+          "MU",
+          "AMD",
+          "MSTR",
+          "ASML"
+        ],
+        "gain": 0.035081747321044944,
+        "win": 0.61,
+        "percentile": 0.5583333333333333,
+        "overlap": 0,
+        "regret": 0.10673860795152798
+      },
+      "research_5": {
+        "names": [
+          "TMUS",
+          "MNST",
+          "AAPL",
+          "MDLZ",
+          "MRVL"
+        ],
+        "gain": 0.0044505975693375725,
+        "win": 0.54,
+        "percentile": 0.4083333333333333,
+        "overlap": 0,
+        "regret": 0.13736975770323534
+      }
+    },
+    {
+      "month": "2008-04-01",
+      "eligible": 73,
+      "fully_covered": 73,
+      "excluded_missing_future": 0,
+      "base_list": [
+        "NVDA",
+        "MU",
+        "AMD",
+        "MSTR",
+        "ASML",
+        "MRVL",
+        "MELI"
+      ],
+      "research_list": [
+        "MELI",
+        "PCAR",
+        "CDNS",
+        "GILD",
+        "MCHP",
+        "ON",
+        "SBUX"
+      ],
+      "oracle_top10": [
+        "GOOG",
+        "GOOGL",
+        "ALGN",
+        "ROST",
+        "AAPL",
+        "TMUS",
+        "MCHP",
+        "CTSH",
+        "WBD",
+        "MNST"
+      ],
+      "spearman_previous_win_to_future_gain": 0.04587935958189254,
+      "spearman_previous_win_to_future_win": 0.31947344599617883,
+      "oracle_3": 0.22721146106462317,
+      "base_3": {
+        "names": [
+          "NVDA",
+          "MU",
+          "AMD"
+        ],
+        "gain": 0.05213666694558287,
+        "win": 0.606060606060606,
+        "percentile": 0.7037037037037037,
+        "overlap": 0,
+        "regret": 0.1750747941190403
+      },
+      "research_3": {
+        "names": [
+          "MELI",
+          "PCAR",
+          "CDNS"
+        ],
+        "gain": 0.011226891325834933,
+        "win": 0.5757575757575758,
+        "percentile": 0.41203703703703703,
+        "overlap": 0,
+        "regret": 0.21598456973878824
+      },
+      "oracle_5": 0.18323795707480123,
+      "base_5": {
+        "names": [
+          "NVDA",
+          "MU",
+          "AMD",
+          "MSTR",
+          "ASML"
+        ],
+        "gain": 0.02422704206917684,
+        "win": 0.5454545454545454,
+        "percentile": 0.55,
+        "overlap": 0,
+        "regret": 0.1590109150056244
+      },
+      "research_5": {
+        "names": [
+          "MELI",
+          "PCAR",
+          "CDNS",
+          "GILD",
+          "MCHP"
+        ],
+        "gain": 0.03657523573398301,
+        "win": 0.6272727272727272,
+        "percentile": 0.5805555555555555,
+        "overlap": 0,
+        "regret": 0.1466627213408182
+      }
+    },
+    {
+      "month": "2008-08-01",
+      "eligible": 74,
+      "fully_covered": 74,
+      "excluded_missing_future": 0,
+      "base_list": [
+        "NVDA",
+        "MU",
+        "AMD",
+        "MSTR",
+        "ASML",
+        "MRVL",
+        "MELI"
+      ],
+      "research_list": [],
+      "oracle_top10": [
+        "AMD",
+        "BIIB",
+        "NVDA",
+        "ADSK",
+        "MU",
+        "ON",
+        "LRCX",
+        "CSCO",
+        "CDNS",
+        "LULU"
+      ],
+      "spearman_previous_win_to_future_gain": -0.027025739052490862,
+      "spearman_previous_win_to_future_win": 0.1461577942554392,
+      "oracle_3": 0.10459253459382604,
+      "base_3": {
+        "names": [
+          "NVDA",
+          "MU",
+          "AMD"
+        ],
+        "gain": 0.09409759031327801,
+        "win": 0.6666666666666666,
+        "percentile": 0.9726027397260274,
+        "overlap": 2,
+        "regret": 0.010494944280548035
+      },
+      "research_3": null,
+      "oracle_5": 0.09414390565603463,
+      "base_5": {
+        "names": [
+          "NVDA",
+          "MU",
+          "AMD",
+          "MSTR",
+          "ASML"
+        ],
+        "gain": 0.0251121548672326,
+        "win": 0.5714285714285714,
+        "percentile": 0.736986301369863,
+        "overlap": 3,
+        "regret": 0.06903175078880203
+      },
+      "research_5": null
+    },
+    {
+      "month": "2008-09-01",
+      "eligible": 74,
+      "fully_covered": 74,
+      "excluded_missing_future": 0,
+      "base_list": [
+        "NVDA",
+        "MU",
+        "AMD",
+        "MSTR",
+        "ASML",
+        "MRVL",
+        "MELI"
+      ],
+      "research_list": [
+        "MU",
+        "MRVL",
+        "ROP",
+        "AMD",
+        "ASML",
+        "CSCO",
+        "CSX",
+        "EXC",
+        "LRCX",
+        "BKR",
+        "MAR",
+        "NVDA",
+        "QCOM",
+        "SNPS",
+        "ADBE",
+        "ADSK",
+        "AMAT",
+        "AZN",
+        "BIIB",
+        "CDNS",
+        "CMCSA",
+        "GILD",
+        "KDP",
+        "KLAC",
+        "LULU",
+        "MTCH",
+        "NTES",
+        "PEP",
+        "REGN",
+        "VRTX",
+        "WBD",
+        "XEL",
+        "ADI",
+        "HON",
+        "IDXX",
+        "INTU",
+        "PAYX",
+        "ROST",
+        "SBUX",
+        "TCOM",
+        "TTWO"
+      ],
+      "oracle_top10": [
+        "WBD",
+        "CSX",
+        "MTCH",
+        "REGN",
+        "ADBE",
+        "GOOGL",
+        "GOOG",
+        "ALGN",
+        "MSFT",
+        "DXCM"
+      ],
+      "spearman_previous_win_to_future_gain": -0.1274639510719307,
+      "spearman_previous_win_to_future_win": -0.11680682442690209,
+      "oracle_3": 0.14362347661949823,
+      "base_3": {
+        "names": [
+          "NVDA",
+          "MU",
+          "AMD"
+        ],
+        "gain": -0.15583898432448975,
+        "win": 0.36507936507936506,
+        "percentile": 0.0776255707762557,
+        "overlap": 0,
+        "regret": 0.299462460943988
+      },
+      "research_3": {
+        "names": [
+          "MU",
+          "MRVL",
+          "ROP"
+        ],
+        "gain": -0.06985166819504994,
+        "win": 0.3968253968253968,
+        "percentile": 0.2785388127853881,
+        "overlap": 0,
+        "regret": 0.21347514481454816
+      },
+      "oracle_5": 0.11951915389490578,
+      "base_5": {
+        "names": [
+          "NVDA",
+          "MU",
+          "AMD",
+          "MSTR",
+          "ASML"
+        ],
+        "gain": -0.10910077821825973,
+        "win": 0.3904761904761904,
+        "percentile": 0.2328767123287671,
+        "overlap": 0,
+        "regret": 0.2286199321131655
+      },
+      "research_5": {
+        "names": [
+          "MU",
+          "MRVL",
+          "ROP",
+          "AMD",
+          "ASML"
+        ],
+        "gain": -0.10357024362468366,
+        "win": 0.4095238095238095,
+        "percentile": 0.18356164383561646,
+        "overlap": 0,
+        "regret": 0.22308939751958945
+      }
+    },
+    {
+      "month": "2008-10-01",
+      "eligible": 74,
+      "fully_covered": 74,
+      "excluded_missing_future": 0,
+      "base_list": [
+        "NVDA",
+        "MU",
+        "AMD",
+        "MSTR",
+        "ASML",
+        "MRVL",
+        "MELI"
+      ],
+      "research_list": [
+        "ADBE",
+        "MTCH",
+        "ALGN",
+        "BIIB",
+        "CSX",
+        "DXCM",
+        "EXC",
+        "GOOG",
+        "GOOGL",
+        "SBUX",
+        "ADSK",
+        "AMAT",
+        "CMCSA",
+        "EA",
+        "EBAY",
+        "MSFT",
+        "ON",
+        "REGN",
+        "ROST",
+        "TTWO"
+      ],
+      "oracle_top10": [
+        "AMD",
+        "AAPL",
+        "PAYX",
+        "ALGN",
+        "MDLZ",
+        "NVDA",
+        "CSX",
+        "ASML",
+        "ADP",
+        "AMAT"
+      ],
+      "spearman_previous_win_to_future_gain": 0.18975689808004384,
+      "spearman_previous_win_to_future_win": 0.08340485987379251,
+      "oracle_3": 0.21740349850896154,
+      "base_3": {
+        "names": [
+          "NVDA",
+          "MU",
+          "AMD"
+        ],
+        "gain": 0.1501050937211163,
+        "win": 0.47826086956521746,
+        "percentile": 0.8310502283105023,
+        "overlap": 1,
+        "regret": 0.06729840478784524
+      },
+      "research_3": {
+        "names": [
+          "ADBE",
+          "MTCH",
+          "ALGN"
+        ],
+        "gain": -0.006263655577402642,
+        "win": 0.5217391304347826,
+        "percentile": 0.7808219178082192,
+        "overlap": 0,
+        "regret": 0.22366715408636417
+      },
+      "oracle_5": 0.14821426795828568,
+      "base_5": {
+        "names": [
+          "NVDA",
+          "MU",
+          "AMD",
+          "MSTR",
+          "ASML"
+        ],
+        "gain": 0.0686615666603783,
+        "win": 0.4782608695652174,
+        "percentile": 0.7342465753424658,
+        "overlap": 1,
+        "regret": 0.07955270129790738
+      },
+      "research_5": {
+        "names": [
+          "ADBE",
+          "MTCH",
+          "ALGN",
+          "BIIB",
+          "CSX"
+        ],
+        "gain": -0.019718888862948866,
+        "win": 0.5130434782608695,
+        "percentile": 0.736986301369863,
+        "overlap": 1,
+        "regret": 0.16793315682123455
+      }
+    },
+    {
+      "month": "2008-11-01",
+      "eligible": 74,
+      "fully_covered": 74,
+      "excluded_missing_future": 0,
+      "base_list": [
+        "NVDA",
+        "MU",
+        "AMD",
+        "MSTR",
+        "ASML",
+        "MRVL",
+        "MELI"
+      ],
+      "research_list": [
+        "KLAC",
+        "MDLZ",
+        "ASML",
+        "ADBE",
+        "ALGN",
+        "DLTR",
+        "FAST",
+        "MRVL",
+        "AAPL",
+        "ADP",
+        "AMD",
+        "AXON",
+        "BKR",
+        "CSX",
+        "CTAS",
+        "ISRG",
+        "MELI",
+        "MSFT",
+        "ODFL",
+        "PAYX",
+        "PEP",
+        "REGN",
+        "TTWO"
+      ],
+      "oracle_top10": [
+        "DXCM",
+        "AMD",
+        "ON",
+        "AXON",
+        "WBD",
+        "TTWO",
+        "BKNG",
+        "DLTR",
+        "MNST",
+        "ODFL"
+      ],
+      "spearman_previous_win_to_future_gain": -0.0007746415876939993,
+      "spearman_previous_win_to_future_win": -0.12954274250938494,
+      "oracle_3": 0.30709808094895236,
+      "base_3": {
+        "names": [
+          "NVDA",
+          "MU",
+          "AMD"
+        ],
+        "gain": 0.14117919605748327,
+        "win": 0.49122807017543857,
+        "percentile": 0.8721461187214611,
+        "overlap": 1,
+        "regret": 0.16591888489146908
+      },
+      "research_3": {
+        "names": [
+          "KLAC",
+          "MDLZ",
+          "ASML"
+        ],
+        "gain": -0.0658203477958441,
+        "win": 0.3508771929824561,
+        "percentile": 0.3424657534246575,
+        "overlap": 0,
+        "regret": 0.37291842874479647
+      },
+      "oracle_5": 0.24293865671731946,
+      "base_5": {
+        "names": [
+          "NVDA",
+          "MU",
+          "AMD",
+          "MSTR",
+          "ASML"
+        ],
+        "gain": 0.0530862467568432,
+        "win": 0.43157894736842106,
+        "percentile": 0.6301369863013698,
+        "overlap": 1,
+        "regret": 0.18985240996047625
+      },
+      "research_5": {
+        "names": [
+          "KLAC",
+          "MDLZ",
+          "ASML",
+          "ADBE",
+          "ALGN"
+        ],
+        "gain": -0.05367724800822925,
+        "win": 0.36842105263157887,
+        "percentile": 0.40273972602739727,
+        "overlap": 0,
+        "regret": 0.2966159047255487
+      }
+    },
+    {
+      "month": "2008-12-01",
+      "eligible": 74,
+      "fully_covered": 74,
+      "excluded_missing_future": 0,
+      "base_list": [
+        "NVDA",
+        "MU",
+        "AMD",
+        "MSTR",
+        "ASML",
+        "MRVL",
+        "MELI"
+      ],
+      "research_list": [
+        "AMD",
+        "DLTR",
+        "ADP",
+        "AZN",
+        "BIIB",
+        "EA",
+        "TTWO",
+        "CMCSA",
+        "DXCM",
+        "EXC",
+        "ISRG",
+        "KDP",
+        "MU",
+        "ODFL",
+        "ON",
+        "TCOM",
+        "WBD",
+        "ADI",
+        "ADSK",
+        "ALGN",
+        "AMAT",
+        "AMGN",
+        "CDNS",
+        "MAR",
+        "MCHP",
+        "MDLZ",
+        "MELI",
+        "MSFT",
+        "NFLX",
+        "ORLY",
+        "PEP",
+        "ROST",
+        "VRTX",
+        "ADBE",
+        "BKNG",
+        "COST",
+        "CSX",
+        "CTSH",
+        "FAST",
+        "HON",
+        "IDXX",
+        "INTC",
+        "INTU",
+        "LULU",
+        "MTCH",
+        "NVDA",
+        "QCOM",
+        "REGN",
+        "TXN",
+        "XEL"
+      ],
+      "oracle_top10": [
+        "MRVL",
+        "INTU",
+        "AMD",
+        "MDLZ",
+        "ADBE",
+        "PEP",
+        "HON",
+        "SNPS",
+        "WBD",
+        "CSX"
+      ],
+      "spearman_previous_win_to_future_gain": -0.08574271728578625,
+      "spearman_previous_win_to_future_win": -0.04128631501102489,
+      "oracle_3": 0.06823643344848797,
+      "base_3": {
+        "names": [
+          "NVDA",
+          "MU",
+          "AMD"
+        ],
+        "gain": -0.01510054013779698,
+        "win": 0.48484848484848486,
+        "percentile": 0.5662100456621005,
+        "overlap": 1,
+        "regret": 0.08333697358628495
+      },
+      "research_3": {
+        "names": [
+          "AMD",
+          "DLTR",
+          "ADP"
+        ],
+        "gain": 0.004413136201937978,
+        "win": 0.4393939393939394,
+        "percentile": 0.7077625570776256,
+        "overlap": 1,
+        "regret": 0.06382329724654999
+      },
+      "oracle_5": 0.056105661332550086,
+      "base_5": {
+        "names": [
+          "NVDA",
+          "MU",
+          "AMD",
+          "MSTR",
+          "ASML"
+        ],
+        "gain": -0.008548818035138697,
+        "win": 0.4727272727272728,
+        "percentile": 0.6328767123287671,
+        "overlap": 1,
+        "regret": 0.06465447936768878
+      },
+      "research_5": {
+        "names": [
+          "AMD",
+          "DLTR",
+          "ADP",
+          "AZN",
+          "BIIB"
+        ],
+        "gain": -0.02447268396791836,
+        "win": 0.46363636363636357,
+        "percentile": 0.5534246575342465,
+        "overlap": 1,
+        "regret": 0.08057834530046845
+      }
+    },
+    {
+      "month": "2009-01-01",
+      "eligible": 74,
+      "fully_covered": 74,
+      "excluded_missing_future": 0,
+      "base_list": [
+        "NVDA",
+        "MU",
+        "AMD",
+        "MSTR",
+        "ASML",
+        "MRVL",
+        "MELI"
+      ],
+      "research_list": [
+        "PEP"
+      ],
+      "oracle_top10": [
+        "MELI",
+        "DLTR",
+        "DXCM",
+        "XEL",
+        "ODFL",
+        "AMZN",
+        "MNST",
+        "AXON",
+        "EXC",
+        "ROST"
+      ],
+      "spearman_previous_win_to_future_gain": 0.09706267863613055,
+      "spearman_previous_win_to_future_win": 0.3537526677261687,
+      "oracle_3": 0.04903510007544452,
+      "base_3": {
+        "names": [
+          "NVDA",
+          "MU",
+          "AMD"
+        ],
+        "gain": -0.08935447145538689,
+        "win": 0.43333333333333335,
+        "percentile": 0.2968036529680365,
+        "overlap": 0,
+        "regret": 0.1383895715308314
+      },
+      "research_3": null,
+      "oracle_5": 0.039435176605742625,
+      "base_5": {
+        "names": [
+          "NVDA",
+          "MU",
+          "AMD",
+          "MSTR",
+          "ASML"
+        ],
+        "gain": -0.07579070926232266,
+        "win": 0.42000000000000004,
+        "percentile": 0.36986301369863017,
+        "overlap": 0,
+        "regret": 0.11522588586806529
+      },
+      "research_5": null
+    },
+    {
+      "month": "2009-02-01",
+      "eligible": 74,
+      "fully_covered": 74,
+      "excluded_missing_future": 0,
+      "base_list": [
+        "NVDA",
+        "MU",
+        "AMD",
+        "MSTR",
+        "ASML",
+        "MRVL",
+        "MELI"
+      ],
+      "research_list": [
+        "CTSH",
+        "XEL",
+        "DLTR",
+        "MELI",
+        "GOOG",
+        "GOOGL",
+        "INTC",
+        "ISRG",
+        "LULU",
+        "MNST",
+        "MSFT",
+        "PCAR",
+        "TCOM",
+        "COST",
+        "CSX",
+        "EBAY",
+        "HON",
+        "IDXX",
+        "MCHP",
+        "MDLZ",
+        "ODFL",
+        "PEP",
+        "ROST"
+      ],
+      "oracle_top10": [
+        "MRVL",
+        "BKNG",
+        "TMUS",
+        "AMD",
+        "WBD",
+        "MTCH",
+        "INTU",
+        "CPRT",
+        "ORLY",
+        "CTSH"
+      ],
+      "spearman_previous_win_to_future_gain": 0.17021581474900546,
+      "spearman_previous_win_to_future_win": 0.08133198721900375,
+      "oracle_3": 0.07729261202666594,
+      "base_3": {
+        "names": [
+          "NVDA",
+          "MU",
+          "AMD"
+        ],
+        "gain": -0.04691349951928426,
+        "win": 0.5087719298245613,
+        "percentile": 0.5753424657534246,
+        "overlap": 0,
+        "regret": 0.12420611154595021
+      },
+      "research_3": {
+        "names": [
+          "CTSH",
+          "XEL",
+          "DLTR"
+        ],
+        "gain": -0.023043868135251108,
+        "win": 0.5087719298245613,
+        "percentile": 0.730593607305936,
+        "overlap": 0,
+        "regret": 0.10033648016191705
+      },
+      "oracle_5": 0.067465561433893,
+      "base_5": {
+        "names": [
+          "NVDA",
+          "MU",
+          "AMD",
+          "MSTR",
+          "ASML"
+        ],
+        "gain": -0.06091953371580953,
+        "win": 0.4947368421052631,
+        "percentile": 0.4876712328767122,
+        "overlap": 1,
+        "regret": 0.12838509514970253
+      },
+      "research_5": {
+        "names": [
+          "CTSH",
+          "XEL",
+          "DLTR",
+          "MELI",
+          "GOOG"
+        ],
+        "gain": -0.03467826808076842,
+        "win": 0.4947368421052631,
+        "percentile": 0.6794520547945206,
+        "overlap": 0,
+        "regret": 0.10214382951466142
+      }
+    },
+    {
+      "month": "2009-11-01",
+      "eligible": 75,
+      "fully_covered": 75,
+      "excluded_missing_future": 0,
+      "base_list": [
+        "NVDA",
+        "AVGO",
+        "MU",
+        "AMD",
+        "MSTR",
+        "ASML",
+        "MRVL",
+        "MELI"
+      ],
+      "research_list": [
+        "EA",
+        "AMZN",
+        "CTSH",
+        "NFLX",
+        "ASML",
+        "BKNG",
+        "EBAY",
+        "GOOG",
+        "GOOGL",
+        "INTC",
+        "KLAC",
+        "LRCX",
+        "MRVL",
+        "MU",
+        "ORLY",
+        "QCOM",
+        "TMUS",
+        "TXN"
+      ],
+      "oracle_top10": [
+        "AMD",
+        "BKNG",
+        "MELI",
+        "TCOM",
+        "REGN",
+        "ADI",
+        "ASML",
+        "CSX",
+        "AXON",
+        "CMCSA"
+      ],
+      "spearman_previous_win_to_future_gain": 0.11877025340644642,
+      "spearman_previous_win_to_future_win": 0.2816910576591507,
+      "oracle_3": 0.14654375111754345,
+      "base_3": {
+        "names": [
+          "NVDA",
+          "AVGO",
+          "MU"
+        ],
+        "gain": 0.005547848913803555,
+        "win": 0.6,
+        "percentile": 0.5630630630630631,
+        "overlap": 0,
+        "regret": 0.1409959022037399
+      },
+      "research_3": {
+        "names": [
+          "EA",
+          "AMZN",
+          "CTSH"
+        ],
+        "gain": 0.00377567613350218,
+        "win": 0.5666666666666667,
+        "percentile": 0.5720720720720721,
+        "overlap": 0,
+        "regret": 0.14276807498404126
+      },
+      "oracle_5": 0.12284209767169318,
+      "base_5": {
+        "names": [
+          "NVDA",
+          "AVGO",
+          "MU",
+          "AMD",
+          "MSTR"
+        ],
+        "gain": 0.04027656393192279,
+        "win": 0.5900000000000001,
+        "percentile": 0.5810810810810811,
+        "overlap": 1,
+        "regret": 0.0825655337397704
+      },
+      "research_5": {
+        "names": [
+          "EA",
+          "AMZN",
+          "CTSH",
+          "NFLX",
+          "ASML"
+        ],
+        "gain": -0.006655289432029648,
+        "win": 0.5599999999999999,
+        "percentile": 0.5297297297297298,
+        "overlap": 0,
+        "regret": 0.12949738710372283
+      }
+    },
+    {
+      "month": "2010-06-01",
+      "eligible": 77,
+      "fully_covered": 77,
+      "excluded_missing_future": 0,
+      "base_list": [
+        "NVDA",
+        "AVGO",
+        "MU",
+        "AMD",
+        "MSTR",
+        "ASML",
+        "MRVL",
+        "MELI"
+      ],
+      "research_list": [
+        "ADSK",
+        "AAPL",
+        "DLTR",
+        "NFLX",
+        "ODFL",
+        "TMUS",
+        "WBD",
+        "AVGO",
+        "CSCO",
+        "GILD",
+        "GOOG",
+        "GOOGL",
+        "ISRG",
+        "KDP",
+        "LULU",
+        "MDLZ",
+        "MELI",
+        "MRVL",
+        "MTCH",
+        "ON",
+        "PEP",
+        "ADI",
+        "AMD",
+        "ASML",
+        "BKNG",
+        "BKR",
+        "CSX",
+        "EA",
+        "EXC",
+        "IDXX",
+        "LRCX",
+        "MSFT",
+        "MU",
+        "PCAR",
+        "ROP"
+      ],
+      "oracle_top10": [
+        "ASML",
+        "LULU",
+        "AMD",
+        "AAPL",
+        "BKNG",
+        "BKR",
+        "AVGO",
+        "NTES",
+        "NVDA",
+        "TXN"
+      ],
+      "spearman_previous_win_to_future_gain": 0.33005138482248947,
+      "spearman_previous_win_to_future_win": 0.346503194867798,
+      "oracle_3": 0.14740962164454388,
+      "base_3": {
+        "names": [
+          "NVDA",
+          "AVGO",
+          "MU"
+        ],
+        "gain": 0.06244708820326788,
+        "win": 0.6818181818181818,
+        "percentile": 0.8947368421052632,
+        "overlap": 0,
+        "regret": 0.084962533441276
+      },
+      "research_3": {
+        "names": [
+          "ADSK",
+          "AAPL",
+          "DLTR"
+        ],
+        "gain": 0.027978055679591014,
+        "win": 0.6515151515151515,
+        "percentile": 0.5745614035087719,
+        "overlap": 0,
+        "regret": 0.11943156596495287
+      },
+      "oracle_5": 0.1226029081422139,
+      "base_5": {
+        "names": [
+          "NVDA",
+          "AVGO",
+          "MU",
+          "AMD",
+          "MSTR"
+        ],
+        "gain": 0.06176530436703124,
+        "win": 0.6909090909090909,
+        "percentile": 0.8289473684210525,
+        "overlap": 1,
+        "regret": 0.060837603775182665
+      },
+      "research_5": {
+        "names": [
+          "ADSK",
+          "AAPL",
+          "DLTR",
+          "NFLX",
+          "ODFL"
+        ],
+        "gain": 0.033124207181072694,
+        "win": 0.6636363636363637,
+        "percentile": 0.6578947368421052,
+        "overlap": 1,
+        "regret": 0.08947870096114122
+      }
+    },
+    {
+      "month": "2010-07-01",
+      "eligible": 77,
+      "fully_covered": 77,
+      "excluded_missing_future": 0,
+      "base_list": [
+        "NVDA",
+        "AVGO",
+        "MU",
+        "AMD",
+        "MSTR",
+        "ASML",
+        "MRVL",
+        "MELI"
+      ],
+      "research_list": [
+        "AAPL",
+        "AMD",
+        "MU",
+        "ASML",
+        "CSX",
+        "KLAC",
+        "ODFL",
+        "PAYX"
+      ],
+      "oracle_top10": [
+        "ALGN",
+        "QCOM",
+        "REGN",
+        "MELI",
+        "KLAC",
+        "MU",
+        "HON",
+        "MSFT",
+        "TCOM",
+        "ODFL"
+      ],
+      "spearman_previous_win_to_future_gain": 0.4076018833575686,
+      "spearman_previous_win_to_future_win": 0.2759833774120781,
+      "oracle_3": 0.15832882019144204,
+      "base_3": {
+        "names": [
+          "NVDA",
+          "AVGO",
+          "MU"
+        ],
+        "gain": 0.040463048780257097,
+        "win": 0.6349206349206349,
+        "percentile": 0.42105263157894735,
+        "overlap": 0,
+        "regret": 0.11786577141118494
+      },
+      "research_3": {
+        "names": [
+          "AAPL",
+          "AMD",
+          "MU"
+        ],
+        "gain": 0.08145433098200099,
+        "win": 0.5555555555555555,
+        "percentile": 0.8245614035087719,
+        "overlap": 0,
+        "regret": 0.07687448920944105
+      },
+      "oracle_5": 0.13828797082954553,
+      "base_5": {
+        "names": [
+          "NVDA",
+          "AVGO",
+          "MU",
+          "AMD",
+          "MSTR"
+        ],
+        "gain": 0.05609293977069772,
+        "win": 0.6380952380952382,
+        "percentile": 0.5842105263157895,
+        "overlap": 0,
+        "regret": 0.0821950310588478
+      },
+      "research_5": {
+        "names": [
+          "AAPL",
+          "AMD",
+          "MU",
+          "ASML",
+          "CSX"
+        ],
+        "gain": 0.08141843965828888,
+        "win": 0.5904761904761904,
+        "percentile": 0.8368421052631578,
+        "overlap": 0,
+        "regret": 0.05686953117125665
+      }
+    },
+    {
+      "month": "2010-08-01",
+      "eligible": 79,
+      "fully_covered": 78,
+      "excluded_missing_future": 1,
+      "base_list": [
+        "NVDA",
+        "AVGO",
+        "MU",
+        "AMD",
+        "MSTR",
+        "ASML",
+        "MRVL",
+        "MELI"
+      ],
+      "research_list": [
+        "CSX",
+        "GOOG",
+        "GOOGL",
+        "MSFT",
+        "PCAR",
+        "TSLA",
+        "ADBE",
+        "EXC",
+        "FAST",
+        "QCOM",
+        "SBUX",
+        "BKNG",
+        "HON",
+        "ISRG",
+        "KDP",
+        "KLAC",
+        "MCHP",
+        "MSTR",
+        "NVDA",
+        "REGN",
+        "ALGN",
+        "AVGO",
+        "BKR",
+        "CMCSA",
+        "COST",
+        "CTAS",
+        "MAR",
+        "MELI",
+        "MU",
+        "NFLX",
+        "NTES",
+        "ODFL",
+        "ROST",
+        "TMUS",
+        "ADI",
+        "AMAT",
+        "AMD",
+        "BIIB",
+        "DLTR",
+        "IDXX",
+        "INTU",
+        "LRCX",
+        "LULU",
+        "ORLY",
+        "ROP",
+        "TCOM",
+        "TTWO",
+        "VRTX"
+      ],
+      "oracle_top10": [
+        "BKNG",
+        "MRVL",
+        "CTSH",
+        "NTES",
+        "MNST",
+        "TTWO",
+        "TSLA",
+        "PAYX",
+        "AZN",
+        "AAPL"
+      ],
+      "spearman_previous_win_to_future_gain": -0.0424628417187753,
+      "spearman_previous_win_to_future_win": 0.10295851098818301,
+      "oracle_3": 0.07847348901022454,
+      "base_3": {
+        "names": [
+          "NVDA",
+          "AVGO",
+          "MU"
+        ],
+        "gain": -0.08019279609160573,
+        "win": 0.42424242424242425,
+        "percentile": 0.3333333333333333,
+        "overlap": 0,
+        "regret": 0.15866628510183028
+      },
+      "research_3": {
+        "names": [
+          "CSX",
+          "GOOG",
+          "GOOGL"
+        ],
+        "gain": -0.05590222508108411,
+        "win": 0.3636363636363637,
+        "percentile": 0.5497835497835498,
+        "overlap": 0,
+        "regret": 0.13437571409130866
+      },
+      "oracle_5": 0.04801150319632811,
+      "base_5": {
+        "names": [
+          "NVDA",
+          "AVGO",
+          "MU",
+          "AMD",
+          "MSTR"
+        ],
+        "gain": -0.0824665103858409,
+        "win": 0.3909090909090909,
+        "percentile": 0.3168831168831169,
+        "overlap": 0,
+        "regret": 0.130478013582169
+      },
+      "research_5": {
+        "names": [
+          "CSX",
+          "GOOG",
+          "GOOGL",
+          "MSFT",
+          "PCAR"
+        ],
+        "gain": -0.0635831320278361,
+        "win": 0.31818181818181823,
+        "percentile": 0.42857142857142855,
+        "overlap": 0,
+        "regret": 0.11159463522416421
+      }
+    },
+    {
+      "month": "2010-09-01",
+      "eligible": 78,
+      "fully_covered": 78,
+      "excluded_missing_future": 0,
+      "base_list": [
+        "NVDA",
+        "AVGO",
+        "MU",
+        "AMD",
+        "MSTR",
+        "ASML",
+        "MRVL",
+        "MELI"
+      ],
+      "research_list": [
+        "MELI",
+        "MRVL",
+        "TCOM",
+        "ADSK",
+        "AVGO",
+        "EBAY",
+        "LULU",
+        "NVDA",
+        "REGN",
+        "ADI",
+        "AZN",
+        "BIIB",
+        "GOOGL",
+        "NTES",
+        "TSLA",
+        "AAPL",
+        "ADBE",
+        "AMAT",
+        "AMD",
+        "AMZN",
+        "BKNG",
+        "CMCSA",
+        "COST",
+        "DXCM",
+        "EXC",
+        "GILD",
+        "GOOG",
+        "HON",
+        "INTC",
+        "ISRG",
+        "KLAC",
+        "MCHP",
+        "MDLZ",
+        "MNST",
+        "MTCH",
+        "MU",
+        "ODFL",
+        "PAYX",
+        "TTWO",
+        "TXN"
+      ],
+      "oracle_top10": [
+        "TTWO",
+        "LULU",
+        "ASML",
+        "AMD",
+        "NFLX",
+        "BKNG",
+        "TSLA",
+        "CSCO",
+        "NVDA",
+        "GOOGL"
+      ],
+      "spearman_previous_win_to_future_gain": 0.1894058739301897,
+      "spearman_previous_win_to_future_win": 0.16344910310525565,
+      "oracle_3": 0.1759892930285816,
+      "base_3": {
+        "names": [
+          "NVDA",
+          "AVGO",
+          "MU"
+        ],
+        "gain": 0.06872235226306458,
+        "win": 0.6190476190476191,
+        "percentile": 0.7012987012987013,
+        "overlap": 0,
+        "regret": 0.10726694076551702
+      },
+      "research_3": {
+        "names": [
+          "MELI",
+          "MRVL",
+          "TCOM"
+        ],
+        "gain": 0.06690872008985065,
+        "win": 0.5873015873015873,
+        "percentile": 0.774891774891775,
+        "overlap": 0,
+        "regret": 0.10908057293873095
+      },
+      "oracle_5": 0.15528807615464818,
+      "base_5": {
+        "names": [
+          "NVDA",
+          "AVGO",
+          "MU",
+          "AMD",
+          "MSTR"
+        ],
+        "gain": 0.07378680468394055,
+        "win": 0.6,
+        "percentile": 0.6909090909090909,
+        "overlap": 1,
+        "regret": 0.08150127147070763
+      },
+      "research_5": {
+        "names": [
+          "MELI",
+          "MRVL",
+          "TCOM",
+          "ADSK",
+          "AVGO"
+        ],
+        "gain": 0.05522422639520701,
+        "win": 0.5714285714285714,
+        "percentile": 0.6207792207792209,
+        "overlap": 0,
+        "regret": 0.10006384975944117
+      }
+    },
+    {
+      "month": "2011-06-01",
+      "eligible": 80,
+      "fully_covered": 80,
+      "excluded_missing_future": 0,
+      "base_list": [
+        "NVDA",
+        "AVGO",
+        "MU",
+        "AMD",
+        "MSTR",
+        "ASML",
+        "MRVL",
+        "MELI"
+      ],
+      "research_list": [
+        "AVGO",
+        "NFLX",
+        "NXPI",
+        "TSLA",
+        "CMCSA",
+        "FTNT",
+        "HON",
+        "MDLZ",
+        "MRVL",
+        "MSTR",
+        "MTCH",
+        "QCOM",
+        "XEL",
+        "ASML",
+        "AZN",
+        "BKNG",
+        "BKR",
+        "CSX",
+        "CTAS",
+        "DLTR",
+        "EXC",
+        "GILD",
+        "MAR",
+        "NVDA",
+        "AAPL",
+        "AMGN",
+        "CDNS",
+        "COST",
+        "LULU",
+        "MELI",
+        "MSFT",
+        "MU",
+        "ODFL",
+        "ON",
+        "ROP",
+        "ROST"
+      ],
+      "oracle_top10": [
+        "TSLA",
+        "REGN",
+        "LULU",
+        "AVGO",
+        "ODFL",
+        "BIIB",
+        "EBAY",
+        "CSX",
+        "AMD",
+        "COST"
+      ],
+      "spearman_previous_win_to_future_gain": 0.019159560704897126,
+      "spearman_previous_win_to_future_win": 0.14705249038367127,
+      "oracle_3": 0.10883092948185352,
+      "base_3": {
+        "names": [
+          "NVDA",
+          "AVGO",
+          "MU"
+        ],
+        "gain": 0.0053207517075810895,
+        "win": 0.6212121212121212,
+        "percentile": 0.4135021097046414,
+        "overlap": 0,
+        "regret": 0.10351017777427243
+      },
+      "research_3": {
+        "names": [
+          "AVGO",
+          "NFLX",
+          "NXPI"
+        ],
+        "gain": 0.01665244665805893,
+        "win": 0.5454545454545454,
+        "percentile": 0.6075949367088608,
+        "overlap": 0,
+        "regret": 0.0921784828237946
+      },
+      "oracle_5": 0.09389148087000401,
+      "base_5": {
+        "names": [
+          "NVDA",
+          "AVGO",
+          "MU",
+          "AMD",
+          "MSTR"
+        ],
+        "gain": 0.013379271838346769,
+        "win": 0.6,
+        "percentile": 0.5974683544303798,
+        "overlap": 1,
+        "regret": 0.08051220903165725
+      },
+      "research_5": {
+        "names": [
+          "AVGO",
+          "NFLX",
+          "NXPI",
+          "TSLA",
+          "CMCSA"
+        ],
+        "gain": 0.03483032778718937,
+        "win": 0.5727272727272726,
+        "percentile": 0.6784810126582278,
+        "overlap": 2,
+        "regret": 0.05906115308281464
+      }
+    },
+    {
+      "month": "2011-07-01",
+      "eligible": 80,
+      "fully_covered": 80,
+      "excluded_missing_future": 0,
+      "base_list": [
+        "NVDA",
+        "AVGO",
+        "MU",
+        "AMD",
+        "MSTR",
+        "ASML",
+        "MRVL",
+        "MELI"
+      ],
+      "research_list": [
+        "AVGO",
+        "CSX",
+        "AAPL",
+        "EXC",
+        "KDP",
+        "MNST",
+        "MU",
+        "ADI",
+        "AMD",
+        "BIIB",
+        "CMCSA",
+        "COST",
+        "CTAS",
+        "PEP",
+        "TSLA",
+        "TXN"
+      ],
+      "oracle_top10": [
+        "MTCH",
+        "CDNS",
+        "AMZN",
+        "GOOG",
+        "GOOGL",
+        "CTAS",
+        "AAPL",
+        "ODFL",
+        "AMD",
+        "LULU"
+      ],
+      "spearman_previous_win_to_future_gain": 0.14393864717864024,
+      "spearman_previous_win_to_future_win": 0.12116947158573088,
+      "oracle_3": 0.11325169682579093,
+      "base_3": {
+        "names": [
+          "NVDA",
+          "AVGO",
+          "MU"
+        ],
+        "gain": -0.03409450999374704,
+        "win": 0.5,
+        "percentile": 0.270042194092827,
+        "overlap": 0,
+        "regret": 0.14734620681953797
+      },
+      "research_3": {
+        "names": [
+          "AVGO",
+          "CSX",
+          "AAPL"
+        ],
+        "gain": 0.010559990179428845,
+        "win": 0.5,
+        "percentile": 0.5654008438818565,
+        "overlap": 0,
+        "regret": 0.1026917066463621
+      },
+      "oracle_5": 0.10421257992766911,
+      "base_5": {
+        "names": [
+          "NVDA",
+          "AVGO",
+          "MU",
+          "AMD",
+          "MSTR"
+        ],
+        "gain": -0.005411819825408653,
+        "win": 0.48,
+        "percentile": 0.47848101265822784,
+        "overlap": 0,
+        "regret": 0.10962439975307776
+      },
+      "research_5": {
+        "names": [
+          "AVGO",
+          "CSX",
+          "AAPL",
+          "EXC",
+          "KDP"
+        ],
+        "gain": 0.0071828506451371244,
+        "win": 0.53,
+        "percentile": 0.5898734177215189,
+        "overlap": 0,
+        "regret": 0.09702972928253198
+      }
+    },
+    {
+      "month": "2011-08-01",
+      "eligible": 80,
+      "fully_covered": 80,
+      "excluded_missing_future": 0,
+      "base_list": [
+        "NVDA",
+        "AVGO",
+        "MU",
+        "AMD",
+        "MSTR",
+        "ASML",
+        "MRVL",
+        "MELI"
+      ],
+      "research_list": [
+        "COST",
+        "CPRT",
+        "EXC",
+        "AMZN",
+        "MCHP",
+        "ODFL",
+        "ON",
+        "VRSK",
+        "AAPL",
+        "ADP",
+        "ADSK",
+        "BKNG",
+        "CDNS",
+        "CTAS",
+        "EA",
+        "EBAY",
+        "MNST",
+        "ORLY",
+        "PAYX",
+        "PCAR",
+        "ROP",
+        "XEL",
+        "AMGN",
+        "AVGO",
+        "BIIB",
+        "BKR",
+        "CHTR",
+        "DLTR",
+        "DXCM",
+        "HON",
+        "INTC",
+        "MDLZ",
+        "MRVL",
+        "MU",
+        "PEP",
+        "QCOM",
+        "REGN",
+        "ROST",
+        "SBUX",
+        "TCOM",
+        "TXN",
+        "WBD"
+      ],
+      "oracle_top10": [
+        "AVGO",
+        "MDLZ",
+        "BKNG",
+        "NVDA",
+        "LULU",
+        "CSCO",
+        "MRVL",
+        "AZN",
+        "PEP",
+        "GOOGL"
+      ],
+      "spearman_previous_win_to_future_gain": 0.03950902987898957,
+      "spearman_previous_win_to_future_win": 0.2415191937392542,
+      "oracle_3": 0.07330736481372895,
+      "base_3": {
+        "names": [
+          "NVDA",
+          "AVGO",
+          "MU"
+        ],
+        "gain": 0.05116563595384416,
+        "win": 0.5652173913043478,
+        "percentile": 0.9367088607594937,
+        "overlap": 1,
+        "regret": 0.022141728859884788
+      },
+      "research_3": {
+        "names": [
+          "COST",
+          "CPRT",
+          "EXC"
+        ],
+        "gain": -0.012265307243805363,
+        "win": 0.5362318840579711,
+        "percentile": 0.6413502109704642,
+        "overlap": 0,
+        "regret": 0.08557267205753431
+      },
+      "oracle_5": 0.06253772750959771,
+      "base_5": {
+        "names": [
+          "NVDA",
+          "AVGO",
+          "MU",
+          "AMD",
+          "MSTR"
+        ],
+        "gain": -0.011283418416936381,
+        "win": 0.5217391304347826,
+        "percentile": 0.5974683544303797,
+        "overlap": 2,
+        "regret": 0.07382114592653409
+      },
+      "research_5": {
+        "names": [
+          "COST",
+          "CPRT",
+          "EXC",
+          "AMZN",
+          "MCHP"
+        ],
+        "gain": -0.023093614002467212,
+        "win": 0.5217391304347826,
+        "percentile": 0.5518987341772151,
+        "overlap": 0,
+        "regret": 0.08563134151206492
+      }
+    },
+    {
+      "month": "2011-09-01",
+      "eligible": 80,
+      "fully_covered": 80,
+      "excluded_missing_future": 0,
+      "base_list": [
+        "NVDA",
+        "AVGO",
+        "MU",
+        "AMD",
+        "MSTR",
+        "ASML",
+        "MRVL",
+        "MELI"
+      ],
+      "research_list": [
+        "DXCM",
+        "WBD",
+        "AVGO",
+        "AXON",
+        "BKNG",
+        "CSX",
+        "FTNT",
+        "LULU",
+        "MRVL",
+        "MU",
+        "PEP",
+        "QCOM",
+        "TMUS",
+        "TTWO",
+        "VRSK"
+      ],
+      "oracle_top10": [
+        "NVDA",
+        "TSLA",
+        "TXN",
+        "NXPI",
+        "EXC",
+        "PAYX",
+        "PEP",
+        "NTES",
+        "ADI",
+        "VRSK"
+      ],
+      "spearman_previous_win_to_future_gain": -0.2555258836237051,
+      "spearman_previous_win_to_future_win": -0.1442230319374039,
+      "oracle_3": 0.02241547582818233,
+      "base_3": {
+        "names": [
+          "NVDA",
+          "AVGO",
+          "MU"
+        ],
+        "gain": -0.05881752778436666,
+        "win": 0.4920634920634921,
+        "percentile": 0.4050632911392405,
+        "overlap": 1,
+        "regret": 0.081233003612549
+      },
+      "research_3": {
+        "names": [
+          "DXCM",
+          "WBD",
+          "AVGO"
+        ],
+        "gain": -0.07039130570599851,
+        "win": 0.4761904761904762,
+        "percentile": 0.3670886075949367,
+        "overlap": 0,
+        "regret": 0.09280678153418084
+      },
+      "oracle_5": 0.009664680601242048,
+      "base_5": {
+        "names": [
+          "NVDA",
+          "AVGO",
+          "MU",
+          "AMD",
+          "MSTR"
+        ],
+        "gain": -0.08397497104365377,
+        "win": 0.5047619047619047,
+        "percentile": 0.35443037974683544,
+        "overlap": 1,
+        "regret": 0.09363965164489582
+      },
+      "research_5": {
+        "names": [
+          "DXCM",
+          "WBD",
+          "AVGO",
+          "AXON",
+          "BKNG"
+        ],
+        "gain": -0.06413334326736483,
+        "win": 0.47619047619047616,
+        "percentile": 0.42025316455696204,
+        "overlap": 0,
+        "regret": 0.07379802386860689
+      }
+    },
+    {
+      "month": "2011-10-01",
+      "eligible": 80,
+      "fully_covered": 80,
+      "excluded_missing_future": 0,
+      "base_list": [
+        "NVDA",
+        "AVGO",
+        "MU",
+        "AMD",
+        "MSTR",
+        "ASML",
+        "MRVL",
+        "MELI"
+      ],
+      "research_list": [
+        "TXN"
+      ],
+      "oracle_top10": [
+        "ALGN",
+        "BIIB",
+        "AMD",
+        "ISRG",
+        "PCAR",
+        "NTES",
+        "ROST",
+        "ORLY",
+        "GOOG",
+        "GOOGL"
+      ],
+      "spearman_previous_win_to_future_gain": -0.0061539731972661835,
+      "spearman_previous_win_to_future_win": -0.19068297623882785,
+      "oracle_3": 0.15762070127452302,
+      "base_3": {
+        "names": [
+          "NVDA",
+          "AVGO",
+          "MU"
+        ],
+        "gain": -0.020025924234563577,
+        "win": 0.4444444444444444,
+        "percentile": 0.21940928270042193,
+        "overlap": 0,
+        "regret": 0.1776466255090866
+      },
+      "research_3": null,
+      "oracle_5": 0.13256737160753715,
+      "base_5": {
+        "names": [
+          "NVDA",
+          "AVGO",
+          "MU",
+          "AMD",
+          "MSTR"
+        ],
+        "gain": 0.001165878623263894,
+        "win": 0.47619047619047616,
+        "percentile": 0.33924050632911384,
+        "overlap": 1,
+        "regret": 0.13140149298427325
+      },
+      "research_5": null
+    },
+    {
+      "month": "2012-06-01",
+      "eligible": 80,
+      "fully_covered": 80,
+      "excluded_missing_future": 0,
+      "base_list": [
+        "NVDA",
+        "AVGO",
+        "MU",
+        "AMD",
+        "MSTR",
+        "ASML",
+        "MRVL",
+        "MELI"
+      ],
+      "research_list": [
+        "AAPL",
+        "MNST",
+        "MU",
+        "SBUX",
+        "BKNG",
+        "CHTR",
+        "DLTR",
+        "INTU",
+        "NTES",
+        "ROP",
+        "TSLA",
+        "TXN",
+        "WBD",
+        "ADSK",
+        "CMCSA",
+        "CTSH",
+        "FAST",
+        "GOOG",
+        "GOOGL",
+        "INTC",
+        "KDP",
+        "MTCH",
+        "NVDA",
+        "ODFL",
+        "QCOM",
+        "REGN"
+      ],
+      "oracle_top10": [
+        "NVDA",
+        "TSLA",
+        "ASML",
+        "NXPI",
+        "ON",
+        "ALGN",
+        "MNST",
+        "AMD",
+        "MU",
+        "MSFT"
+      ],
+      "spearman_previous_win_to_future_gain": 0.14105687529507974,
+      "spearman_previous_win_to_future_win": 0.14803336620057791,
+      "oracle_3": 0.1586250286940618,
+      "base_3": {
+        "names": [
+          "NVDA",
+          "AVGO",
+          "MU"
+        ],
+        "gain": 0.0989912069177037,
+        "win": 0.6349206349206349,
+        "percentile": 0.7890295358649789,
+        "overlap": 1,
+        "regret": 0.059633821776358106
+      },
+      "research_3": {
+        "names": [
+          "AAPL",
+          "MNST",
+          "MU"
+        ],
+        "gain": 0.07641416344896255,
+        "win": 0.6349206349206349,
+        "percentile": 0.7341772151898734,
+        "overlap": 0,
+        "regret": 0.08221086524509925
+      },
+      "oracle_5": 0.14511250507534879,
+      "base_5": {
+        "names": [
+          "NVDA",
+          "AVGO",
+          "MU",
+          "AMD",
+          "MSTR"
+        ],
+        "gain": 0.08641259907740853,
+        "win": 0.6285714285714286,
+        "percentile": 0.7443037974683545,
+        "overlap": 1,
+        "regret": 0.058699905997940255
+      },
+      "research_5": {
+        "names": [
+          "AAPL",
+          "MNST",
+          "MU",
+          "SBUX",
+          "BKNG"
+        ],
+        "gain": 0.058641293736409396,
+        "win": 0.619047619047619,
+        "percentile": 0.610126582278481,
+        "overlap": 0,
+        "regret": 0.0864712113389394
+      }
+    },
+    {
+      "month": "2012-07-01",
+      "eligible": 81,
+      "fully_covered": 81,
+      "excluded_missing_future": 0,
+      "base_list": [
+        "NVDA",
+        "AVGO",
+        "MU",
+        "AMD",
+        "MSTR",
+        "ASML",
+        "MRVL",
+        "MELI"
+      ],
+      "research_list": [
+        "DLTR",
+        "MNST",
+        "PAYX"
+      ],
+      "oracle_top10": [
+        "REGN",
+        "TMUS",
+        "FTNT",
+        "BKR",
+        "EBAY",
+        "ASML",
+        "AVGO",
+        "QCOM",
+        "MTCH",
+        "BIIB"
+      ],
+      "spearman_previous_win_to_future_gain": -0.0490308107663975,
+      "spearman_previous_win_to_future_win": 0.053849070390654376,
+      "oracle_3": 0.1255081619999284,
+      "base_3": {
+        "names": [
+          "NVDA",
+          "AVGO",
+          "MU"
+        ],
+        "gain": 0.017106991035168332,
+        "win": 0.5079365079365079,
+        "percentile": 0.6375000000000001,
+        "overlap": 0,
+        "regret": 0.10840117096476007
+      },
+      "research_3": {
+        "names": [
+          "DLTR",
+          "MNST",
+          "PAYX"
+        ],
+        "gain": -0.009976196664483588,
+        "win": 0.4761904761904761,
+        "percentile": 0.4375,
+        "overlap": 0,
+        "regret": 0.135484358664412
+      },
+      "oracle_5": 0.11499731669137858,
+      "base_5": {
+        "names": [
+          "NVDA",
+          "AVGO",
+          "MU",
+          "AMD",
+          "MSTR"
+        ],
+        "gain": -0.04196737036114863,
+        "win": 0.5142857142857142,
+        "percentile": 0.3925,
+        "overlap": 0,
+        "regret": 0.1569646870525272
+      },
+      "research_5": null
+    },
+    {
+      "month": "2012-08-01",
+      "eligible": 82,
+      "fully_covered": 82,
+      "excluded_missing_future": 0,
+      "base_list": [
+        "NVDA",
+        "AVGO",
+        "MU",
+        "AMD",
+        "MSTR",
+        "ASML",
+        "MRVL",
+        "MELI"
+      ],
+      "research_list": [
+        "MCHP",
+        "META",
+        "MTCH",
+        "TTWO",
+        "AAPL",
+        "CTSH",
+        "NFLX",
+        "NOW",
+        "VRTX",
+        "ASML",
+        "COST",
+        "FTNT",
+        "GOOG",
+        "GOOGL",
+        "ISRG",
+        "ODFL",
+        "QCOM",
+        "ROP",
+        "TSLA",
+        "ADI",
+        "AVGO",
+        "AZN",
+        "BKR",
+        "EBAY",
+        "GILD",
+        "MELI",
+        "MSTR",
+        "NTES",
+        "PAYX",
+        "REGN",
+        "ROST"
+      ],
+      "oracle_top10": [
+        "MELI",
+        "CSCO",
+        "CTSH",
+        "SBUX",
+        "EBAY",
+        "EA",
+        "GILD",
+        "NOW",
+        "MSTR",
+        "TSLA"
+      ],
+      "spearman_previous_win_to_future_gain": 0.34889869675024227,
+      "spearman_previous_win_to_future_win": 0.2337055471510126,
+      "oracle_3": 0.14858130959359475,
+      "base_3": {
+        "names": [
+          "NVDA",
+          "AVGO",
+          "MU"
+        ],
+        "gain": 0.03617668412647155,
+        "win": 0.5652173913043478,
+        "percentile": 0.7818930041152262,
+        "overlap": 0,
+        "regret": 0.11240462546712321
+      },
+      "research_3": {
+        "names": [
+          "MCHP",
+          "META",
+          "MTCH"
+        ],
+        "gain": 0.01741490386754019,
+        "win": 0.5362318840579711,
+        "percentile": 0.6172839506172839,
+        "overlap": 0,
+        "regret": 0.13116640572605456
+      },
+      "oracle_5": 0.12040373575167526,
+      "base_5": {
+        "names": [
+          "NVDA",
+          "AVGO",
+          "MU",
+          "AMD",
+          "MSTR"
+        ],
+        "gain": 0.031329023381063116,
+        "win": 0.5478260869565218,
+        "percentile": 0.6987654320987654,
+        "overlap": 0,
+        "regret": 0.08907471237061215
+      },
+      "research_5": {
+        "names": [
+          "MCHP",
+          "META",
+          "MTCH",
+          "TTWO",
+          "AAPL"
+        ],
+        "gain": 0.020921782516615594,
+        "win": 0.5478260869565218,
+        "percentile": 0.6567901234567901,
+        "overlap": 0,
+        "regret": 0.09948195323505966
+      }
+    },
+    {
+      "month": "2012-10-01",
+      "eligible": 83,
+      "fully_covered": 83,
+      "excluded_missing_future": 0,
+      "base_list": [
+        "NVDA",
+        "AVGO",
+        "MU",
+        "AMD",
+        "MSTR",
+        "ASML",
+        "MRVL",
+        "MELI"
+      ],
+      "research_list": [
+        "META",
+        "MU",
+        "NOW",
+        "SBUX",
+        "AAPL",
+        "AMGN",
+        "BIIB",
+        "EXC",
+        "KDP",
+        "TTWO",
+        "ASML",
+        "CTSH",
+        "INTC",
+        "MRVL",
+        "NXPI",
+        "PEP",
+        "QCOM",
+        "WBD"
+      ],
+      "oracle_top10": [
+        "TTWO",
+        "META",
+        "ASML",
+        "TCOM",
+        "TSLA",
+        "GILD",
+        "PCAR",
+        "FAST",
+        "PANW",
+        "NTES"
+      ],
+      "spearman_previous_win_to_future_gain": 0.07678622576413471,
+      "spearman_previous_win_to_future_win": 0.16922686300829948,
+      "oracle_3": 0.17041111872021864,
+      "base_3": {
+        "names": [
+          "NVDA",
+          "AVGO",
+          "MU"
+        ],
+        "gain": 0.029346984739576133,
+        "win": 0.6349206349206349,
+        "percentile": 0.47154471544715443,
+        "overlap": 0,
+        "regret": 0.1410641339806425
+      },
+      "research_3": {
+        "names": [
+          "META",
+          "MU",
+          "NOW"
+        ],
+        "gain": 0.07945967774089946,
+        "win": 0.5873015873015873,
+        "percentile": 0.7154471544715446,
+        "overlap": 1,
+        "regret": 0.09095144097931918
+      },
+      "oracle_5": 0.14946057555796574,
+      "base_5": {
+        "names": [
+          "NVDA",
+          "AVGO",
+          "MU",
+          "AMD",
+          "MSTR"
+        ],
+        "gain": -0.020687101215288464,
+        "win": 0.6,
+        "percentile": 0.3024390243902439,
+        "overlap": 0,
+        "regret": 0.1701476767732542
+      },
+      "research_5": {
+        "names": [
+          "META",
+          "MU",
+          "NOW",
+          "SBUX",
+          "AAPL"
+        ],
+        "gain": 0.0627871996254523,
+        "win": 0.6,
+        "percentile": 0.6536585365853658,
+        "overlap": 1,
+        "regret": 0.08667337593251344
+      }
+    },
+    {
+      "month": "2012-11-01",
+      "eligible": 83,
+      "fully_covered": 83,
+      "excluded_missing_future": 0,
+      "base_list": [
+        "NVDA",
+        "AVGO",
+        "MU",
+        "AMD",
+        "MSTR",
+        "ASML",
+        "MRVL",
+        "MELI"
+      ],
+      "research_list": [
+        "EXC",
+        "CTAS",
+        "PCAR",
+        "WBD",
+        "XEL",
+        "CMCSA",
+        "CSCO",
+        "INTC",
+        "KLAC",
+        "MDLZ",
+        "PAYX",
+        "ROP",
+        "SBUX",
+        "TSLA",
+        "ADI",
+        "ADP",
+        "AMAT",
+        "AMZN",
+        "ASML",
+        "EBAY",
+        "FAST",
+        "GILD",
+        "INTU",
+        "ISRG",
+        "MELI",
+        "MU",
+        "ODFL",
+        "PEP",
+        "QCOM",
+        "TTWO",
+        "VRTX"
+      ],
+      "oracle_top10": [
+        "AMD",
+        "BKNG",
+        "QCOM",
+        "FTNT",
+        "AAPL",
+        "CSCO",
+        "GILD",
+        "SBUX",
+        "TCOM",
+        "NVDA"
+      ],
+      "spearman_previous_win_to_future_gain": -0.05859043785586509,
+      "spearman_previous_win_to_future_win": 0.04645122757685337,
+      "oracle_3": 0.14236455750518195,
+      "base_3": {
+        "names": [
+          "NVDA",
+          "AVGO",
+          "MU"
+        ],
+        "gain": 0.025080200850937987,
+        "win": 0.619047619047619,
+        "percentile": 0.6707317073170732,
+        "overlap": 0,
+        "regret": 0.11728435665424397
+      },
+      "research_3": {
+        "names": [
+          "EXC",
+          "CTAS",
+          "PCAR"
+        ],
+        "gain": -0.0034020357563075165,
+        "win": 0.5079365079365079,
+        "percentile": 0.35772357723577236,
+        "overlap": 0,
+        "regret": 0.14576659326148947
+      },
+      "oracle_5": 0.12682506062168222,
+      "base_5": {
+        "names": [
+          "NVDA",
+          "AVGO",
+          "MU",
+          "AMD",
+          "MSTR"
+        ],
+        "gain": 0.04827597719020397,
+        "win": 0.5523809523809524,
+        "percentile": 0.624390243902439,
+        "overlap": 1,
+        "regret": 0.07854908343147826
+      },
+      "research_5": {
+        "names": [
+          "EXC",
+          "CTAS",
+          "PCAR",
+          "WBD",
+          "XEL"
+        ],
+        "gain": -0.002621069922748365,
+        "win": 0.5428571428571429,
+        "percentile": 0.3829268292682927,
+        "overlap": 0,
+        "regret": 0.12944613054443058
+      }
+    },
+    {
+      "month": "2012-12-01",
+      "eligible": 85,
+      "fully_covered": 85,
+      "excluded_missing_future": 0,
+      "base_list": [
+        "NVDA",
+        "AVGO",
+        "MU",
+        "AMD",
+        "MSTR",
+        "ASML",
+        "MRVL",
+        "MELI"
+      ],
+      "research_list": [
+        "AAPL",
+        "QCOM",
+        "XEL",
+        "FTNT",
+        "MSFT",
+        "NVDA",
+        "ADBE",
+        "ASML",
+        "AVGO",
+        "AZN",
+        "EBAY",
+        "WDAY"
+      ],
+      "oracle_top10": [
+        "AMD",
+        "TCOM",
+        "AXON",
+        "MNST",
+        "INTC",
+        "MU",
+        "ON",
+        "MSFT",
+        "GOOG",
+        "GOOGL"
+      ],
+      "spearman_previous_win_to_future_gain": 0.11027651850514952,
+      "spearman_previous_win_to_future_win": 0.15153464053339738,
+      "oracle_3": 0.1179488127030844,
+      "base_3": {
+        "names": [
+          "NVDA",
+          "AVGO",
+          "MU"
+        ],
+        "gain": 0.02295488060005808,
+        "win": 0.65,
+        "percentile": 0.6706349206349206,
+        "overlap": 0,
+        "regret": 0.09499393210302631
+      },
+      "research_3": {
+        "names": [
+          "AAPL",
+          "QCOM",
+          "XEL"
+        ],
+        "gain": -0.00946010157936155,
+        "win": 0.5,
+        "percentile": 0.25396825396825395,
+        "overlap": 0,
+        "regret": 0.12740891428244594
+      },
+      "oracle_5": 0.09312650970660656,
+      "base_5": {
+        "names": [
+          "NVDA",
+          "AVGO",
+          "MU",
+          "AMD",
+          "MSTR"
+        ],
+        "gain": 0.05343660516730272,
+        "win": 0.65,
+        "percentile": 0.7547619047619047,
+        "overlap": 1,
+        "regret": 0.03968990453930384
+      },
+      "research_5": {
+        "names": [
+          "AAPL",
+          "QCOM",
+          "XEL",
+          "FTNT",
+          "MSFT"
+        ],
+        "gain": 0.007223471732724258,
+        "win": 0.53,
+        "percentile": 0.49285714285714277,
+        "overlap": 0,
+        "regret": 0.0859030379738823
+      }
+    },
+    {
+      "month": "2013-01-01",
+      "eligible": 85,
+      "fully_covered": 85,
+      "excluded_missing_future": 0,
+      "base_list": [
+        "NVDA",
+        "AVGO",
+        "MU",
+        "AMD",
+        "MSTR",
+        "ASML",
+        "MRVL",
+        "MELI"
+      ],
+      "research_list": [
+        "AMD",
+        "KLAC",
+        "INTC",
+        "MSFT",
+        "MU",
+        "ADI",
+        "ASML",
+        "AVGO",
+        "META",
+        "ODFL",
+        "PCAR",
+        "TCOM",
+        "XEL",
+        "AZN",
+        "EBAY",
+        "GILD",
+        "ORLY",
+        "PAYX",
+        "ROST"
+      ],
+      "oracle_top10": [
+        "NFLX",
+        "AMD",
+        "ALGN",
+        "FTNT",
+        "AMZN",
+        "AXON",
+        "ASML",
+        "ADSK",
+        "PANW",
+        "TSLA"
+      ],
+      "spearman_previous_win_to_future_gain": 0.17405586438298898,
+      "spearman_previous_win_to_future_win": 0.23250085204178786,
+      "oracle_3": 0.3017594581527392,
+      "base_3": {
+        "names": [
+          "NVDA",
+          "AVGO",
+          "MU"
+        ],
+        "gain": 0.024727542462403065,
+        "win": 0.5555555555555556,
+        "percentile": 0.6071428571428572,
+        "overlap": 0,
+        "regret": 0.27703191569033614
+      },
+      "research_3": {
+        "names": [
+          "AMD",
+          "KLAC",
+          "INTC"
+        ],
+        "gain": 0.07955366222680144,
+        "win": 0.6825396825396824,
+        "percentile": 0.638888888888889,
+        "overlap": 1,
+        "regret": 0.22220579592593775
+      },
+      "oracle_5": 0.23733808124148542,
+      "base_5": {
+        "names": [
+          "NVDA",
+          "AVGO",
+          "MU",
+          "AMD",
+          "MSTR"
+        ],
+        "gain": 0.056586114048069756,
+        "win": 0.5904761904761905,
+        "percentile": 0.6095238095238096,
+        "overlap": 1,
+        "regret": 0.18075196719341566
+      },
+      "research_5": {
+        "names": [
+          "AMD",
+          "KLAC",
+          "INTC",
+          "MSFT",
+          "MU"
+        ],
+        "gain": 0.057850345782095844,
+        "win": 0.6571428571428571,
+        "percentile": 0.6357142857142857,
+        "overlap": 1,
+        "regret": 0.17948773545938956
+      }
+    },
+    {
+      "month": "2015-04-01",
+      "eligible": 86,
+      "fully_covered": 86,
+      "excluded_missing_future": 0,
+      "base_list": [
+        "NVDA",
+        "AVGO",
+        "MU",
+        "AMD",
+        "MSTR",
+        "ASML",
+        "MRVL",
+        "MELI"
+      ],
+      "research_list": [
+        "AAPL",
+        "COST",
+        "EXC",
+        "NTES",
+        "NXPI",
+        "MDLZ",
+        "MSTR",
+        "REGN",
+        "TSLA",
+        "VRTX",
+        "XEL",
+        "FANG",
+        "GOOGL",
+        "KDP",
+        "META",
+        "MU",
+        "ROST",
+        "ADP",
+        "CHTR",
+        "CPRT",
+        "CTAS",
+        "EA",
+        "FTNT",
+        "GILD",
+        "GOOG",
+        "MNST",
+        "MTCH",
+        "TMUS",
+        "VRSK"
+      ],
+      "oracle_top10": [
+        "AXON",
+        "NFLX",
+        "ASML",
+        "ALGN",
+        "FTNT",
+        "TSLA",
+        "AMZN",
+        "LRCX",
+        "SBUX",
+        "MSTR"
+      ],
+      "spearman_previous_win_to_future_gain": 0.22438847376208262,
+      "spearman_previous_win_to_future_win": 0.27051316784657736,
+      "oracle_3": 0.21986608908346664,
+      "base_3": {
+        "names": [
+          "NVDA",
+          "AVGO",
+          "MU"
+        ],
+        "gain": -0.028643805095781266,
+        "win": 0.4761904761904762,
+        "percentile": 0.19607843137254902,
+        "overlap": 0,
+        "regret": 0.2485098941792479
+      },
+      "research_3": {
+        "names": [
+          "AAPL",
+          "COST",
+          "EXC"
+        ],
+        "gain": 0.018406025311950604,
+        "win": 0.5714285714285715,
+        "percentile": 0.6509803921568628,
+        "overlap": 0,
+        "regret": 0.20146006377151604
+      },
+      "oracle_5": 0.1891898248615037,
+      "base_5": {
+        "names": [
+          "NVDA",
+          "AVGO",
+          "MU",
+          "AMD",
+          "MSTR"
+        ],
+        "gain": -0.0215655117826543,
+        "win": 0.43809523809523815,
+        "percentile": 0.2988235294117647,
+        "overlap": 0,
+        "regret": 0.21075533664415802
+      },
+      "research_5": {
+        "names": [
+          "AAPL",
+          "COST",
+          "EXC",
+          "NTES",
+          "NXPI"
+        ],
+        "gain": 0.026953500221902387,
+        "win": 0.6,
+        "percentile": 0.6941176470588235,
+        "overlap": 0,
+        "regret": 0.16223632463960133
+      }
+    },
+    {
+      "month": "2015-06-01",
+      "eligible": 86,
+      "fully_covered": 86,
+      "excluded_missing_future": 0,
+      "base_list": [
+        "NVDA",
+        "AVGO",
+        "MU",
+        "AMD",
+        "MSTR",
+        "ASML",
+        "MRVL",
+        "MELI"
+      ],
+      "research_list": [
+        "AVGO",
+        "NXPI",
+        "CMCSA",
+        "NTES",
+        "ADI",
+        "NFLX",
+        "AAPL",
+        "AXON",
+        "CHTR",
+        "MCHP",
+        "ON",
+        "ROST",
+        "BKR",
+        "CPRT",
+        "FANG",
+        "FTNT",
+        "IDXX",
+        "MU",
+        "PANW",
+        "TCOM",
+        "AMAT",
+        "CDNS",
+        "CTSH",
+        "EBAY",
+        "GILD",
+        "LRCX",
+        "MELI",
+        "MSTR",
+        "REGN",
+        "WBD",
+        "AMD",
+        "AMGN",
+        "ASML",
+        "BIIB",
+        "CDW",
+        "GOOG",
+        "HON",
+        "INTU",
+        "MDLZ",
+        "MRVL",
+        "NVDA",
+        "PEP",
+        "QCOM",
+        "SBUX"
+      ],
+      "oracle_top10": [
+        "MTCH",
+        "AMD",
+        "TMUS",
+        "LULU",
+        "NFLX",
+        "CPRT",
+        "MNST",
+        "ON",
+        "AMGN",
+        "BIIB"
+      ],
+      "spearman_previous_win_to_future_gain": -0.04884402213768352,
+      "spearman_previous_win_to_future_win": -0.09032608715447313,
+      "oracle_3": 0.08196132478187525,
+      "base_3": {
+        "names": [
+          "NVDA",
+          "AVGO",
+          "MU"
+        ],
+        "gain": -0.06485034227192597,
+        "win": 0.4393939393939394,
+        "percentile": 0.1450980392156863,
+        "overlap": 0,
+        "regret": 0.14681166705380122
+      },
+      "research_3": {
+        "names": [
+          "AVGO",
+          "NXPI",
+          "CMCSA"
+        ],
+        "gain": 0.007851467729858284,
+        "win": 0.5,
+        "percentile": 0.4862745098039216,
+        "overlap": 0,
+        "regret": 0.07410985705201696
+      },
+      "oracle_5": 0.07224368574868431,
+      "base_5": {
+        "names": [
+          "NVDA",
+          "AVGO",
+          "MU",
+          "AMD",
+          "MSTR"
+        ],
+        "gain": -0.025231728545325505,
+        "win": 0.4545454545454545,
+        "percentile": 0.3058823529411765,
+        "overlap": 1,
+        "regret": 0.09747541429400981
+      },
+      "research_5": {
+        "names": [
+          "AVGO",
+          "NXPI",
+          "CMCSA",
+          "NTES",
+          "ADI"
+        ],
+        "gain": 0.008258602166458396,
+        "win": 0.509090909090909,
+        "percentile": 0.4964705882352941,
+        "overlap": 0,
+        "regret": 0.06398508358222592
+      }
+    },
+    {
+      "month": "2015-07-01",
+      "eligible": 86,
+      "fully_covered": 86,
+      "excluded_missing_future": 0,
+      "base_list": [
+        "NVDA",
+        "AVGO",
+        "MU",
+        "AMD",
+        "MSTR",
+        "ASML",
+        "MRVL",
+        "MELI"
+      ],
+      "research_list": [
+        "CHTR",
+        "DXCM",
+        "GOOGL",
+        "QCOM",
+        "ADI",
+        "AMGN",
+        "AXON",
+        "BKNG",
+        "FTNT",
+        "GOOG",
+        "MDLZ",
+        "AAPL",
+        "ALGN",
+        "COST",
+        "CPRT",
+        "CSCO",
+        "CTAS",
+        "EA",
+        "GILD",
+        "KLAC",
+        "LULU",
+        "MNST",
+        "MTCH",
+        "NOW",
+        "NXPI",
+        "ODFL",
+        "ON",
+        "ORLY",
+        "PANW",
+        "PEP",
+        "REGN",
+        "ROP",
+        "SNPS",
+        "TMUS",
+        "VRSK",
+        "WDAY",
+        "ADP",
+        "ASML",
+        "BIIB",
+        "DLTR",
+        "EBAY",
+        "FAST",
+        "HON",
+        "INTC",
+        "ISRG",
+        "MCHP",
+        "MSFT",
+        "NFLX",
+        "PAYX",
+        "SBUX"
+      ],
+      "oracle_top10": [
+        "AMZN",
+        "NFLX",
+        "MSTR",
+        "FTNT",
+        "MU",
+        "GOOGL",
+        "GILD",
+        "SBUX",
+        "GOOG",
+        "ADSK"
+      ],
+      "spearman_previous_win_to_future_gain": 0.1933271340338441,
+      "spearman_previous_win_to_future_win": 0.26403826788865725,
+      "oracle_3": 0.21621479510325503,
+      "base_3": {
+        "names": [
+          "NVDA",
+          "AVGO",
+          "MU"
+        ],
+        "gain": 0.05260053013878816,
+        "win": 0.5303030303030303,
+        "percentile": 0.5098039215686274,
+        "overlap": 0,
+        "regret": 0.16361426496446688
+      },
+      "research_3": {
+        "names": [
+          "CHTR",
+          "DXCM",
+          "GOOGL"
+        ],
+        "gain": 0.07720720839438984,
+        "win": 0.6515151515151515,
+        "percentile": 0.7607843137254902,
+        "overlap": 0,
+        "regret": 0.1390075867088652
+      },
+      "oracle_5": 0.18980339579283437,
+      "base_5": {
+        "names": [
+          "NVDA",
+          "AVGO",
+          "MU",
+          "AMD",
+          "MSTR"
+        ],
+        "gain": 0.0408878019782899,
+        "win": 0.5272727272727272,
+        "percentile": 0.5011764705882353,
+        "overlap": 2,
+        "regret": 0.14891559381454447
+      },
+      "research_5": {
+        "names": [
+          "CHTR",
+          "DXCM",
+          "GOOGL",
+          "QCOM",
+          "ADI"
+        ],
+        "gain": 0.037489860281543094,
+        "win": 0.6,
+        "percentile": 0.5082352941176471,
+        "overlap": 0,
+        "regret": 0.1523135355112913
+      }
+    },
+    {
+      "month": "2015-08-01",
+      "eligible": 86,
+      "fully_covered": 86,
+      "excluded_missing_future": 0,
+      "base_list": [
+        "NVDA",
+        "AVGO",
+        "MU",
+        "AMD",
+        "MSTR",
+        "ASML",
+        "MRVL",
+        "MELI"
+      ],
+      "research_list": [
+        "AMGN",
+        "BIIB",
+        "SBUX",
+        "ALGN",
+        "BKNG",
+        "CSX",
+        "EA",
+        "GILD",
+        "ROST",
+        "VRSK",
+        "CHTR",
+        "DXCM",
+        "FTNT",
+        "META",
+        "MRVL",
+        "MTCH",
+        "NXPI",
+        "ORLY"
+      ],
+      "oracle_top10": [
+        "GOOG",
+        "GOOGL",
+        "NVDA",
+        "ASML",
+        "BKNG",
+        "DXCM",
+        "AMZN",
+        "FANG",
+        "ORLY",
+        "EXC"
+      ],
+      "spearman_previous_win_to_future_gain": -0.0643465995247535,
+      "spearman_previous_win_to_future_win": 0.19698366057859448,
+      "oracle_3": 0.04669078801939486,
+      "base_3": {
+        "names": [
+          "NVDA",
+          "AVGO",
+          "MU"
+        ],
+        "gain": -0.05138905553003468,
+        "win": 0.3650793650793651,
+        "percentile": 0.4470588235294118,
+        "overlap": 1,
+        "regret": 0.09807984354942953
+      },
+      "research_3": {
+        "names": [
+          "AMGN",
+          "BIIB",
+          "SBUX"
+        ],
+        "gain": -0.04710465246911701,
+        "win": 0.5238095238095238,
+        "percentile": 0.5843137254901961,
+        "overlap": 0,
+        "regret": 0.09379544048851188
+      },
+      "oracle_5": 0.03551292938730967,
+      "base_5": {
+        "names": [
+          "NVDA",
+          "AVGO",
+          "MU",
+          "AMD",
+          "MSTR"
+        ],
+        "gain": -0.07230242266589866,
+        "win": 0.3238095238095238,
+        "percentile": 0.4305882352941177,
+        "overlap": 1,
+        "regret": 0.10781535205320833
+      },
+      "research_5": {
+        "names": [
+          "AMGN",
+          "BIIB",
+          "SBUX",
+          "ALGN",
+          "BKNG"
+        ],
+        "gain": -0.03377842793745102,
+        "win": 0.44761904761904764,
+        "percentile": 0.6611764705882353,
+        "overlap": 1,
+        "regret": 0.06929135732476069
+      }
+    },
+    {
+      "month": "2015-09-01",
+      "eligible": 88,
+      "fully_covered": 88,
+      "excluded_missing_future": 0,
+      "base_list": [
+        "NVDA",
+        "AVGO",
+        "MU",
+        "AMD",
+        "MSTR",
+        "ASML",
+        "MRVL",
+        "MELI"
+      ],
+      "research_list": [
+        "PYPL",
+        "AMGN",
+        "BIIB",
+        "SBUX",
+        "ASML",
+        "CMCSA",
+        "DXCM",
+        "IDXX",
+        "META",
+        "MU",
+        "SNPS",
+        "TCOM",
+        "ADBE",
+        "CDW",
+        "CSX",
+        "CTAS",
+        "FANG",
+        "GILD",
+        "GOOG",
+        "GOOGL",
+        "MELI",
+        "NFLX",
+        "PCAR",
+        "REGN",
+        "VRTX",
+        "AMAT",
+        "BKNG",
+        "CHTR",
+        "CTSH",
+        "DLTR",
+        "EXC",
+        "HON",
+        "INTU",
+        "ISRG",
+        "KHC",
+        "MAR",
+        "MDLZ",
+        "MNST",
+        "MRVL",
+        "NTES",
+        "NXPI",
+        "ORLY",
+        "PANW",
+        "ROST",
+        "TMUS",
+        "TSLA",
+        "TXN",
+        "AAPL",
+        "AMZN",
+        "AZN"
+      ],
+      "oracle_top10": [
+        "AZN",
+        "AMD",
+        "PANW",
+        "VRSK",
+        "CMCSA",
+        "MCHP",
+        "TSLA",
+        "AVGO",
+        "ADI",
+        "NTES"
+      ],
+      "spearman_previous_win_to_future_gain": 0.14833373476353603,
+      "spearman_previous_win_to_future_win": 0.10095159599539326,
+      "oracle_3": 0.10691027040155865,
+      "base_3": {
+        "names": [
+          "NVDA",
+          "AVGO",
+          "MU"
+        ],
+        "gain": 0.052971702032644896,
+        "win": 0.619047619047619,
+        "percentile": 0.8812260536398467,
+        "overlap": 0,
+        "regret": 0.05393856836891375
+      },
+      "research_3": {
+        "names": [
+          "PYPL",
+          "AMGN",
+          "BIIB"
+        ],
+        "gain": 0.043157457671200904,
+        "win": 0.5238095238095238,
+        "percentile": 0.7777777777777777,
+        "overlap": 0,
+        "regret": 0.06375281273035774
+      },
+      "oracle_5": 0.09301900963027143,
+      "base_5": {
+        "names": [
+          "NVDA",
+          "AVGO",
+          "MU",
+          "AMD",
+          "MSTR"
+        ],
+        "gain": 0.05645812962578228,
+        "win": 0.5809523809523809,
+        "percentile": 0.7839080459770115,
+        "overlap": 1,
+        "regret": 0.03656088000448915
+      },
+      "research_5": {
+        "names": [
+          "PYPL",
+          "AMGN",
+          "BIIB",
+          "SBUX",
+          "ASML"
+        ],
+        "gain": 0.033386507661815376,
+        "win": 0.5428571428571429,
+        "percentile": 0.6298850574712643,
+        "overlap": 0,
+        "regret": 0.059632501968456056
+      }
+    },
+    {
+      "month": "2015-10-01",
+      "eligible": 88,
+      "fully_covered": 88,
+      "excluded_missing_future": 0,
+      "base_list": [
+        "NVDA",
+        "AVGO",
+        "MU",
+        "AMD",
+        "MSTR",
+        "ASML",
+        "MRVL",
+        "MELI"
+      ],
+      "research_list": [
+        "MDLZ",
+        "AVGO",
+        "AZN",
+        "BKR",
+        "CDW",
+        "EXC",
+        "GOOGL",
+        "MAR",
+        "NVDA",
+        "NXPI",
+        "ORLY",
+        "SBUX"
+      ],
+      "oracle_top10": [
+        "TCOM",
+        "KLAC",
+        "DXCM",
+        "AMZN",
+        "AXON",
+        "BIIB",
+        "GOOG",
+        "GOOGL",
+        "ISRG",
+        "NTES"
+      ],
+      "spearman_previous_win_to_future_gain": 0.010443990102907263,
+      "spearman_previous_win_to_future_win": -0.02111938460025522,
+      "oracle_3": 0.23447813585292362,
+      "base_3": {
+        "names": [
+          "NVDA",
+          "AVGO",
+          "MU"
+        ],
+        "gain": 0.027572544561147744,
+        "win": 0.5606060606060606,
+        "percentile": 0.521072796934866,
+        "overlap": 0,
+        "regret": 0.20690559129177588
+      },
+      "research_3": {
+        "names": [
+          "MDLZ",
+          "AVGO",
+          "AZN"
+        ],
+        "gain": -0.02047474310011514,
+        "win": 0.4393939393939394,
+        "percentile": 0.23371647509578544,
+        "overlap": 0,
+        "regret": 0.25495287895303875
+      },
+      "oracle_5": 0.19213850466992838,
+      "base_5": {
+        "names": [
+          "NVDA",
+          "AVGO",
+          "MU",
+          "AMD",
+          "MSTR"
+        ],
+        "gain": -0.00809572136244591,
+        "win": 0.5,
+        "percentile": 0.34942528735632183,
+        "overlap": 0,
+        "regret": 0.20023422603237429
+      },
+      "research_5": {
+        "names": [
+          "MDLZ",
+          "AVGO",
+          "AZN",
+          "BKR",
+          "CDW"
+        ],
+        "gain": 0.006502654418095774,
+        "win": 0.5181818181818182,
+        "percentile": 0.4114942528735632,
+        "overlap": 0,
+        "regret": 0.1856358502518326
+      }
+    },
+    {
+      "month": "2016-02-01",
+      "eligible": 89,
+      "fully_covered": 89,
+      "excluded_missing_future": 0,
+      "base_list": [
+        "NVDA",
+        "AVGO",
+        "MU",
+        "AMD",
+        "MSTR",
+        "ASML",
+        "MRVL",
+        "MELI"
+      ],
+      "research_list": [
+        "DLTR",
+        "LULU",
+        "ALGN",
+        "BIIB",
+        "GOOGL",
+        "ISRG",
+        "LRCX",
+        "MTCH",
+        "AAPL",
+        "ADBE",
+        "AMGN",
+        "AXON",
+        "CSCO",
+        "CTAS",
+        "FAST",
+        "GOOG",
+        "HON",
+        "IDXX",
+        "META",
+        "PAYX",
+        "PYPL",
+        "SBUX",
+        "TEAM",
+        "TSLA"
+      ],
+      "oracle_top10": [
+        "BKNG",
+        "CSCO",
+        "AMAT",
+        "AXON",
+        "AMD",
+        "NVDA",
+        "TTWO",
+        "TMUS",
+        "ADSK",
+        "DLTR"
+      ],
+      "spearman_previous_win_to_future_gain": -0.10474921069213909,
+      "spearman_previous_win_to_future_win": -0.1430674930095162,
+      "oracle_3": 0.11026720644571836,
+      "base_3": {
+        "names": [
+          "NVDA",
+          "AVGO",
+          "MU"
+        ],
+        "gain": 0.04703049473600637,
+        "win": 0.5833333333333334,
+        "percentile": 0.7954545454545455,
+        "overlap": 0,
+        "regret": 0.06323671170971198
+      },
+      "research_3": {
+        "names": [
+          "DLTR",
+          "LULU",
+          "ALGN"
+        ],
+        "gain": -0.00061488070757066,
+        "win": 0.43333333333333335,
+        "percentile": 0.4393939393939394,
+        "overlap": 0,
+        "regret": 0.11088208715328901
+      },
+      "oracle_5": 0.10033173137920078,
+      "base_5": {
+        "names": [
+          "NVDA",
+          "AVGO",
+          "MU",
+          "AMD",
+          "MSTR"
+        ],
+        "gain": 0.040915013210804284,
+        "win": 0.56,
+        "percentile": 0.7431818181818183,
+        "overlap": 1,
+        "regret": 0.05941671816839649
+      },
+      "research_5": {
+        "names": [
+          "DLTR",
+          "LULU",
+          "ALGN",
+          "BIIB",
+          "GOOGL"
+        ],
+        "gain": 0.0031505691595889924,
+        "win": 0.45999999999999996,
+        "percentile": 0.48636363636363633,
+        "overlap": 0,
+        "regret": 0.09718116221961179
+      }
+    },
+    {
+      "month": "2016-03-01",
+      "eligible": 89,
+      "fully_covered": 89,
+      "excluded_missing_future": 0,
+      "base_list": [
+        "NVDA",
+        "AVGO",
+        "MU",
+        "AMD",
+        "MSTR",
+        "ASML",
+        "MRVL",
+        "MELI"
+      ],
+      "research_list": [
+        "AVGO",
+        "BKR",
+        "NXPI",
+        "AMAT",
+        "AMD",
+        "CPRT",
+        "CSCO",
+        "GOOG",
+        "GOOGL",
+        "MELI",
+        "NVDA",
+        "TMUS"
+      ],
+      "oracle_top10": [
+        "TSLA",
+        "MTCH",
+        "ADBE",
+        "AVGO",
+        "ROST",
+        "KHC",
+        "CHTR",
+        "REGN",
+        "FTNT",
+        "NFLX"
+      ],
+      "spearman_previous_win_to_future_gain": 0.07405058676100715,
+      "spearman_previous_win_to_future_win": 0.21062198648901737,
+      "oracle_3": 0.0809553837039385,
+      "base_3": {
+        "names": [
+          "NVDA",
+          "AVGO",
+          "MU"
+        ],
+        "gain": -0.021170675687626362,
+        "win": 0.4545454545454546,
+        "percentile": 0.5303030303030304,
+        "overlap": 0,
+        "regret": 0.10212605939156486
+      },
+      "research_3": {
+        "names": [
+          "AVGO",
+          "BKR",
+          "NXPI"
+        ],
+        "gain": -0.012830910735553957,
+        "win": 0.4545454545454546,
+        "percentile": 0.46212121212121215,
+        "overlap": 0,
+        "regret": 0.09378629443949245
+      },
+      "oracle_5": 0.06540271815630448,
+      "base_5": {
+        "names": [
+          "NVDA",
+          "AVGO",
+          "MU",
+          "AMD",
+          "MSTR"
+        ],
+        "gain": -0.013981258995780227,
+        "win": 0.4545454545454546,
+        "percentile": 0.6068181818181818,
+        "overlap": 1,
+        "regret": 0.07938397715208471
+      },
+      "research_5": {
+        "names": [
+          "AVGO",
+          "BKR",
+          "NXPI",
+          "AMAT",
+          "AMD"
+        ],
+        "gain": -0.014724461588285803,
+        "win": 0.4454545454545455,
+        "percentile": 0.48636363636363644,
+        "overlap": 1,
+        "regret": 0.08012717974459029
+      }
+    },
+    {
+      "month": "2018-05-01",
+      "eligible": 91,
+      "fully_covered": 91,
+      "excluded_missing_future": 0,
+      "base_list": [
+        "NVDA",
+        "AVGO",
+        "MU",
+        "AMD",
+        "MSTR",
+        "ASML",
+        "MRVL",
+        "MELI"
+      ],
+      "research_list": [
+        "AMZN",
+        "ADSK",
+        "CPRT",
+        "MSFT",
+        "MTCH",
+        "WBD",
+        "ADBE",
+        "ADP",
+        "ALGN",
+        "AXON",
+        "BKNG",
+        "CSCO",
+        "GILD",
+        "HON",
+        "IDXX",
+        "KLAC",
+        "LRCX",
+        "MCHP",
+        "MDLZ",
+        "MRVL",
+        "MSTR",
+        "ODFL",
+        "ROP",
+        "TCOM",
+        "VRSK"
+      ],
+      "oracle_top10": [
+        "TTD",
+        "AXON",
+        "MU",
+        "LULU",
+        "NXPI",
+        "MRVL",
+        "AAPL",
+        "KHC",
+        "QCOM",
+        "TCOM"
+      ],
+      "spearman_previous_win_to_future_gain": 0.06241066028359591,
+      "spearman_previous_win_to_future_win": 0.07199726220780463,
+      "oracle_3": 0.2063458868059507,
+      "base_3": {
+        "names": [
+          "NVDA",
+          "AVGO",
+          "MU"
+        ],
+        "gain": 0.055085148961154795,
+        "win": 0.5909090909090908,
+        "percentile": 0.7777777777777778,
+        "overlap": 1,
+        "regret": 0.1512607378447959
+      },
+      "research_3": {
+        "names": [
+          "AMZN",
+          "ADSK",
+          "CPRT"
+        ],
+        "gain": -0.018975794121111816,
+        "win": 0.5151515151515151,
+        "percentile": 0.3185185185185185,
+        "overlap": 0,
+        "regret": 0.2253216809270625
+      },
+      "oracle_5": 0.15720894907599897,
+      "base_5": {
+        "names": [
+          "NVDA",
+          "AVGO",
+          "MU",
+          "AMD",
+          "MSTR"
+        ],
+        "gain": 0.04201034419211012,
+        "win": 0.5727272727272726,
+        "percentile": 0.7666666666666667,
+        "overlap": 1,
+        "regret": 0.11519860488388886
+      },
+      "research_5": {
+        "names": [
+          "AMZN",
+          "ADSK",
+          "CPRT",
+          "MSFT",
+          "MTCH"
+        ],
+        "gain": -0.008024002801859432,
+        "win": 0.5,
+        "percentile": 0.42222222222222217,
+        "overlap": 0,
+        "regret": 0.1652329518778584
+      }
+    },
+    {
+      "month": "2018-09-01",
+      "eligible": 92,
+      "fully_covered": 92,
+      "excluded_missing_future": 0,
+      "base_list": [
+        "NVDA",
+        "AVGO",
+        "MU",
+        "AMD",
+        "MSTR",
+        "ASML",
+        "MRVL",
+        "MELI"
+      ],
+      "research_list": [
+        "LULU",
+        "ROST",
+        "AAPL",
+        "CSX",
+        "EBAY",
+        "ORLY",
+        "TTD",
+        "AMZN",
+        "CSCO",
+        "INTU",
+        "KHC",
+        "MSFT",
+        "ODFL"
+      ],
+      "oracle_top10": [
+        "AMD",
+        "PANW",
+        "LULU",
+        "AVGO",
+        "TEAM",
+        "NFLX",
+        "MRVL",
+        "FANG",
+        "ODFL",
+        "GILD"
+      ],
+      "spearman_previous_win_to_future_gain": 0.09806401137896541,
+      "spearman_previous_win_to_future_win": 0.1763332850693638,
+      "oracle_3": 0.07222353183801589,
+      "base_3": {
+        "names": [
+          "NVDA",
+          "AVGO",
+          "MU"
+        ],
+        "gain": -0.008528936206928309,
+        "win": 0.5263157894736842,
+        "percentile": 0.5128205128205128,
+        "overlap": 0,
+        "regret": 0.0807524680449442
+      },
+      "research_3": {
+        "names": [
+          "LULU",
+          "ROST",
+          "AAPL"
+        ],
+        "gain": 0.036042802660639146,
+        "win": 0.6140350877192983,
+        "percentile": 0.7692307692307692,
+        "overlap": 1,
+        "regret": 0.03618072917737674
+      },
+      "oracle_5": 0.0687672850939428,
+      "base_5": {
+        "names": [
+          "NVDA",
+          "AVGO",
+          "MU",
+          "AMD",
+          "MSTR"
+        ],
+        "gain": 0.007377619256387582,
+        "win": 0.5263157894736842,
+        "percentile": 0.5428571428571428,
+        "overlap": 2,
+        "regret": 0.061389665837555216
+      },
+      "research_5": {
+        "names": [
+          "LULU",
+          "ROST",
+          "AAPL",
+          "CSX",
+          "EBAY"
+        ],
+        "gain": 0.019015320001268904,
+        "win": 0.5684210526315789,
+        "percentile": 0.5714285714285714,
+        "overlap": 1,
+        "regret": 0.04975196509267389
+      }
+    },
+    {
+      "month": "2018-11-01",
+      "eligible": 92,
+      "fully_covered": 92,
+      "excluded_missing_future": 0,
+      "base_list": [
+        "NVDA",
+        "AVGO",
+        "MU",
+        "AMD",
+        "MSTR",
+        "ASML",
+        "MRVL",
+        "MELI"
+      ],
+      "research_list": [
+        "TSLA",
+        "CHTR",
+        "COST",
+        "INTC",
+        "WBD",
+        "ADP",
+        "CTAS",
+        "INTU",
+        "CMCSA",
+        "CSCO",
+        "CSX",
+        "DLTR",
+        "KLAC",
+        "MDLZ",
+        "ORLY",
+        "PAYX",
+        "PDD",
+        "ROST",
+        "SBUX",
+        "TMUS",
+        "TTWO",
+        "XEL",
+        "AMZN",
+        "AVGO",
+        "BKNG",
+        "FANG",
+        "FTNT",
+        "ISRG",
+        "ODFL",
+        "PYPL",
+        "ROP",
+        "VRSK",
+        "ZS",
+        "AMD",
+        "AMGN",
+        "AZN",
+        "BKR",
+        "CDNS",
+        "CDW",
+        "FAST",
+        "GILD",
+        "GOOG",
+        "GOOGL",
+        "HON",
+        "KHC",
+        "LRCX",
+        "META",
+        "MNST",
+        "MRVL",
+        "MSFT"
+      ],
+      "oracle_top10": [
+        "PDD",
+        "ADSK",
+        "PANW",
+        "BKNG",
+        "FANG",
+        "WDAY",
+        "CSCO",
+        "CPRT",
+        "ADBE",
+        "MSFT"
+      ],
+      "spearman_previous_win_to_future_gain": 0.14706138834984675,
+      "spearman_previous_win_to_future_win": 0.06312263453327943,
+      "oracle_3": 0.12203303916065526,
+      "base_3": {
+        "names": [
+          "NVDA",
+          "AVGO",
+          "MU"
+        ],
+        "gain": -0.0855729033617859,
+        "win": 0.41269841269841273,
+        "percentile": 0.08791208791208789,
+        "overlap": 0,
+        "regret": 0.20760594252244116
+      },
+      "research_3": {
+        "names": [
+          "TSLA",
+          "CHTR",
+          "COST"
+        ],
+        "gain": -0.009316126996461496,
+        "win": 0.4920634920634921,
+        "percentile": 0.3626373626373627,
+        "overlap": 0,
+        "regret": 0.13134916615711675
+      },
+      "oracle_5": 0.10290301531357988,
+      "base_5": {
+        "names": [
+          "NVDA",
+          "AVGO",
+          "MU",
+          "AMD",
+          "MSTR"
+        ],
+        "gain": -0.056159346027632694,
+        "win": 0.4095238095238095,
+        "percentile": 0.1956043956043956,
+        "overlap": 0,
+        "regret": 0.15906236134121257
+      },
+      "research_5": {
+        "names": [
+          "TSLA",
+          "CHTR",
+          "COST",
+          "INTC",
+          "WBD"
+        ],
+        "gain": -0.0013845931660967856,
+        "win": 0.49523809523809526,
+        "percentile": 0.4197802197802198,
+        "overlap": 0,
+        "regret": 0.10428760847967666
+      }
+    },
+    {
+      "month": "2018-12-01",
+      "eligible": 92,
+      "fully_covered": 92,
+      "excluded_missing_future": 0,
+      "base_list": [
+        "NVDA",
+        "AVGO",
+        "MU",
+        "AMD",
+        "MSTR",
+        "ASML",
+        "MRVL",
+        "MELI"
+      ],
+      "research_list": [
+        "EXC",
+        "MNST",
+        "BKR",
+        "FANG",
+        "VRSK",
+        "VRTX",
+        "WBD",
+        "ADSK",
+        "BIIB",
+        "CPRT",
+        "EA",
+        "KHC",
+        "MTCH",
+        "NTES",
+        "PANW",
+        "PCAR",
+        "PDD",
+        "XEL",
+        "AAPL",
+        "ADI",
+        "AMGN",
+        "CHTR",
+        "CTAS",
+        "CTSH",
+        "DLTR",
+        "FAST",
+        "GILD",
+        "MSFT",
+        "ORLY",
+        "PAYX",
+        "SNPS",
+        "TCOM",
+        "TMUS",
+        "WDAY",
+        "ZS",
+        "ADBE",
+        "ADP",
+        "AMZN",
+        "BKNG",
+        "CDW",
+        "CMCSA",
+        "COST",
+        "CSCO",
+        "CSX",
+        "FTNT",
+        "GOOGL",
+        "HON",
+        "KDP",
+        "LULU",
+        "MAR"
+      ],
+      "oracle_top10": [
+        "MRVL",
+        "AVGO",
+        "XEL",
+        "QCOM",
+        "AZN",
+        "LULU",
+        "PEP",
+        "NTES",
+        "DLTR",
+        "KHC"
+      ],
+      "spearman_previous_win_to_future_gain": 0.0795323513798961,
+      "spearman_previous_win_to_future_win": 0.03689330138060594,
+      "oracle_3": 0.05359096193154315,
+      "base_3": {
+        "names": [
+          "NVDA",
+          "AVGO",
+          "MU"
+        ],
+        "gain": -0.03539475663660404,
+        "win": 0.47368421052631576,
+        "percentile": 0.347985347985348,
+        "overlap": 1,
+        "regret": 0.08898571856814719
+      },
+      "research_3": {
+        "names": [
+          "EXC",
+          "MNST",
+          "BKR"
+        ],
+        "gain": -0.027588846474815753,
+        "win": 0.5263157894736842,
+        "percentile": 0.4029304029304029,
+        "overlap": 0,
+        "regret": 0.0811798084063589
+      },
+      "oracle_5": 0.044794001676868714,
+      "base_5": {
+        "names": [
+          "NVDA",
+          "AVGO",
+          "MU",
+          "AMD",
+          "MSTR"
+        ],
+        "gain": -0.033113109583202474,
+        "win": 0.4526315789473684,
+        "percentile": 0.3516483516483516,
+        "overlap": 1,
+        "regret": 0.07790711126007119
+      },
+      "research_5": {
+        "names": [
+          "EXC",
+          "MNST",
+          "BKR",
+          "FANG",
+          "VRSK"
+        ],
+        "gain": -0.020344741336243026,
+        "win": 0.5157894736842106,
+        "percentile": 0.5032967032967033,
+        "overlap": 0,
+        "regret": 0.06513874301311173
+      }
+    },
+    {
+      "month": "2019-01-01",
+      "eligible": 92,
+      "fully_covered": 92,
+      "excluded_missing_future": 0,
+      "base_list": [
+        "NVDA",
+        "AVGO",
+        "MU",
+        "AMD",
+        "MSTR",
+        "ASML",
+        "MRVL",
+        "MELI"
+      ],
+      "research_list": [
+        "REGN",
+        "XEL",
+        "CMCSA",
+        "DLTR",
+        "BIIB",
+        "CTAS",
+        "EXC",
+        "PEP",
+        "AZN",
+        "FTNT",
+        "KHC",
+        "PAYX",
+        "PDD",
+        "ROST",
+        "SNPS",
+        "TSLA",
+        "TXN",
+        "CHTR",
+        "COST",
+        "CTSH",
+        "DXCM",
+        "FANG",
+        "FAST",
+        "LULU",
+        "MAR",
+        "NVDA",
+        "PCAR",
+        "PYPL",
+        "QCOM",
+        "SBUX",
+        "AAPL",
+        "AMZN",
+        "CDW",
+        "CPRT",
+        "GILD",
+        "GOOG",
+        "GOOGL",
+        "IDXX",
+        "INTC",
+        "INTU",
+        "KDP",
+        "LRCX",
+        "MCHP",
+        "MDLZ",
+        "MNST",
+        "MRVL",
+        "MTCH",
+        "NOW",
+        "NTES",
+        "PANW"
+      ],
+      "oracle_top10": [
+        "CDW",
+        "EBAY",
+        "DXCM",
+        "META",
+        "NFLX",
+        "LRCX",
+        "AMD",
+        "NOW",
+        "CHTR",
+        "TEAM"
+      ],
+      "spearman_previous_win_to_future_gain": -0.06704575908174099,
+      "spearman_previous_win_to_future_win": -0.1604487534225684,
+      "oracle_3": 0.14439227271941407,
+      "base_3": {
+        "names": [
+          "NVDA",
+          "AVGO",
+          "MU"
+        ],
+        "gain": -0.0025840097042296776,
+        "win": 0.5714285714285715,
+        "percentile": 0.40659340659340665,
+        "overlap": 0,
+        "regret": 0.14697628242364374
+      },
+      "research_3": {
+        "names": [
+          "REGN",
+          "XEL",
+          "CMCSA"
+        ],
+        "gain": 0.01998489836202988,
+        "win": 0.4603174603174603,
+        "percentile": 0.47985347985347987,
+        "overlap": 0,
+        "regret": 0.12440737435738419
+      },
+      "oracle_5": 0.1315670053751245,
+      "base_5": {
+        "names": [
+          "NVDA",
+          "AVGO",
+          "MU",
+          "AMD",
+          "MSTR"
+        ],
+        "gain": -0.0005845775326085822,
+        "win": 0.5428571428571429,
+        "percentile": 0.43296703296703304,
+        "overlap": 0,
+        "regret": 0.13215158290773307
+      },
+      "research_5": {
+        "names": [
+          "REGN",
+          "XEL",
+          "CMCSA",
+          "DLTR",
+          "BIIB"
+        ],
+        "gain": 0.011436836419445644,
+        "win": 0.4666666666666667,
+        "percentile": 0.41098901098901097,
+        "overlap": 0,
+        "regret": 0.12013016895567885
+      }
+    },
+    {
+      "month": "2019-06-01",
+      "eligible": 92,
+      "fully_covered": 92,
+      "excluded_missing_future": 0,
+      "base_list": [
+        "NVDA",
+        "AVGO",
+        "MU",
+        "AMD",
+        "MSTR",
+        "ASML",
+        "MRVL",
+        "MELI"
+      ],
+      "research_list": [
+        "EXC",
+        "AZN",
+        "XEL",
+        "AXON",
+        "CPRT",
+        "KDP",
+        "COST",
+        "SNPS",
+        "TTD",
+        "TTWO",
+        "AMAT",
+        "AMGN",
+        "AMZN",
+        "ASML",
+        "BKNG",
+        "CTAS",
+        "FANG",
+        "GOOGL",
+        "IDXX",
+        "MDLZ",
+        "MELI",
+        "MRVL",
+        "MSFT",
+        "MTCH",
+        "PCAR",
+        "PDD",
+        "PEP",
+        "REGN",
+        "TCOM",
+        "WBD",
+        "ZS"
+      ],
+      "oracle_top10": [
+        "MU",
+        "NXPI",
+        "AMD",
+        "NVDA",
+        "ON",
+        "MELI",
+        "TSLA",
+        "MCHP",
+        "ZS",
+        "ADBE"
+      ],
+      "spearman_previous_win_to_future_gain": -0.18119008847809268,
+      "spearman_previous_win_to_future_win": -0.12055648507919017,
+      "oracle_3": 0.2653410653142259,
+      "base_3": {
+        "names": [
+          "NVDA",
+          "AVGO",
+          "MU"
+        ],
+        "gain": 0.2086494337849301,
+        "win": 0.75,
+        "percentile": 0.816849816849817,
+        "overlap": 1,
+        "regret": 0.05669163152929582
+      },
+      "research_3": {
+        "names": [
+          "EXC",
+          "AZN",
+          "XEL"
+        ],
+        "gain": 0.03763269532978703,
+        "win": 0.65,
+        "percentile": 0.08424908424908424,
+        "overlap": 0,
+        "regret": 0.22770836998443889
+      },
+      "oracle_5": 0.24806694300028323,
+      "base_5": {
+        "names": [
+          "NVDA",
+          "AVGO",
+          "MU",
+          "AMD",
+          "MSTR"
+        ],
+        "gain": 0.18527131456027107,
+        "win": 0.72,
+        "percentile": 0.7032967032967034,
+        "overlap": 3,
+        "regret": 0.06279562844001216
+      },
+      "research_5": {
+        "names": [
+          "EXC",
+          "AZN",
+          "XEL",
+          "AXON",
+          "CPRT"
+        ],
+        "gain": 0.038742540224428836,
+        "win": 0.68,
+        "percentile": 0.10329670329670329,
+        "overlap": 0,
+        "regret": 0.2093244027758544
+      }
+    },
+    {
+      "month": "2020-04-01",
+      "eligible": 94,
+      "fully_covered": 94,
+      "excluded_missing_future": 0,
+      "base_list": [
+        "NVDA",
+        "AVGO",
+        "MU",
+        "AMD",
+        "MSTR",
+        "ASML",
+        "MRVL",
+        "MELI"
+      ],
+      "research_list": [
+        "AMD",
+        "ASML",
+        "MRVL",
+        "AAPL",
+        "DXCM",
+        "GILD",
+        "MELI",
+        "NTES",
+        "QCOM",
+        "AMZN",
+        "BKR",
+        "COST",
+        "EA",
+        "INTC",
+        "MDLZ",
+        "MSFT",
+        "MU",
+        "NFLX",
+        "NVDA",
+        "NXPI",
+        "REGN",
+        "VRSK",
+        "WDAY"
+      ],
+      "oracle_top10": [
+        "TSLA",
+        "TTD",
+        "FANG",
+        "MAR",
+        "ON",
+        "BKR",
+        "MELI",
+        "NXPI",
+        "META",
+        "LRCX"
+      ],
+      "spearman_previous_win_to_future_gain": 0.09994147115165383,
+      "spearman_previous_win_to_future_win": -0.044884688722444034,
+      "oracle_3": 0.48912997205693926,
+      "base_3": {
+        "names": [
+          "NVDA",
+          "AVGO",
+          "MU"
+        ],
+        "gain": 0.15970281009949502,
+        "win": 0.5873015873015873,
+        "percentile": 0.5842293906810035,
+        "overlap": 0,
+        "regret": 0.32942716195744426
+      },
+      "research_3": {
+        "names": [
+          "AMD",
+          "ASML",
+          "MRVL"
+        ],
+        "gain": 0.15899101220180287,
+        "win": 0.5873015873015873,
+        "percentile": 0.5806451612903226,
+        "overlap": 0,
+        "regret": 0.3301389598551364
+      },
+      "oracle_5": 0.4229007683665224,
+      "base_5": {
+        "names": [
+          "NVDA",
+          "AVGO",
+          "MU",
+          "AMD",
+          "MSTR"
+        ],
+        "gain": 0.13298443790052905,
+        "win": 0.5809523809523809,
+        "percentile": 0.4666666666666666,
+        "overlap": 0,
+        "regret": 0.28991633046599335
+      },
+      "research_5": {
+        "names": [
+          "AMD",
+          "ASML",
+          "MRVL",
+          "AAPL",
+          "DXCM"
+        ],
+        "gain": 0.16376841228553465,
+        "win": 0.5809523809523809,
+        "percentile": 0.5956989247311829,
+        "overlap": 0,
+        "regret": 0.2591323560809877
+      }
+    }
+  ],
+  "summary": {
+    "3": {
+      "base": {
+        "gain": 0.023484184599245575,
+        "win": 0.546814325203072,
+        "percentile": 0.5815751488211244,
+        "overlap": 0.2549019607843137,
+        "regret": 0.13645730150763008
+      },
+      "research": {
+        "gain": 0.014393156128681804,
+        "win": 0.5296047799884117,
+        "percentile": 0.5445067296158832,
+        "overlap": 0.13725490196078433,
+        "regret": 0.1455483299781938
+      },
+      "n": 51,
+      "research_wins": 22,
+      "base_wins": 29,
+      "equal": 0,
+      "oracle_gain": 0.15994148610687564,
+      "by_year": {
+        "2005": {
+          "n": 4,
+          "base_gain": 0.04760450608731516,
+          "research_gain": 0.05803111594247702,
+          "oracle_gain": 0.17100170959563107
+        },
+        "2006": {
+          "n": 3,
+          "base_gain": 0.027296811523752424,
+          "research_gain": 0.011509012137010445,
+          "oracle_gain": 0.13304330271495654
+        },
+        "2007": {
+          "n": 4,
+          "base_gain": 0.04633616054084231,
+          "research_gain": 0.029196075070786694,
+          "oracle_gain": 0.22863880743637044
+        },
+        "2008": {
+          "n": 8,
+          "base_gain": 0.020816156311656585,
+          "research_gain": -0.023435379724821435,
+          "oracle_gain": 0.18023519882769246
+        },
+        "2009": {
+          "n": 2,
+          "base_gain": -0.020682825302740352,
+          "research_gain": -0.009634096000874464,
+          "oracle_gain": 0.1119181815721047
+        },
+        "2010": {
+          "n": 4,
+          "base_gain": 0.022859923288745955,
+          "research_gain": 0.030109720417589633,
+          "oracle_gain": 0.14005030596869802
+        },
+        "2011": {
+          "n": 4,
+          "base_gain": -0.009106412529172114,
+          "research_gain": -0.013861044028079025,
+          "oracle_gain": 0.07945136673738894
+        },
+        "2012": {
+          "n": 6,
+          "base_gain": 0.038276158044985964,
+          "research_gain": 0.025075068509541592,
+          "oracle_gain": 0.14390649820267834
+        },
+        "2013": {
+          "n": 1,
+          "base_gain": 0.024727542462403065,
+          "research_gain": 0.07955366222680144,
+          "oracle_gain": 0.3017594581527392
+        },
+        "2015": {
+          "n": 6,
+          "base_gain": -0.001956404360860186,
+          "research_gain": 0.013173793923027914,
+          "oracle_gain": 0.1510202338737457
+        },
+        "2016": {
+          "n": 2,
+          "base_gain": 0.012929909524190005,
+          "research_gain": -0.006722895721562309,
+          "oracle_gain": 0.09561129507482843
+        },
+        "2018": {
+          "n": 4,
+          "base_gain": -0.018602861811040865,
+          "research_gain": -0.00495949123293748,
+          "oracle_gain": 0.11354835493404125
+        },
+        "2019": {
+          "n": 2,
+          "base_gain": 0.10303271204035021,
+          "research_gain": 0.028808796845908455,
+          "oracle_gain": 0.20486666901682
+        },
+        "2020": {
+          "n": 1,
+          "base_gain": 0.15970281009949502,
+          "research_gain": 0.15899101220180287,
+          "oracle_gain": 0.48912997205693926
+        }
+      }
+    },
+    "5": {
+      "base": {
+        "gain": 0.015483893787086417,
+        "win": 0.5289604909591278,
+        "percentile": 0.5415825169516645,
+        "overlap": 0.7446808510638298,
+        "regret": 0.11470667972258151
+      },
+      "research": {
+        "gain": 0.011837259758447667,
+        "win": 0.5342782193057278,
+        "percentile": 0.5380896866671702,
+        "overlap": 0.3404255319148936,
+        "regret": 0.11835331375122028
+      },
+      "n": 47,
+      "research_wins": 25,
+      "base_wins": 22,
+      "equal": 0,
+      "oracle_gain": 0.13019057350966792,
+      "by_year": {
+        "2005": {
+          "n": 3,
+          "base_gain": 0.029649467393502518,
+          "research_gain": 0.05104368168028094,
+          "oracle_gain": 0.1437019356226078
+        },
+        "2006": {
+          "n": 3,
+          "base_gain": 0.011919684847318755,
+          "research_gain": 0.009169251241239119,
+          "oracle_gain": 0.11769414033521917
+        },
+        "2007": {
+          "n": 3,
+          "base_gain": 0.036840257689352646,
+          "research_gain": 0.02714461062847145,
+          "oracle_gain": 0.16312239737320403
+        },
+        "2008": {
+          "n": 7,
+          "base_gain": -0.005564864982733663,
+          "research_gain": -0.028658489477151144,
+          "oracle_gain": 0.13349724473447763
+        },
+        "2009": {
+          "n": 2,
+          "base_gain": -0.010321484891943369,
+          "research_gain": -0.020666778756399034,
+          "oracle_gain": 0.09515382955279308
+        },
+        "2010": {
+          "n": 4,
+          "base_gain": 0.027294634608957157,
+          "research_gain": 0.026545935301683123,
+          "oracle_gain": 0.11604761458068394
+        },
+        "2011": {
+          "n": 4,
+          "base_gain": -0.02182273436191301,
+          "research_gain": -0.011303444709376389,
+          "oracle_gain": 0.06757661722712821
+        },
+        "2012": {
+          "n": 5,
+          "base_gain": 0.039753420720137975,
+          "research_gain": 0.029390535537690637,
+          "oracle_gain": 0.1269856773426557
+        },
+        "2013": {
+          "n": 1,
+          "base_gain": 0.056586114048069756,
+          "research_gain": 0.057850345782095844,
+          "oracle_gain": 0.23733808124148542
+        },
+        "2015": {
+          "n": 6,
+          "base_gain": -0.004974908792042032,
+          "research_gain": 0.013135449468727335,
+          "oracle_gain": 0.12865122501508863
+        },
+        "2016": {
+          "n": 2,
+          "base_gain": 0.01346687710751203,
+          "research_gain": -0.005786946214348406,
+          "oracle_gain": 0.08286722476775263
+        },
+        "2018": {
+          "n": 4,
+          "base_gain": -0.009971123040584368,
+          "research_gain": -0.002684504325732585,
+          "oracle_gain": 0.09341831279009759
+        },
+        "2019": {
+          "n": 2,
+          "base_gain": 0.09234336851383125,
+          "research_gain": 0.02508968832193724,
+          "oracle_gain": 0.18981697418770388
+        },
+        "2020": {
+          "n": 1,
+          "base_gain": 0.13298443790052905,
+          "research_gain": 0.16376841228553465,
+          "oracle_gain": 0.4229007683665224
+        }
+      }
+    }
+  },
+  "cross_sectional_correlations": {
+    "spearman_previous_win_to_future_gain": {
+      "n": 55,
+      "mean": 0.09672771064321317,
+      "median": 0.09706267863613055,
+      "positive_months": 37
+    },
+    "spearman_previous_win_to_future_win": {
+      "n": 55,
+      "mean": 0.13894789173933633,
+      "median": 0.14705249038367127,
+      "positive_months": 44
+    }
+  },
+  "manifest": {
+    "SPY": "c465532cbf4bfd8aa6c65b8e3fda8c74f7cd4cedcf759f057afa423397d8dbd8",
+    "AAPL": "845e7b5c0919927c2b72a4435d0f207c5a2f69a218a074a78637bf8bd921c890",
+    "ADBE": "7e2aa73e77366a2d34083dd13579c7a856310e856e68eaa8ded9696cf3075722",
+    "ADI": "4eeaf9a14416f89ff439581edd5777173d2ac99f1898c64012150360cebd371f",
+    "ADP": "ed027a7d263d29bc1648dc357b51bbe926d5a7aa9164b634c4b97fe05c24fac6",
+    "ADSK": "b7c4f21ea5e9d3c936ccb7b7fed6021d5884ed2b8786d2a25253ff3333f19ded",
+    "ALGN": "60a212887a7e3229d0f0e5bab4b0fd5203e2557397854be492823705b5f65a15",
+    "AMAT": "0db504e878f97753c29b9a1ce9a4373163f4dd0d4ba7be079d2fba98de89e0a8",
+    "AMD": "25652de0a52b8f6348e16a95973c5744883bae66484551afe5df29204a6da208",
+    "AMGN": "9ff90b0d359f1703410fd0662806da4fe7878bfc4a8b3dfbb33baa37a4cc2866",
+    "AMZN": "259fd6610d12936de005e76ccf2ea552eab209d6e03dc924715561f8f6b84dca",
+    "ASML": "93a565fc28f68dadc43bd97548f33469945faf4f8202995d3a16a3b30329170e",
+    "AXON": "322f346a07bc3fe13da6312e35e31c4b1265a121ae61a687c9aed79ce38a933b",
+    "AZN": "ce04d94ef0a6b2e83720478ea773dcaab91d62982f1ec6c29c3842508dc840b8",
+    "BIIB": "b48d68697ed3ff8874212dbfa30ebdc540edd682476d4f1a3b723e0aa2154184",
+    "BKNG": "39328e4ae5eb62b0f5e32fdec1638a7d892ce2fae3c70790b3dfb9d3c478c73b",
+    "BKR": "ee33bfe08e2be2e2cce331dbe29466503f41ae172b075d5df565e2c613b580f7",
+    "CDNS": "51b29832cb80f6bfc2f08e0c042dab73258e65a210ff40e49d10836784813f9f",
+    "CMCSA": "5d79e9214f9043703c219bbb854388081361989d7e0b3df1672710079f5a4150",
+    "COST": "b3425420de340a580c71beb03480e1e8ba2f72064f23ea2cc325277b1c793608",
+    "CPRT": "096ac2d2838db0e98ec7c8665896ea6d050e4c8683c8f0d6ecb111381319f176",
+    "CSCO": "21561455fe463d35bc612a7b68df14de4e36e734304ae6de904c927926f841ce",
+    "CSX": "cb17cac9d0f221cf64210c0e516f562a1bf099f8424950a971e27caeb5978e14",
+    "CTAS": "f227668cd78e10d17581882a5657a1192046ca2fad0df020157ae1da543ae09c",
+    "CTSH": "da7fb6fa669e5cb73fe1630274d5cc0bf476f5da17cba40495d4bbd5130a8f8f",
+    "DLTR": "86ce3db2b3d06f32e3a653c400befce9ca53f266f6ac9f4481d3fb93b807855d",
+    "EA": "14d8c4253f6ac0b6a1e43363b24b2708eb3ed98b7200f534303dc1aa06e72420",
+    "EBAY": "dd2b081f77903dec19b85d95023be4118296815ad38cb787603391d1842845b4",
+    "EXC": "085507d9b27a1e3d19e86e187530716d71ca006c7c9add082502bd98b586b672",
+    "FAST": "3cd28af4684ad657ff858f2fb89c4b62f25a3bc2226cd00f0c573d081b0d5dbc",
+    "GILD": "c07b0791ea029ddf4a736d2a4bdd3ef79665cba04c6e3bf6d48b73daadeae9a3",
+    "GOOG": "54df8cee1bfb5e66f289184185197982ae7c1ba41fa07850f51eb3ce18366aef",
+    "GOOGL": "a54ef402f887cbfe83feccfa53937b85861e07b48c38af748facb5c67c8b2240",
+    "HON": "5f719a4a62a579565af03d16367cc603b74ab2432ce4d6441709f5379d7fbd4e",
+    "IDXX": "04ded60b68b505ee667b2db4c0909d2aebc678f2e3978f51be16354bb8fdae49",
+    "INTC": "bccab8bfd13f3823bb8549133b71aaf1d8e1c9d43d8c6d6a53dfa2ce47026e76",
+    "INTU": "7fd2cb64ce97a8daf90adfa0340e27173fa20bdeacf30b91331492113b7bafda",
+    "ISRG": "7801a61fede5b1bc58e881f249cc34c6673c994d66985f3bf3a62adcb65affb7",
+    "KLAC": "447823edf57b726ffe1c97899d50903a283238715f038ebe4c7b1700768cb3a5",
+    "LRCX": "39cc21943f3cc261254857d694117fe1184d6258490172986b8776131334c7cd",
+    "MAR": "b72802df3e1d28bac8be6e0cfa1f60899a063aa525907ff50d3f5b728bf64d83",
+    "MCHP": "c06244bb382d455f9d08295a299d81a847907310ae73620a71c2c6d0a7a15494",
+    "MDLZ": "790d3e56e56a88b6b28ff018572ba97e87bb22a4ae2c9fed3f4d7942d233a41e",
+    "MNST": "cd3dbb166c736f5eb8500b3c2326fcae063e87e8d1992b41b82d2f4ab1613deb",
+    "MRVL": "973560608cec90e95491ab8cc972de952f64ce7abe2b66017cdc0607780a8546",
+    "MSFT": "279cb6beacc9a2edf1bab5bb759434f9564af67abd0f7b8749285a6e82299b18",
+    "MSTR": "0a55776f507c4107f9fc6430e307187e8e4c3eead3d9379c68102bd5f60c1842",
+    "MTCH": "6fe32d027317790f79a538e957900b770ee1ecdb5cdc9fb776eb26ec617b23e3",
+    "MU": "e968f698fc7fbe5d866de581c1c984b1ad37ebbff65b8fdcf11facbd172ac571",
+    "NFLX": "6ca11d29e1e8f32845b7be0fa506ff7512629fa539604ba22ac0f1eb0d79c43c",
+    "NTES": "63717bd9d3a2be544d5db85cc46feeb68a771ca39a7dcf7557bffac512778e02",
+    "NVDA": "2c34052805a11ad9c713b022cdd829cf4de1c8a5b83150f2a18760c4e37a2478",
+    "ODFL": "7c74858ac8fc419d09e52dc19e92abee506a7005311e49c846909cc3e3bd9fd7",
+    "ON": "b3748821ad143b5e85ceb468e8f934bb3722e4555ac6646684d34d204725ab4e",
+    "ORLY": "ff67e59d228b475d2141c2368f2738e5630931bcc7df728105e79ff002cdde2a",
+    "PAYX": "360163287aab2a9be2205e2755bbaf69c77c8c416db0cbf28705eeca5ec8ccfd",
+    "PCAR": "e28e6b923ee83f8da89d7a093f4a8e1651769b9cb069c9197fc79857eef7b3c9",
+    "PEP": "9da559b610c3caccea2703d9af56022ade6f5dd6dd4f2a7e62a51d8f903b239d",
+    "QCOM": "fbb888aed9858ea515a0ab1dbb592c3b0e28ba03e8e5814726dbd4a24dcbef5d",
+    "REGN": "c220409a41a306a6ed2c0c82c26a6638e33e6c4864c3c76b8b045400bb780361",
+    "ROP": "6a6693cc68241835ac9e579c9aaf3526f44fba2bd58f668318edef977a84e82d",
+    "ROST": "99742a4218eb98498144c253ca63607f88afdca305272d5ba0f9b2c52cba03ad",
+    "SBUX": "982612702898864efc97c7634bb417c167b1c39a2e386fc62c51795bd5ae3444",
+    "SNPS": "bce0349fe525f7c4f9d32315804c1092dc09280c0ec4aa3e10e1764406a51d21",
+    "TCOM": "0e831a729f8b6885371811d4f8b8a6e1bd259dbfab400ee2bb088a29dd7facd6",
+    "TTWO": "ee1293c163186332e43e4a1dbb5fa85b1b8fad8ffa289ae061b86ccba8c369b9",
+    "TXN": "cc0416bb1ddd8cdf88a2fd723fe27293173dea3f62be28eece43e487c7dfb428",
+    "VRTX": "6884bb9543adfd1a287bd53440f712b36afb09f7568ca45b1732e262551a3c42",
+    "XEL": "c18c256cb2fedf340f231d956d86cf16461816f7c734918d10578e8881c3d96f",
+    "DXCM": "3410f390ec6a25087847cf6c03e7761adab9cde13281f86c18c053a2f1630c04",
+    "WBD": "2800e41109a4ed59b37a81babde16e35cee93a5728d7b01c267d4471e951e86a",
+    "LULU": "354635412c44e7acb45a528687c685ff2664d1eebd2d77fd7274b452b982dfab",
+    "MELI": "d2472fbdef3574c5973ec1aefd61c84d9142cb36ba5f51115e11e269d2cfdab6",
+    "TMUS": "71963c769efc5c0fb4112bfbef4e27fea2d224022a31de2403908eaacdd7939c",
+    "KDP": "c0e6888d4f47142b9e98dd362ff6702cd4baf805a088c4059292cc58e9de5c52",
+    "AVGO": "99989833001ffe92925beedb8335006228fc6ddc68ad151bdc334fef6e04fb8c",
+    "FTNT": "eff4605959f4b8a874d0bf5d7b5001548d0a30c71777516381143115ea631aef",
+    "VRSK": "c1e8f6c0298560189f8d669284c87b17cad62fe76024af26bdb386cbbac1af19",
+    "CHTR": "54924bf2e7d8273d553b9c2fe47ede69350e4e67f038fd2c297f0e5dcc9b1959",
+    "TSLA": "3d70ba3c70c59ece5a1e59cb98c94a816d81d468ec5cbdaeb43abb75e46cd700",
+    "NXPI": "bcabc1788fbe109fd5090af8fe5b4c8879565ad1fb24b8431ad4c68dedc2f7b6",
+    "META": "817771444c4bb26944bd72113f26caf8e1d80280f4eb8410c799e1d74832ac37",
+    "NOW": "1ff3ea2b4ddf77130b204d518976a0a435bcbd076949ab1d0d920d38316bc8a1",
+    "PANW": "af4ed502a77d3f4f2728aa6da185750ef310a4e41c3a7ff49818e7cf5da70891",
+    "FANG": "ade94739d8044c49733c53f4717991fd867e1a573a3ed3ebe34ac4a7445ab524",
+    "WDAY": "7fbead6795f1aa7da681ae0beab5f91f5043d79342ba802d71ce854b9a0fd3e1",
+    "CDW": "e28c2f6a49727c6141dddcea6587e3b857bf80e9d46a780bb842b08cd2248489",
+    "KHC": "940492c58d1efced1f2d61bc9882900e29be767fe4dbfdea41dcc3c9d4bd740c",
+    "PYPL": "02f5469db3b0852118e05106ffd3926f12d361e2ad1302d2e2102706a4e5ec89",
+    "TEAM": "f7918b3a867de492fe238adbb6548566284763b50163dbd5134643affc09c35c",
+    "TTD": "577c58fcf41791a312ae435c659e7df21e7ff9660d2457da9f62f3d7fb47e35a",
+    "ZS": "5bb2317d181220511c81a22905c96a330bc8320bb459ae1e07005e4e199f35ff",
+    "PDD": "3c59dba6952d690b0a7e13ee2f7e7d395ccfb550d09c92ad8d218003a29217ae",
+    "CRWD": "10e400acd5c3d7643bee876ca988795771f4cec45c886ca28bef4b477e4d0d1d",
+    "DDOG": "64201fe6d2f67a64a22d16f153ee750c617fb450ccd0aec5490b427cdb763e73"
+  },
+  "limitations": [
+    "fallback branch only",
+    "only ex-ante research-eligible symbols with full subsequent coverage",
+    "coverage conditioned on later availability",
+    "capital sizing, actual signals, tradability, risk gates and execution ignored",
+    "selected names first K from logged lists, not necessarily actual executed orders",
+    "historical universe is today-selected, survivorship bias"
+  ]
+}

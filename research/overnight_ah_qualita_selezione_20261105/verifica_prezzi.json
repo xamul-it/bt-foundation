@@ -1,0 +1,20 @@
+{
+  "base": {
+    "sample": 120,
+    "matched": 120,
+    "unmatched": 0,
+    "max_relative_difference": 4.789856080655852e-07,
+    "within_1e-5": 120,
+    "seed": 42,
+    "scope": "entry price versus current parquet close; not proof of all prices or exact historical vintage"
+  },
+  "research": {
+    "sample": 120,
+    "matched": 120,
+    "unmatched": 0,
+    "max_relative_difference": 2.220446049250313e-16,
+    "within_1e-5": 120,
+    "seed": 42,
+    "scope": "entry price versus current parquet close; not proof of all prices or exact historical vintage"
+  }
+}

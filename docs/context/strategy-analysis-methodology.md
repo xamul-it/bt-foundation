@@ -74,6 +74,71 @@ instead of treating them as defaults. At minimum, record:
 Long-only is not a general rule. It is one possible tested configuration and
 must be justified by results for the specific strategy.
 
+## Evaluate The Selection Method, Not Diversity For Its Own Sake
+
+When the study compares ways to select or rank instruments, the primary question
+is whether the rule identifies useful opportunities using only information
+available at the decision time. A concentration in a few instruments is not,
+by itself, evidence that the selection is defective: repeatedly choosing a
+strong instrument can be the correct consequence of a successful rule. Do not
+impose equal treatment, rotation, sector quotas or a minimum number of names
+merely to make the portfolio look diversified. Measure concentration and its
+risk consequences, including exposure to correlated instruments, liquidity,
+execution and capacity, as diagnostics and trade-offs.
+
+Distinguish these cases explicitly:
+
+- **Ex-ante objective selection:** an explicit rule is applied using only the
+  universe, inputs, parameters and history available at each decision. Its
+  real-world usefulness depends on economic outcomes, stability and costs, not
+  merely on being objective.
+- **Fixed list:** establish when, why and from which information the list was
+  chosen. A list chosen and frozen before a genuinely later test is not
+  automatically invalid. A list selected or revised using outcomes in the
+  evaluation period is a retrospective selection and its results can benefit
+  from lookahead and survivorship bias; do not present them as unbiased OOS.
+- **Ex-post reference:** select the best names after observing outcomes, solely
+  to assess what the ex-ante rule missed or identified. This is a hindsight
+  diagnostic, not an investable strategy or independent validation. A fixed
+  hindsight-selected list is not automatically an optimal or always-profitable
+  portfolio. An ex-ante rule is not guaranteed to underperform such a list.
+
+Where feasible, construct an ex-post reference for the **same future holding
+interval** and the same point-in-time eligible universe for each decision.
+Specify the realized outcome being ranked, number of names, direction, market
+session, missing-data handling, ties and rebalancing. Compare it with the
+ex-ante ranking using interpretable selection diagnostics: overlap with the
+best eligible names, ordering or rank quality, realized outcomes of selected
+versus excluded names, and missed or avoided opportunities. If the actual
+strategy can choose fewer than N names or remain in cash, preserve and report
+that behavior; do not silently force it to hold N positions.
+
+An ex-post top-N list ranked by individual returns is not necessarily the
+portfolio that maximizes net return or risk-adjusted performance. Call it an
+oracle or upper bound only if the objective, feasible allocations, capital,
+position limits, chronology, execution, liquidity and costs are defined and
+the optimization actually establishes that bound. Otherwise call it a
+hindsight reference. Avoid optimizing the reference over a larger or cleaner
+universe than the one available at the original decision, and do not replace
+delisted or missing names with today's survivors.
+
+Separate **selection quality** from portfolio execution: a well-ranked name
+may not be bought because of entry signals, cash, existing positions, risk
+filters or liquidity caps. Report the ex-ante eligible list and ranking, the
+realized ex-post reference, the actual orders and fills, and the reasons for
+differences. Any counterfactual portfolio must use its own consistent sizing,
+cash, turnover, costs and execution assumptions; a sum of individual returns
+is not automatically an investable portfolio return.
+
+Evaluate the rule across periods and market regimes, with temporal separation
+between design, parameter selection and evaluation. Identify data and periods
+already observed; do not call them blind holdouts. Compare full strategies
+with each strategy's intended parameters and describe material differences.
+When the question is the causal effect of one selector, additionally compare
+controlled variants of that same strategy with the other settings unchanged.
+Report uncertainty and limits, and avoid choosing a lookback, formula or
+universe by consulting the final evaluation period.
+
 ## Data Convention
 
 Record the following for every study:
@@ -149,7 +214,11 @@ matters to the hypothesis, for example C2C, AH-only, RTH-only, and total C2C.
 
 ## Feed And Data Invariance
 
-Before comparing two runs, verify that only the intended variable changed.
+Before comparing two runs, define the comparison. For a controlled test of one
+change, verify that only the intended variable changed. For a decision between
+complete strategies, preserve each strategy's intended configuration, document
+all material differences, and do not attribute the total difference to one
+parameter or force both strategies to use the same internal parameters.
 
 Do:
 
