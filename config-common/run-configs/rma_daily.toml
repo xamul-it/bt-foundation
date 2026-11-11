@@ -90,6 +90,6 @@ max_volatility = 0.08
 period = 180
 period_fast = 30
 regime_filter = false
-selnum = 2
+min_concurrent = 2
 trail_stop = 0.001
 use_adj_indicators = false
