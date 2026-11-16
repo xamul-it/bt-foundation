@@ -1084,7 +1084,17 @@ def reconcile_one_day(repo: "wr.WatchtowerRepository", profile: str, profile_env
     run_tag = f"{profile}_{trading_date:%Y%m%d}"
     worktree_bt_core = create_worktree(bt_core_repo, core_commit, run_tag, code_root / "config-common")
     try:
-        snapshot = None if settle_only else market_data_snapshot(profile, trading_date)
+        # Settlement must replay the same entry universe as the original
+        # cycle. The live ticker list may have changed while its positions
+        # were open; using it here can silently drop an original position.
+        snapshot = market_data_snapshot(profile, trading_date)
+        ticker = str((version.get('metadata') or {}).get('TICKER') or profile_env.get('TICKER') or '')
+        if settle_only and ticker.endswith('.json') and snapshot is None:
+            raise ValueError(
+                'Original entry snapshot unavailable; cannot safely replay a mutable ticker list'
+            )
+        if settle_only and ticker.endswith('.json') and not (snapshot / 'tickers' / ticker).is_file():
+            raise ValueError('Ticker list missing from original entry snapshot')
         replay_config = None
         if snapshot:
             replay_config = prepare_snapshot_replay_config(snapshot, code_root / "config-common", worktree_bt_core)
