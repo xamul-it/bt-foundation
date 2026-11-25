@@ -85,18 +85,14 @@ splits must not introduce artificial gaps in indicators. Alpaca remains the
 execution venue, so actual fills and position sizes are not expected to equal a
 Backtrader simulation; the selected symbol set is expected to equal it.
 
-Entry jobs do not download data. They use a fixed cutoff equal to the previous
-calendar day (`DATA_CUTOFF`, default `yesterday`) and pass it to `btmain`. With
-`live_use_last_completed_bar=True`, the live run evaluates that last available
-completed bar directly. The target is resolved as `t-N` from the shared Alpaca
+Entry jobs normally use the independently refreshed cache; when an entry is
+configured to download data, the loader refreshes through the current date.
+The signal is always the exact previous exchange session, resolved from the shared Alpaca
 trading calendar (`config-common/cache/alpaca_calendar_cache.json`), never from
-SPY or another ticker in the universe. The entry decision runs once only when
-the master and every feed that contains the target session are positioned on
-that date. A symbol without that bar is excluded as `stale_feed`, with both its
-feed date and the target date logged. Every log line that reports an entry price
-also reports `feed_date`. The historical replay reaches the same information
-set with the normal one-bar signal lag. Consequently, runs at 09:10 and 16:00
-on the same execution date must produce the same candidates.
+SPY or another ticker in the universe. Backtest and live use the same target;
+each symbol without that exact bar is skipped and other symbols continue. Every
+log line that reports an entry price also reports `feed_date`. If calendar
+coverage is unavailable the strategy does not infer an older target.
 
 The Alpaca calendar is maintained independently of Yahoo data by
 `scripts/refresh-alpaca-calendar-cache.sh`. The monthly job runs on the first
