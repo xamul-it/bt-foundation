@@ -26,10 +26,9 @@ STRAT_CLASS=${STRAT##*.}
 STRAT_DIR=${STRAT_MODULE,,}
 
 FROMDATE=$(date -d "$FROM_DAYS days ago" '+%Y-%m-%d')
-# The entry decision must never depend on today's incomplete daily candle.
-# Calendar-day cutoff is intentional: on Monday (or after a holiday) the
-# feed naturally ends at the latest earlier trading session.
-DATA_CUTOFF=${DATA_CUTOFF:-$(date -d 'yesterday' '+%Y-%m-%d')}
+# Today's incomplete bar supplies only its opening price for the cooldown.
+# Candidate selection remains on the previous exchange session in strategy.
+DATA_CUTOFF=${DATA_CUTOFF:-$(date '+%Y-%m-%d')}
 LOAD_CMD=(python load_tickers.py --ticker="$TICKER" --provider "$DATA_PROVIDER" --alpaca-feed "$ALPACA_FEED" --timeframe=d --todate "$(date '+%Y-%m-%d')" --incremental)
 RUN_CMD=(python btmain.py --strat "$STRAT" --ticker "$TICKER" --stratargs "$STRATARGS" --timeframe daily --provider "$DATA_PROVIDER" --alpaca-feed "$ALPACA_FEED" --fromdate "$FROMDATE" --todate "$DATA_CUTOFF" --mode "$TRADING_MODE" --margin-leverage "$MARGIN_LEVERAGE" --commission "$COMMISSION" --id "$RUN_ID")
 
