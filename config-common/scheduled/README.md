@@ -40,13 +40,17 @@ cron. Supported phases are `entry`, `exit`, and `exit-fallback`.
 
 ## OvernightAH data lifecycle
 
-Scheduled entries consume already consolidated previous-day data. They use
+Scheduled entries use the prior completed exchange session for stock selection
+and the decision-day opening price for the overnight cooldown. They use
 `yahoo_adj` for signal generation and set `REFRESH_MARKET_DATA=0`; a separate
 post-close job runs `scripts/refresh-scheduled-daily-data.sh` once per weekday.
 The Alpaca trading calendar is refreshed separately once per month by
 `scripts/refresh-alpaca-calendar-cache.sh`; it never downloads Yahoo symbols.
-The entry handler applies `DATA_CUTOFF` (default: yesterday) to both any optional
-loader and `btmain`, so intraday execution time cannot change the input bars.
+The entry handler loads through `DATA_CUTOFF` (default: today). Today's
+incomplete daily bar is used only for its opening price in the cooldown; stock
+selection remains tied to the exact previous market session. A symbol missing
+either required cooldown date is excluded from that calculation. If no symbol
+has both dates, entry is not submitted and the decision records the reason.
 
 Immediately before a run, `scripts/snapshot-scheduled-data.sh` freezes its
 point-in-time inputs under
